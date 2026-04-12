@@ -1,3 +1,4 @@
+import '../styles/employees.css'
 import { useState, useEffect } from 'react'
 
 import {
@@ -161,177 +162,180 @@ const filteredEmployees = employees.filter((emp) => {
   )
 })
 
-  return (
-    <div>
-      <h2>Funcionários</h2>
+   return (
+     <div className="container">
+       <h2>Funcionários</h2>
+       <div className="form">
+         <input
+           placeholder="Buscar funcionário"
+           value={search}
+           onChange={(e) => setSearch(e.target.value)}
+         />
 
-      <input
-        placeholder="Buscar funcionário"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+         <br />
+         <br />
 
-      <br />
-      <br />
+         <input
+           placeholder="Nome completo"
+           value={name}
+           onChange={(e) => setName(e.target.value)}
+         />
 
-      <input
-        placeholder="Nome completo"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-      />
+         <input
+           placeholder="CPF"
+           value={cpf}
+           onChange={(e) => setCpf(formatCPF(e.target.value))}
+         />
 
-      <input
-        placeholder="CPF"
-        value={cpf}
-        onChange={(e) => setCpf(formatCPF(e.target.value))}
-      />
+         <input
+           placeholder="RG"
+           value={rg}
+           onChange={(e) => setRg(formatRG(e.target.value, isForeigner))}
+         />
 
-      <input
-        placeholder="RG"
-        value={rg}
-        onChange={(e) => setRg(formatRG(e.target.value, isForeigner))}
-      />
+         {/* 🌍 Checkbox de estrangeiro */}
+         <label>
+           <input
+             type="checkbox"
+             checked={isForeigner}
+             onChange={(e) => setIsForeigner(e.target.checked)}
+           />
+           Estrangeiro
+         </label>
 
-      {/* 🌍 Checkbox de estrangeiro */}
-      <label>
-        <input
-          type="checkbox"
-          checked={isForeigner}
-          onChange={(e) => setIsForeigner(e.target.checked)}
-        />
-        Estrangeiro
-      </label>
+         <input
+           placeholder="Telefone"
+           value={phone}
+           onChange={(e) => setPhone(formatPhone(e.target.value))}
+         />
 
-      <input
-        placeholder="Telefone"
-        value={phone}
-        onChange={(e) => setPhone(formatPhone(e.target.value))}
-      />
+         <input
+           placeholder="Email"
+           value={email}
+           onChange={(e) => setEmail(e.target.value)}
+         />
 
-      <input
-        placeholder="Email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-      />
+         <input
+           placeholder="Endereço"
+           value={address}
+           onChange={(e) => setAddress(e.target.value)}
+         />
+       </div>
 
-      <input
-        placeholder="Endereço"
-        value={address}
-        onChange={(e) => setAddress(e.target.value)}
-      />
+       <select value={role} onChange={(e) => setRole(e.target.value)}>
+         <option value="">Selecione o cargo</option>
+         <option value="auxiliar_escritorio">Auxiliar de Escritório</option>
+         <option value="auxiliar_administrativo">
+           Auxiliar Administrativo
+         </option>
+         <option value="motorista">Motorista</option>
+         <option value="gestao_pessoas">Gestão de Pessoas</option>
+       </select>
 
-      <select value={role} onChange={(e) => setRole(e.target.value)}>
-        <option value="">Selecione o cargo</option>
-        <option value="auxiliar_escritorio">Auxiliar de Escritório</option>
-        <option value="auxiliar_administrativo">Auxiliar Administrativo</option>
-        <option value="motorista">Motorista</option>
-        <option value="gestao_pessoas">Gestão de Pessoas</option>
-      </select>
+       <input
+         placeholder="Data de Admissão"
+         value={admissionDate}
+         onChange={(e) => setAdmissionDate(formatDate(e.target.value))}
+       />
 
-      <input
-        placeholder="Data de Admissão"
-        value={admissionDate}
-        onChange={(e) => setAdmissionDate(formatDate(e.target.value))}
-      />
+       <input
+         placeholder="Data de Demissão"
+         value={dismissalDate}
+         onChange={(e) => setDismissalDate(formatDate(e.target.value))}
+       />
+       {/* 👤 Status do funcionário */}
+       <label>
+         <input
+           type="checkbox"
+           checked={isActive}
+           onChange={(e) => setIsActive(e.target.checked)}
+         />
+         Funcionário Ativo
+       </label>
 
-      <input
-        placeholder="Data de Demissão"
-        value={dismissalDate}
-        onChange={(e) => setDismissalDate(formatDate(e.target.value))}
-      />
-      {/* 👤 Status do funcionário */}
-      <label>
-        <input
-          type="checkbox"
-          checked={isActive}
-          onChange={(e) => setIsActive(e.target.checked)}
-        />
-        Funcionário Ativo
-      </label>
+       <br />
+       <br />
 
-      <br />
-      <br />
+       <button onClick={handleSaveEmployee}>
+         {editingEmployee ? "Atualizar" : "Cadastrar"}
+       </button>
 
-      <button onClick={handleSaveEmployee}>
-        {editingEmployee ? "Atualizar" : "Cadastrar"}
-      </button>
+       <hr />
+       {search !== "" && filteredEmployees.length === 0 && (
+         <p>Nenhum funcionário encontrado</p>
+       )}
+       {/* 🧠 Só aparece se um funcionário foi selecionado */}
+       {selectedEmployee && (
+         <div className="details">
+           <h3>Detalhes do Funcionário</h3>
 
-      <hr />
-      {search !== "" && filteredEmployees.length === 0 && (
-        <p>Nenhum funcionário encontrado</p>
-      )}
-      {/* 🧠 Só aparece se um funcionário foi selecionado */}
-      {selectedEmployee && (
-        <div>
-          <h3>Detalhes do Funcionário</h3>
+           {/* 📋 Exibe TODOS os dados */}
+           <p>
+             <strong>Nome:</strong> {selectedEmployee.name}
+           </p>
+           <p>
+             <strong>CPF:</strong> {selectedEmployee.cpf}
+           </p>
+           <p>
+             <strong>RG:</strong> {selectedEmployee.rg}
+           </p>
+           <p>
+             <strong>Telefone:</strong> {selectedEmployee.phone}
+           </p>
+           <p>
+             <strong>Email:</strong> {selectedEmployee.email}
+           </p>
+           <p>
+             <strong>Endereço:</strong> {selectedEmployee.address}
+           </p>
+           <p>
+             <strong>Cargo:</strong> {selectedEmployee.role}
+           </p>
+           <p>
+             <strong>Status:</strong>{" "}
+             {selectedEmployee.isActive ? "Ativo" : "Ex-funcionário"}
+           </p>
+           <p>
+             <strong>Admissão:</strong> {selectedEmployee.admissionDate}
+           </p>
+           <p>
+             <strong>Demissão:</strong> {selectedEmployee.dismissalDate}
+           </p>
 
-          {/* 📋 Exibe TODOS os dados */}
-          <p>
-            <strong>Nome:</strong> {selectedEmployee.name}
-          </p>
-          <p>
-            <strong>CPF:</strong> {selectedEmployee.cpf}
-          </p>
-          <p>
-            <strong>RG:</strong> {selectedEmployee.rg}
-          </p>
-          <p>
-            <strong>Telefone:</strong> {selectedEmployee.phone}
-          </p>
-          <p>
-            <strong>Email:</strong> {selectedEmployee.email}
-          </p>
-          <p>
-            <strong>Endereço:</strong> {selectedEmployee.address}
-          </p>
-          <p>
-            <strong>Cargo:</strong> {selectedEmployee.role}
-          </p>
-          <p>
-            <strong>Status:</strong>{" "}
-            {selectedEmployee.isActive ? "Ativo" : "Ex-funcionário"}
-          </p>
-          <p>
-            <strong>Admissão:</strong> {selectedEmployee.admissionDate}
-          </p>
-          <p>
-            <strong>Demissão:</strong> {selectedEmployee.dismissalDate}
-          </p>
+           {/* ✏️ Botão editar */}
+           <button onClick={() => handleEdit(selectedEmployee)}>Editar</button>
 
-          {/* ✏️ Botão editar */}
-          <button onClick={() => handleEdit(selectedEmployee)}>Editar</button>
+           {/* 🗑️ Só admin ou gestão pode excluir */}
+           {user && (user.role === "admin" || user.role === "gestao_rh") && (
+             <button className="delete" onClick={() => handleDelete(emp.id)}>
+               Excluir
+             </button>
+           )}
 
-          {/* 🗑️ Só admin ou gestão pode excluir */}
-          {user && (user.role === "admin" || user.role === "gestao_rh") && (
-            <button onClick={() => handleDelete(selectedEmployee.id)}>
-              Excluir
-            </button>
-          )}
+           <br />
+           <br />
 
-          <br />
-          <br />
+           {/* ❌ Fecha os detalhes */}
+           <button onClick={() => setSelectedEmployee(null)}>Fechar</button>
 
-          {/* ❌ Fecha os detalhes */}
-          <button onClick={() => setSelectedEmployee(null)}>Fechar</button>
-
-          <hr />
-        </div>
-      )}
-      <ul>
-        {filteredEmployees.map((emp) => (
-          <li key={emp.id}>
-            {/* 🧾 Mostra só o básico */}
-            <strong>{emp.name}</strong> - {emp.role}
-            <br />
-            {/* 👆 Ao clicar, salva o funcionário selecionado */}
-            <button onClick={() => setSelectedEmployee(emp)}>
-              Ver detalhes
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
+           <hr />
+         </div>
+       )}
+       <ul className="employee-list">
+         {filteredEmployees.map((emp) => (
+           <li key={emp.id} className="employee-card">
+             {/* 🧾 Mostra só o básico */}
+             <strong>{emp.name}</strong> - {emp.role}
+             <br />
+             {/* 👆 Ao clicar, salva o funcionário selecionado */}
+             <button onClick={() => setSelectedEmployee(emp)}>
+               Ver detalhes
+             </button>
+           </li>
+         ))}
+       </ul>
+     </div>
+   );
 }
 
 export default Employees
