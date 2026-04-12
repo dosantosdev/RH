@@ -4,43 +4,58 @@ import { useState, useEffect } from 'react'
 import { getEmployees, addEmployee } from '../services/employee'
 
 function Employees() {
-  // 🧠 Estado para armazenar lista de funcionários
+  // 🧠 Lista de funcionários
   const [employees, setEmployees] = useState([])
 
-  // 🧠 Estados do formulário
+  // 🧠 Estados do formulário (cada campo = um estado)
   const [name, setName] = useState('')
-  const [position, setPosition] = useState('')
+  const [cpf, setCpf] = useState('')
+  const [rg, setRg] = useState('')
+  const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
+  const [address, setAddress] = useState('')
+  const [role, setRole] = useState('')
 
-  // 🔍 Estado para busca
+  // 🔍 Campo de busca
   const [search, setSearch] = useState('')
 
-  // 🚀 Roda quando a tela carrega
+  // 🚀 Carrega funcionários ao abrir página
   useEffect(() => {
-    // Carrega funcionários do localStorage
     setEmployees(getEmployees())
   }, [])
 
   // 🧑‍💼 Função para cadastrar funcionário
   function handleAddEmployee() {
-    // Cria objeto do funcionário
     const newEmployee = {
-      id: Date.now(), // gera ID único
-      name: name,
-      position: position
+      id: Date.now(), // ID único
+
+      // 📋 Dados do funcionário
+      name,
+      cpf,
+      rg,
+      phone,
+      email,
+      address,
+      role
     }
 
-    // Salva no localStorage
+    // Salva
     addEmployee(newEmployee)
 
-    // Atualiza lista na tela
+    // Atualiza lista
     setEmployees(getEmployees())
 
-    // Limpa inputs
+    // 🧹 Limpa formulário
     setName('')
-    setPosition('')
+    setCpf('')
+    setRg('')
+    setPhone('')
+    setEmail('')
+    setAddress('')
+    setRole('')
   }
 
-  // 🔍 Filtra funcionários pela busca
+  // 🔍 Filtro por nome
   const filteredEmployees = employees.filter((emp) =>
     emp.name.toLowerCase().includes(search.toLowerCase())
   )
@@ -49,7 +64,7 @@ function Employees() {
     <div>
       <h2>Funcionários</h2>
 
-      {/* 🔍 Campo de busca */}
+      {/* 🔍 BUSCA */}
       <input
         placeholder="Buscar funcionário"
         value={search}
@@ -58,30 +73,77 @@ function Employees() {
 
       <br /><br />
 
-      {/* 🧑‍💼 Cadastro */}
+      {/* 🧾 FORMULÁRIO */}
+
+      {/* 📌 Nome */}
       <input
-        placeholder="Nome"
+        placeholder="Nome completo"
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
 
+      {/* 📌 CPF */}
       <input
-        placeholder="Cargo"
-        value={position}
-        onChange={(e) => setPosition(e.target.value)}
+        placeholder="CPF"
+        value={cpf}
+        onChange={(e) => setCpf(e.target.value)}
       />
 
-      <button onClick={handleAddEmployee}>
-        Adicionar
-      </button>
+      {/* 📌 RG */}
+      <input
+        placeholder="RG"
+        value={rg}
+        onChange={(e) => setRg(e.target.value)}
+      />
+
+      {/* 📌 Telefone */}
+      <input
+        placeholder="Telefone"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
+      />
+
+      {/* 📌 Email */}
+      <input
+        placeholder="Email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+
+      {/* 📌 Endereço */}
+      <input
+        placeholder="Endereço"
+        value={address}
+        onChange={(e) => setAddress(e.target.value)}
+      />
+
+      {/* 🏢 Cargo */}
+      <select
+        value={role}
+        onChange={(e) => setRole(e.target.value)}
+      >
+        <option value="">Selecione o cargo</option>
+        <option value="auxiliar_escritorio">Auxiliar de Escritório</option>
+        <option value="auxiliar_administrativo">Auxiliar Administrativo</option>
+        <option value="motorista">Motorista</option>
+        <option value="gestao_pessoas">Gestão de Pessoas</option>
+      </select>
 
       <br /><br />
 
-      {/* 📋 Lista de funcionários */}
+      <button onClick={handleAddEmployee}>
+        Cadastrar Funcionário
+      </button>
+
+      <hr />
+
+      {/* 📋 LISTA */}
       <ul>
         {filteredEmployees.map((emp) => (
           <li key={emp.id}>
-            {emp.name} - {emp.position}
+            <strong>{emp.name}</strong> - {emp.role}
+            <br />
+            CPF: {emp.cpf} | Tel: {emp.phone}
           </li>
         ))}
       </ul>

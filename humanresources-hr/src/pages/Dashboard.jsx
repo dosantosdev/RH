@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { logout } from '../services/auth'
 
-// Importa a nova página
 import Employees from './Employees'
+import Users from './Users'
+import Roles from './Roles'
 
 function Dashboard({ user, setUser }) {
-  // 🧠 Controle de navegação interna
   const [page, setPage] = useState('home')
 
   function handleLogout() {
@@ -17,8 +17,8 @@ function Dashboard({ user, setUser }) {
     <div>
       <h1>Dashboard</h1>
 
-      <p>Email: {user.email}</p>
-      <p>Permissão: {user.role}</p>
+      <p>Usuário: {user.username}</p>
+      <p>Cargo: {user.role}</p>
 
       {/* 🧭 Navegação */}
       <button onClick={() => setPage('home')}>Início</button>
@@ -26,12 +26,25 @@ function Dashboard({ user, setUser }) {
         Funcionários
       </button>
 
+      {/* 🔐 Só admin vê */}
+      {user.role === 'admin' && (
+        <>
+          <button onClick={() => setPage('users')}>
+            Usuários
+          </button>
+
+          <button onClick={() => setPage('roles')}>
+            Cargos
+          </button>
+        </>
+      )}
+
       <hr />
 
-      {/* 📄 Renderização de páginas */}
-      {page === 'home' && <h2>Bem-vindo ao sistema de RH</h2>}
-
+      {page === 'home' && <h2>Bem-vindo</h2>}
       {page === 'employees' && <Employees />}
+      {page === 'users' && <Users />}
+      {page === 'roles' && <Roles />}
 
       <br />
 

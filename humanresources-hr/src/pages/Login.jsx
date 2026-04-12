@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { login } from '../services/auth'
 
 function Login({ setUser }) {
-  const [email, setEmail] = useState('')
+  const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
 
   function handleLogin() {
-    const user = login(email, password)
+    const user = login(username, password)
 
     if (user) {
       setUser(user)
@@ -20,8 +20,8 @@ function Login({ setUser }) {
       <h2>Login</h2>
 
       <input
-        placeholder="Email"
-        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Usuário"
+        onChange={(e) => setUsername(e.target.value)}
       />
 
       <input
