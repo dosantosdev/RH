@@ -3,6 +3,43 @@ import { useState, useEffect } from 'react'
 // Importa funções do serviço
 import { getEmployees, addEmployee } from '../services/employee'
 
+// 🔢 Remove tudo que NÃO for número
+function onlyNumbers(value) {
+  return value.replace(/\D/g, '')
+}
+
+// 🧾 Formata CPF: 111.111.111-11
+function formatCPF(value) {
+  value = onlyNumbers(value)
+
+  value = value.slice(0, 11) // limita a 11 números
+
+  value = value.replace(/(\d{3})(\d)/, '$1.$2')
+  value = value.replace(/(\d{3})(\d)/, '$1.$2')
+  value = value.replace(/(\d{3})(\d{1,2})$/, '$1-$2')
+
+  return value
+}
+
+// 📞 Formata telefone: (053) 99911-1111
+function formatPhone(value) {
+  value = onlyNumbers(value)
+
+  value = value.slice(0, 11) // limita a 11 números
+
+  value = value.replace(/(\d{2})(\d)/, '($1) $2')
+  value = value.replace(/(\d{5})(\d)/, '$1-$2')
+
+  return value
+}
+
+// 🪪 RG (somente números, sem máscara por enquanto)
+function formatRG(value) {
+  value = onlyNumbers(value)
+
+  return value.slice(0, 10) // limite básico
+}
+
 function Employees() {
   // 🧠 Lista de funcionários
   const [employees, setEmployees] = useState([])
@@ -71,7 +108,8 @@ function Employees() {
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      <br /><br />
+      <br />
+      <br />
 
       {/* 🧾 FORMULÁRIO */}
 
@@ -86,21 +124,20 @@ function Employees() {
       <input
         placeholder="CPF"
         value={cpf}
-        onChange={(e) => setCpf(e.target.value)}
+        onChange={(e) => setCpf(formatCPF(e.target.value))}
       />
-
       {/* 📌 RG */}
       <input
         placeholder="RG"
         value={rg}
-        onChange={(e) => setRg(e.target.value)}
+        onChange={(e) => setRg(formatRG(e.target.value))}
       />
 
       {/* 📌 Telefone */}
       <input
         placeholder="Telefone"
         value={phone}
-        onChange={(e) => setPhone(e.target.value)}
+        onChange={(e) => setPhone(formatPhone(e.target.value))}
       />
 
       {/* 📌 Email */}
@@ -118,10 +155,7 @@ function Employees() {
       />
 
       {/* 🏢 Cargo */}
-      <select
-        value={role}
-        onChange={(e) => setRole(e.target.value)}
-      >
+      <select value={role} onChange={(e) => setRole(e.target.value)}>
         <option value="">Selecione o cargo</option>
         <option value="auxiliar_escritorio">Auxiliar de Escritório</option>
         <option value="auxiliar_administrativo">Auxiliar Administrativo</option>
@@ -129,11 +163,10 @@ function Employees() {
         <option value="gestao_pessoas">Gestão de Pessoas</option>
       </select>
 
-      <br /><br />
+      <br />
+      <br />
 
-      <button onClick={handleAddEmployee}>
-        Cadastrar Funcionário
-      </button>
+      <button onClick={handleAddEmployee}>Cadastrar Funcionário</button>
 
       <hr />
 
@@ -148,7 +181,7 @@ function Employees() {
         ))}
       </ul>
     </div>
-  )
+  );
 }
 
 export default Employees
