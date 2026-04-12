@@ -1,18 +1,31 @@
-// 🧑‍💼 Função para pegar todos os funcionários
+// 🧑‍💼 Buscar todos os funcionários
 export function getEmployees() {
-  // Busca no localStorage a lista de funcionários
-  // Se não existir, retorna array vazio
   return JSON.parse(localStorage.getItem('employees')) || []
 }
 
-// 🧑‍💼 Função para adicionar um novo funcionário
+// ➕ Adicionar funcionário
 export function addEmployee(employee) {
-  // Pega funcionários já existentes
+  const employees = getEmployees()
+  employees.push(employee)
+  localStorage.setItem('employees', JSON.stringify(employees))
+}
+
+// 🗑️ Excluir funcionário
+export function deleteEmployee(id) {
   const employees = getEmployees()
 
-  // Adiciona o novo funcionário na lista
-  employees.push(employee)
+  const updated = employees.filter((emp) => emp.id !== id)
 
-  // Salva novamente no localStorage
-  localStorage.setItem('employees', JSON.stringify(employees))
+  localStorage.setItem('employees', JSON.stringify(updated))
+}
+
+// ✏️ Atualizar funcionário
+export function updateEmployee(updatedEmployee) {
+  const employees = getEmployees()
+
+  const updated = employees.map((emp) =>
+    emp.id === updatedEmployee.id ? updatedEmployee : emp
+  )
+
+  localStorage.setItem('employees', JSON.stringify(updated))
 }
