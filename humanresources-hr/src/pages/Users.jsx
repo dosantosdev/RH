@@ -1,30 +1,50 @@
 import { useState, useEffect } from 'react'
-import { register, getRoles } from '../services/auth'
 
-function Users() {
+export default function Users() {
+  const [users, setUsers] = useState([])
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState('')
   const [roles, setRoles] = useState([])
 
-  // 🔄 Carrega cargos existentes
+  // carregar usuários
   useEffect(() => {
-    setRoles(getRoles())
+    const savedUsers = JSON.parse(localStorage.getItem('users')) || []
+    setUsers(savedUsers)
+
+    const savedRoles = JSON.parse(localStorage.getItem('roles')) || []
+    setRoles(savedRoles)
   }, [])
 
-  function handleCreateUser() {
-    register({ username, password, role })
+  function handleAddUser() {
+    if (!username || !password) return
 
-    alert('Usuário criado!')
+    const newUser = {
+      id: Date.now(),
+      username,
+      password,
+      role
+    }
+
+    const updatedUsers = [...users, newUser]
+
+    setUsers(updatedUsers)
+    localStorage.setItem('users', JSON.stringify(updatedUsers))
 
     setUsername('')
     setPassword('')
     setRole('')
   }
 
+  function handleDeleteUser(id) {
+    const updated = users.filter((u) => u.id !== id)
+    setUsers(updated)
+    localStorage.setItem('users', JSON.stringify(updated))
+  }
+
   return (
-    <div>
-      <h2>Criar Usuário</h2>
+    <div className="container">
+      <h2>Cadastrar Usuários</h2>
 
       <input
         placeholder="Usuário"
@@ -39,24 +59,26 @@ function Users() {
         onChange={(e) => setPassword(e.target.value)}
       />
 
-      {/* 🏢 Seleção de cargo */}
-      <select onChange={(e) => setRole(e.target.value)}>
-        <option>Selecione um cargo</option>
+      <select value={role} onChange={(e) => setRole(e.target.value)}>
+        <option value="">Selecione o cargo</option>
 
         {roles.map((r) => (
-          <option key={r.name} value={r.name}>
+          <option key={r.id} value={r.name}>
             {r.name}
           </option>
         ))}
       </select>
 
-      <br /><br />
+      <button onClick={handleAddUser}>Cadastrar</button>
 
-      <button onClick={handleCreateUser}>
-        Criar Usuário
-      </button>
+      <ul>
+        {users.map((user) => (
+          <li key={user.id}>
+            {user.username} ({user.role})
+            <button onClick={() => handleDeleteUser(user.id)}>Excluir</button>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
-
-export default Users

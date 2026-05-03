@@ -1,40 +1,54 @@
 import { useState } from 'react'
-import { login } from '../services/auth'
+import { useNavigate } from 'react-router-dom'
+import './login.css'
+import logo from '../assets/logo.png'
 
-function Login({ setUser }) {
+export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const navigate = useNavigate()
 
   function handleLogin() {
-    const user = login(username, password)
+    const users = JSON.parse(localStorage.getItem('users')) || []
 
-    if (user) {
-      setUser(user)
-    } else {
+    const user = users.find(
+      (u) => u.username === username && u.password === password
+    )
+
+    if (!user) {
       alert('Usuário ou senha inválidos')
+      return
     }
+
+    // salva usuário logado
+    localStorage.setItem('loggedUser', JSON.stringify(user))
+
+    navigate('/dashboard') // redireciona após login
   }
 
   return (
-    <div>
-      <h2>Login</h2>
+    <div className="login-container">
+      <form className="login-box" onSubmit={handleLogin}>
+        {/* 🖼️ LOGO */}
+        <img src={logo} alt="Logo" className="login-logo" />
 
-      <input
-        placeholder="Usuário"
-        onChange={(e) => setUsername(e.target.value)}
-      />
+        <h2>Login</h2>
 
-      <input
-        type="password"
-        placeholder="Senha"
-        onChange={(e) => setPassword(e.target.value)}
-      />
+        <input
+          placeholder="Usuário"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
 
-      <br /><br />
+        <input
+          type="password"
+          placeholder="Senha"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-      <button onClick={handleLogin}>Entrar</button>
+        <button type="submit">Entrar</button>
+      </form>
     </div>
   )
 }
-
-export default Login

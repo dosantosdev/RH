@@ -1,56 +1,94 @@
-import { useState } from 'react'
-import { logout } from '../services/auth'
+import { useEffect, useState } from 'react'
+import './dashboard.css'
 
-import Employees from './Employees'
-import Users from './Users'
-import Roles from './Roles'
+export default function Dashboard() {
+  const [weather, setWeather] = useState(null)
 
-function Dashboard({ user, setUser }) {
-  const [page, setPage] = useState('home')
-
-  function handleLogout() {
-    logout()
-    setUser(null)
-  }
+  useEffect(() => {
+    fetch(
+      'https://api.weatherapi.com/v1/current.json?key=0274017409e24f7b9da21350260305&q=Sao Lourenco do Sul&lang=pt'
+    )
+      .then((res) => res.json())
+      .then((data) => setWeather(data))
+      .catch((err) => console.error(err))
+  }, [])
 
   return (
-    <div>
-      <h1>Dashboard</h1>
+    <div className="container">
+      <div className="dashboard-cards">
+        {/* 🌤️ CARD CLIMA */}
+        <div
+          className={`weather-card ${
+            weather?.current?.is_day === 1 ? 'day' : 'night'
+          }`}
+        >
+          <h3>Previsão do tempo</h3>
 
-      <p>Usuário: {user.username}</p>
-      <p>Cargo: {user.role}</p>
+          {!weather && <p>Carregando...</p>}
 
-      {/* 🧭 Navegação */}
-      <button onClick={() => setPage('home')}>Início</button>
-      <button onClick={() => setPage('employees')}>
-        Funcionários
-      </button>
+          {weather && (
+            <>
+              <div className="weather-icon-top">
+                {/* DIA */}
+                {weather?.current?.is_day === 1 && (
+                  <>
+                    {weather?.current?.condition?.text
+                      ?.toLowerCase()
+                      .includes('limpo') && <div className="sun"></div>}
 
-      {/* 🔐 Só admin vê */}
-      {user.role === 'admin' && (
-        <>
-          <button onClick={() => setPage('users')}>
-            Usuários
-          </button>
+                    {weather?.current?.condition?.text
+                      ?.toLowerCase()
+                      .includes('nublado') && <div className="cloud"></div>}
+                  </>
+                )}
 
-          <button onClick={() => setPage('roles')}>
-            Cargos
-          </button>
-        </>
-      )}
+                {/* NOITE */}
+                {weather?.current?.is_day === 0 && (
+                  <>
+                    {weather?.current?.condition?.text
+                      ?.toLowerCase()
+                      .includes('limpo') && <div className="moon"></div>}
 
-      <hr />
+                    {weather?.current?.condition?.text
+                      ?.toLowerCase()
+                      .includes('nublado') && (
+                      <div className="cloud-night"></div>
+                    )}
+                  </>
+                )}
 
-      {page === 'home' && <h2>Bem-vindo</h2>}
-      {page === 'employees' && <Employees />}
-      {page === 'users' && <Users />}
-      {page === 'roles' && <Roles />}
+                {/* CHUVA */}
+                {weather?.current?.condition?.text
+                  ?.toLowerCase()
+                  .includes('chuva') && <div className="rain"></div>}
+              </div>
 
-      <br />
+              <p className="location">📍 {weather.location.name}</p>
 
-      <button onClick={handleLogout}>Sair</button>
+              <p className="temp">{weather.current.temp_c}°C</p>
+
+              <p className="condition">{weather.current.condition.text}</p>
+            </>
+          )}
+        </div>
+
+        {/* 🎂 CARD ANIVERSÁRIOS */}
+        <div className="birthday-card">
+          <h3>🎂 Aniversariantes do mês</h3>
+
+          <ul>
+            <li>
+              <strong>Maria</strong> - 05/05
+            </li>
+            <li>
+              <strong>João</strong> - 12/05
+            </li>
+            <li>
+              <strong>Ana</strong> - 28/05
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   )
 }
-
-export default Dashboard

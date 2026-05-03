@@ -1,0 +1,88 @@
+/* NAVBAR */
+.navbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #2c3e50;
+  padding: 8px 20px;
+  border-radius: 12px; /* 👈 arredondado */
+  margin: 10px 20px;
+  position: relative; /* 👈 importante */
+  z-index: 1000;
+}
+
+/* AGRUPAMENTO ESQUERDA */
+.nav-left {
+  display: flex;
+  gap: 15px; /* 👈 aproxima Dashboard e Cadastro */
+}
+
+/* LINKS */
+.nav-link,
+.dropbtn {
+  color: white;
+  text-decoration: none;
+  font-size: 14px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: 8px;
+  transition: all 0.3s ease; /* 👈 suavidade */
+}
+
+/* HOVER */
+.nav-link:hover,
+.dropbtn:hover {
+  background-color: rgba(255, 255, 255, 0.15); /* 👈 efeito visual */
+}
+
+/* DROPDOWN */
+.dropdown {
+  position: relative;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: white;
+  min-width: 200px;
+  border-radius: 8px;
+  overflow: hidden;
+  top: 100%; /* 👈 cola exatamente abaixo do botão */
+  left: 0;
+  z-index: 9999; /* 👈 ISSO resolve */
+}
+
+/* ITENS DROPDOWN */
+.dropdown-content a {
+  display: block;
+  padding: 10px;
+  color: black;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.dropdown-content a:hover {
+  background-color: #f1f1f1;
+}
+
+/* MOSTRAR DROPDOWN */
+.dropdown:hover .dropdown-content {
+  display: block;
+}
+
+/* BOTÃO SAIR */
+.logout-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.logout-btn:hover {
+  background-color: #c0392b;
+}

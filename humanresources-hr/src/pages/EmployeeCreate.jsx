@@ -1,15 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import EmployeeForm from '../components/EmployeeForm'
-import EmployeeList from '../components/EmployeeList'
-import EmployeeDetails from '../components/EmployeeDetails'
-import '../styles/employees.css'
 
-export default function Employees() {
-  const [employees, setEmployees] = useState([])
-  const [selectedEmployee, setSelectedEmployee] = useState(null)
-
+export default function EmployeeCreate() {
   const [formData, setFormData] = useState({
-    search: '',
     name: '',
     cpf: '',
     rg: '',
@@ -22,12 +15,11 @@ export default function Employees() {
     state: '',
     country: '',
     isActive: true,
+    isForeigner: false,
 
-    // 👇 NOVOS / RECUPERADOS
     role: '',
     admissionDate: '',
     dismissalDate: '',
-    isForeigner: false,
 
     cnhNumber: '',
     cnhFirstDate: '',
@@ -38,42 +30,69 @@ export default function Employees() {
   })
 
   function handleSaveEmployee() {
+    const employees = JSON.parse(localStorage.getItem('employees')) || []
+
     const newEmployee = {
       ...formData,
       id: Date.now()
     }
 
-    setEmployees([...employees, newEmployee])
-    setFormData({ name: '', cpf: '', photo: null })
+    localStorage.setItem(
+      'employees',
+      JSON.stringify([...employees, newEmployee])
+    )
+
+    alert('Funcionário cadastrado!')
+
+    // limpa formulário
+    setFormData({
+      name: '',
+      cpf: '',
+      rg: '',
+      birthDate: '',
+      phone: '',
+      email: '',
+      address: '',
+      cep: '',
+      city: '',
+      state: '',
+      country: '',
+      isActive: true,
+      isForeigner: false,
+      role: '',
+      admissionDate: '',
+      dismissalDate: '',
+      cnhNumber: '',
+      cnhFirstDate: '',
+      cnhCategories: [],
+      certificates: [],
+      photo: null
+    })
   }
 
   function handlePhotoUpload(e) {
     const file = e.target.files[0]
+    if (!file) return
+
     const reader = new FileReader()
 
     reader.onloadend = () => {
-      setFormData({ ...formData, photo: reader.result })
+      setFormData((prev) => ({
+        ...prev,
+        photo: reader.result
+      }))
     }
 
-    if (file) reader.readAsDataURL(file)
+    reader.readAsDataURL(file)
   }
 
   return (
     <div className="container">
-      <h2>Funcionários</h2>
-
       <EmployeeForm
         formData={formData}
         setFormData={setFormData}
         handleSaveEmployee={handleSaveEmployee}
         handlePhotoUpload={handlePhotoUpload}
-      />
-
-      <EmployeeDetails selectedEmployee={selectedEmployee} />
-
-      <EmployeeList
-        employees={employees}
-        setSelectedEmployee={setSelectedEmployee}
       />
     </div>
   )

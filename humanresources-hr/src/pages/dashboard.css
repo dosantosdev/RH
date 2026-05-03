@@ -1,0 +1,148 @@
+/* CONTAINER DOS CARDS */
+.dashboard-cards {
+  display: grid;
+  grid-template-columns: auto auto; /* 👈 tamanho real dos cards */
+  gap: 20px;
+  justify-content: start; /* 👈 não espalha */
+}
+
+/* CARD CLIMA */
+.weather-card {
+  position: relative;
+  padding: 25px;
+  border-radius: 16px;
+  color: white;
+  width: 320px;
+}
+
+/* DIA */
+.weather-card.day {
+  background: linear-gradient(135deg, #74b9ff, #a29bfe);
+}
+
+/* NOITE */
+.weather-card.night {
+  background: linear-gradient(135deg, #2c3e50, #4b3f72);
+}
+
+/* ÍCONE */
+.weather-icon-top {
+  position: absolute;
+  top: 15px;
+  right: 20px;
+}
+
+/* TEXTO */
+.location {
+  font-size: 18px;
+  font-weight: 500;
+  margin-top: 10px;
+}
+
+.temp {
+  font-size: 40px;
+  font-weight: bold;
+  margin: 10px 0;
+}
+
+.condition {
+  font-size: 18px;
+}
+
+/* SOL */
+.sun {
+  width: 40px;
+  height: 40px;
+  background: yellow;
+  border-radius: 50%;
+  animation: spin 6s linear infinite;
+}
+
+/* LUA */
+.moon {
+  width: 40px;
+  height: 40px;
+  background: #f1c40f;
+  border-radius: 50%;
+  position: relative;
+}
+
+.moon::after {
+  content: '';
+  position: absolute;
+  width: 35px;
+  height: 35px;
+  background: #2c3e50;
+  border-radius: 50%;
+  top: -5px;
+  left: 10px;
+}
+
+/* NUVEM */
+.cloud {
+  width: 50px;
+  height: 25px;
+  background: #ecf0f1;
+  border-radius: 20px;
+}
+
+.cloud-night {
+  width: 50px;
+  height: 25px;
+  background: #bdc3c7;
+  border-radius: 20px;
+}
+
+/* CHUVA */
+.rain {
+  width: 40px;
+  height: 40px;
+  background: #3498db;
+  border-radius: 50%;
+  animation: rainDrop 1s infinite;
+}
+
+/* ANIMAÇÕES */
+@keyframes spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes rainDrop {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(10px);
+  }
+}
+
+/* CARD ANIVERSÁRIOS */
+.birthday-card {
+  padding: 20px;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #333;
+  width: 320px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.birthday-card h3 {
+  margin-bottom: 10px;
+}
+
+.birthday-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.birthday-card li {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.container {
+  margin-top: 20px; /* 👈 cria espaço abaixo da navbar */
+  padding: 0 20px;
+}

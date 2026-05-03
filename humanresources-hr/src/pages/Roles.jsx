@@ -1,46 +1,61 @@
 import { useState, useEffect } from 'react'
-import { getRoles, addRole } from '../services/auth'
 
-function Roles() {
+export default function Roles() {
   const [roles, setRoles] = useState([])
-  const [roleName, setRoleName] = useState('')
+  const [newRole, setNewRole] = useState('')
 
+  // carregar cargos salvos
   useEffect(() => {
-    setRoles(getRoles())
+    const saved = JSON.parse(localStorage.getItem('roles')) || []
+    setRoles(saved)
   }, [])
 
+  // salvar novo cargo
   function handleAddRole() {
-    const newRole = {
-      name: roleName,
-      permissions: []
-    }
+    if (!newRole.trim()) return
 
-    addRole(newRole)
-    setRoles(getRoles())
-    setRoleName('')
+    const updatedRoles = [
+      ...roles,
+      {
+        id: Date.now(),
+        name: newRole
+      }
+    ]
+
+    setRoles(updatedRoles)
+    localStorage.setItem('roles', JSON.stringify(updatedRoles))
+
+    setNewRole('')
+  }
+
+  // excluir cargo
+  function handleDeleteRole(id) {
+    const updated = roles.filter((role) => role.id !== id)
+    setRoles(updated)
+    localStorage.setItem('roles', JSON.stringify(updated))
   }
 
   return (
-    <div>
-      <h2>Cargos</h2>
+    <div className="container">
+      <h2>Cadastrar Cargos</h2>
 
       <input
         placeholder="Nome do cargo"
-        value={roleName}
-        onChange={(e) => setRoleName(e.target.value)}
+        value={newRole}
+        onChange={(e) => setNewRole(e.target.value)}
       />
 
-      <button onClick={handleAddRole}>
-        Criar Cargo
-      </button>
+      <button onClick={handleAddRole}>Adicionar</button>
 
       <ul>
-        {roles.map((r) => (
-          <li key={r.name}>{r.name}</li>
+        {roles.map((role) => (
+          <li key={role.id}>
+            {role.name}
+
+            <button onClick={() => handleDeleteRole(role.id)}>Excluir</button>
+          </li>
         ))}
       </ul>
     </div>
   )
 }
-
-export default Roles
