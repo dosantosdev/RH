@@ -1,20 +1,17 @@
-export default function EmployeeList({
-  employees,
-  setSelectedEmployee
-}) {
+export default function EmployeeList({ employees, onSelect }) {
   return (
-    <ul className="employee-list">
-      {employees.map((emp) => (
-        <li key={emp.id} className="employee-card">
-          <strong>{emp.name}</strong>
-
-          <br />
-
-          <button onClick={() => setSelectedEmployee(emp)}>
-            Ver detalhes
-          </button>
-        </li>
+    <div className="employee-list">
+      {employees.map((emp, index) => (
+        <div
+          key={index}
+          className="employee-item"
+          onClick={() => onSelect(emp)}
+        >
+          {emp.name}
+        </div>
       ))}
-    </ul>
+
+      {employees.length === 0 && <p>Nenhum funcionário encontrado</p>}
+    </div>
   )
 }

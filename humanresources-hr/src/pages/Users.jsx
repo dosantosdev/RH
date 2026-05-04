@@ -1,84 +1,164 @@
 import { useState, useEffect } from 'react'
+import '../components/employee.css'
 
 export default function Users() {
-  const [users, setUsers] = useState([])
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [role, setRole] = useState('')
-  const [roles, setRoles] = useState([])
-
-  // carregar usuários
-  useEffect(() => {
-    const savedUsers = JSON.parse(localStorage.getItem('users')) || []
-    setUsers(savedUsers)
-
-    const savedRoles = JSON.parse(localStorage.getItem('roles')) || []
-    setRoles(savedRoles)
-  }, [])
-
-  function handleAddUser() {
-    if (!username || !password) return
-
-    const newUser = {
-      id: Date.now(),
-      username,
-      password,
-      role
-    }
-
-    const updatedUsers = [...users, newUser]
-
-    setUsers(updatedUsers)
-    localStorage.setItem('users', JSON.stringify(updatedUsers))
-
-    setUsername('')
-    setPassword('')
-    setRole('')
+  const initialUser = {
+    name: '',
+    username: '',
+    password: '',
+    role: '',
+    active: true
   }
 
-  function handleDeleteUser(id) {
-    const updated = users.filter((u) => u.id !== id)
-    setUsers(updated)
+  const [user, setUser] = useState(initialUser)
+  const [users, setUsers] = useState([])
+  const [roles, setRoles] = useState([])
+  const [editingId, setEditingId] = useState(null)
+
+  useEffect(() => {
+    const storedUsers = JSON.parse(localStorage.getItem('users')) || []
+    const storedRoles = JSON.parse(localStorage.getItem('roles')) || []
+
+    setUsers(storedUsers)
+    setRoles(storedRoles)
+  }, [])
+
+  function handleChange(e) {
+    const { name, value, type, checked } = e.target
+
+    setUser({
+      ...user,
+      [name]: type === 'checkbox' ? checked : value
+    })
+  }
+
+  function handleSubmit(e) {
+    e.preventDefault()
+
+    let updated
+
+    if (editingId) {
+      updated = users.map((u) =>
+        u.id === editingId ? { ...user, id: editingId } : u
+      )
+    } else {
+      const newUser = {
+        ...user,
+        id: Date.now()
+      }
+
+      updated = [...users, newUser]
+    }
+
     localStorage.setItem('users', JSON.stringify(updated))
+    setUsers(updated)
+
+    alert(editingId ? 'Usuário atualizado!' : 'Usuário cadastrado!')
+
+    setUser(initialUser)
+    setEditingId(null)
+  }
+
+  function handleEdit(u) {
+    setUser(u)
+    setEditingId(u.id)
+  }
+
+  function handleDelete(id) {
+    const confirmDelete = confirm('Deseja excluir este usuário?')
+    if (!confirmDelete) return
+
+    const updated = users.filter((u) => u.id !== id)
+
+    localStorage.setItem('users', JSON.stringify(updated))
+    setUsers(updated)
   }
 
   return (
-    <div className="container">
-      <h2>Cadastrar Usuários</h2>
+    <div className="form-container">
+      <h2>Cadastro de Usuários</h2>
 
-      <input
-        placeholder="Usuário"
-        value={username}
-        onChange={(e) => setUsername(e.target.value)}
-      />
+      {/* FORMULÁRIO */}
+      <form onSubmit={handleSubmit}>
+        <div className="form-section">
+          <h3>Informações do Usuário</h3>
 
-      <input
-        type="password"
-        placeholder="Senha"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-      />
+          <div className="form-grid">
+            <input
+              name="name"
+              value={user.name}
+              placeholder="Nome completo"
+              onChange={handleChange}
+            />
 
-      <select value={role} onChange={(e) => setRole(e.target.value)}>
-        <option value="">Selecione o cargo</option>
+            <input
+              name="username"
+              value={user.username}
+              placeholder="Usuário"
+              onChange={handleChange}
+            />
 
-        {roles.map((r) => (
-          <option key={r.id} value={r.name}>
-            {r.name}
-          </option>
-        ))}
-      </select>
+            <input
+              name="password"
+              type="password"
+              value={user.password}
+              placeholder="Senha"
+              onChange={handleChange}
+            />
 
-      <button onClick={handleAddUser}>Cadastrar</button>
+            {/* SELECT DE CARGO */}
+            <select name="role" value={user.role} onChange={handleChange}>
+              <option value="">Selecione o cargo</option>
 
-      <ul>
-        {users.map((user) => (
-          <li key={user.id}>
-            {user.username} ({user.role})
-            <button onClick={() => handleDeleteUser(user.id)}>Excluir</button>
-          </li>
-        ))}
-      </ul>
+              {roles.map((r) => (
+                <option key={r.id} value={r.name}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="form-section">
+          <h3>Status</h3>
+
+          <label>
+            <input
+              type="checkbox"
+              name="active"
+              checked={user.active}
+              onChange={handleChange}
+            />
+            Usuário ativo
+          </label>
+        </div>
+
+        <button type="submit">{editingId ? 'Atualizar' : 'Salvar'}</button>
+      </form>
+
+      {/* LISTA */}
+      <div className="form-section" style={{ marginTop: '20px' }}>
+        <h3>Usuários cadastrados</h3>
+
+        <div className="details-grid">
+          {users.length === 0 && <p>Nenhum usuário cadastrado</p>}
+
+          {users.map((u) => (
+            <div key={u.id} className="detail-item">
+              <span>{u.name}</span>
+              <strong>{u.username}</strong>
+              <strong>{u.role || '-'}</strong>
+              <strong>{u.active ? '🟢 Ativo' : '🔴 Inativo'}</strong>
+
+              {/* AÇÕES */}
+              <div style={{ marginTop: '8px', display: 'flex', gap: '5px' }}>
+                <button onClick={() => handleEdit(u)}>✏️</button>
+                <button onClick={() => handleDelete(u.id)}>🗑️</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

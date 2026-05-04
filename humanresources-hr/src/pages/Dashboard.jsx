@@ -32,9 +32,12 @@ export default function Dashboard() {
                 {/* DIA */}
                 {weather?.current?.is_day === 1 && (
                   <>
-                    {weather?.current?.condition?.text
+                    {(weather?.current?.condition?.text
                       ?.toLowerCase()
-                      .includes('limpo') && <div className="sun"></div>}
+                      .includes('sol') ||
+                      weather?.current?.condition?.text
+                        ?.toLowerCase()
+                        .includes('limpo')) && <div className="sun"></div>}
 
                     {weather?.current?.condition?.text
                       ?.toLowerCase()

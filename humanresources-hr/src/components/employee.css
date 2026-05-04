@@ -41,16 +41,17 @@ label {
 /* BOTÃO */
 button {
   padding: 12px;
-  background: #2ecc71;
+  background: #3b5998; /* 👈 azul mais claro */
   color: white;
   border: none;
   border-radius: 8px;
   cursor: pointer;
   width: 200px;
+  transition: 0.3s;
 }
 
 button:hover {
-  background: #27ae60;
+  background: #2f477a; /* 👈 hover mais escuro */
 }
 
 .checkbox-group {
