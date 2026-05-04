@@ -8,10 +8,12 @@
 
 .login-box {
   background: white;
+  min-height: 420px;
   padding: 30px;
   border-radius: 12px;
   width: 400px;
   text-align: center;
+  position: relative;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -23,11 +25,15 @@
   margin-bottom: 25px;
 }
 
+.logo-light {
+  transform: scale(1.2); /* 👈 aumenta só no light */
+}
+
 /* 🔤 INPUTS */
 .login-box input {
   width: 100%;
-  margin-bottom: 12px;
-  padding: 10px;
+  margin-bottom: 15px;
+  padding: 12px;
   border-radius: 6px;
   border: 1px solid #ccc;
   font-size: 14px;
@@ -38,15 +44,65 @@
 .login-box button {
   width: 100%;
   padding: 10px;
-  background-color: #4caf50;
+  background-color: #3b5998;
   color: white;
   border: none;
   border-radius: 6px;
   font-size: 15px;
   cursor: pointer;
   box-sizing: border-box;
+  transition: 0.3s;
 }
 
 .login-box button:hover {
-  background-color: #45a049;
+  background-color: #3b5998;
+}
+
+.login-container {
+  position: relative;
+}
+
+.login-header {
+  position: relative;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.theme-lamp {
+  position: absolute;
+  top: -8px; /* 👈 sobe mais */
+  right: -8px; /* 👈 vai mais pra borda */
+  font-size: 28px; /* 👈 um pouco maior pra destacar */
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.theme-lamp:hover {
+  transform: scale(1.2);
+}
+
+/* DARK MODE LOGIN */
+
+body.dark {
+  background: #121212;
+}
+
+body.dark .login-container {
+  background: #121212;
+}
+
+body.dark .login-box {
+  background: #1e1e1e;
+  color: white;
+}
+
+body.dark .login-box input {
+  background: #2a2a2a;
+  color: white;
+  border: 1px solid #444;
+  padding: 12px; /* 👈 IGUAL AO LIGHT */
+}
+
+body.dark .login-box button {
+  background: #4a69bd;
 }
