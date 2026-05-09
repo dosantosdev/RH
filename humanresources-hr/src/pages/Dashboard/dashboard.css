@@ -1,22 +1,36 @@
 /* CONTAINER DOS CARDS */
 .dashboard-cards {
   display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.dashboard-row {
+  display: flex;
   gap: 20px;
   align-items: flex-start;
-  margin-top: 25px;
   flex-wrap: wrap;
 }
 
 /* CARD CLIMA */
 .weather-card {
   position: relative;
-  padding: 25px;
-  border-radius: 16px;
+  padding: 28px;
+  border-radius: 18px;
   color: white;
-  width: 320px;
+  width: 420px;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
 }
 
-/* DIA */
+.weather-card h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 18px;
+} /* DIA */
 .weather-card.day {
   background: linear-gradient(135deg, #74b9ff, #a29bfe);
 }
@@ -29,31 +43,33 @@
 /* ÍCONE */
 .weather-icon-top {
   position: absolute;
-  top: 15px;
-  right: 20px;
+  top: 22px;
+  right: 22px;
 }
 
 /* TEXTO */
 .location {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 500;
-  margin-top: 10px;
+  opacity: 0.95;
 }
 
 .temp {
-  font-size: 40px;
-  font-weight: bold;
-  margin: 10px 0;
+  font-size: 50px;
+  font-weight: 700;
+  margin: 12px 0;
+  line-height: 1;
 }
 
 .condition {
   font-size: 18px;
+  opacity: 0.9;
 }
 
 /* SOL */
 .sun {
-  width: 40px;
-  height: 40px;
+  width: 52px;
+  height: 52px;
   background: yellow;
   border-radius: 50%;
   animation: spin 6s linear infinite;
@@ -61,8 +77,8 @@
 
 /* LUA */
 .moon {
-  width: 40px;
-  height: 40px;
+  width: 52px;
+  height: 52px;
   background: #f1c40f;
   border-radius: 50%;
   position: relative;
@@ -71,8 +87,8 @@
 .moon::after {
   content: '';
   position: absolute;
-  width: 35px;
-  height: 35px;
+  width: 52px;
+  height: 52px;
   background: #2c3e50;
   border-radius: 50%;
   top: -5px;
@@ -96,8 +112,8 @@
 
 /* CHUVA */
 .rain {
-  width: 40px;
-  height: 40px;
+  width: 52px;
+  height: 52px;
   background: #3498db;
   border-radius: 50%;
   animation: rainDrop 1s infinite;
@@ -133,7 +149,7 @@
 }
 
 .birthday-card {
-  width: 320px;
+  width: 420px;
   background: white;
   border-radius: 14px;
   padding: 25px;
@@ -147,25 +163,40 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   margin-bottom: 20px;
 }
 
 .birthday-header h3 {
   margin: 0;
   color: #333;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .birthday-header span {
   font-size: 14px;
   color: #777;
+  white-space: nowrap;
 }
 
 .birthday-list {
   display: flex;
   flex-direction: column;
   gap: 15px;
+  max-height: 270px;
   overflow-y: auto;
   padding-right: 5px;
+}
+
+.birthday-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.birthday-list::-webkit-scrollbar-thumb {
+  background: #c5c5c5;
+  border-radius: 10px;
 }
 
 .birthday-item {
