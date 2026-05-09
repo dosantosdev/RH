@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import './dashboard.css'
+import { getBirthdayEmployees } from '../../services/dashboard'
 
 export default function Dashboard() {
   const [weather, setWeather] = useState(null)
+  const birthdayEmployees = getBirthdayEmployees()
 
   useEffect(() => {
     fetch(
@@ -77,19 +79,29 @@ export default function Dashboard() {
 
         {/* 🎂 CARD ANIVERSÁRIOS */}
         <div className="birthday-card">
-          <h3>🎂 Aniversariantes do mês</h3>
+          <div className="birthday-header">
+            <h3>🎂 Aniversariantes do Mês</h3>
+            <span>{birthdayEmployees.length} funcionário(s)</span>
+          </div>
 
-          <ul>
-            <li>
-              <strong>Maria</strong> - 05/05
-            </li>
-            <li>
-              <strong>João</strong> - 12/05
-            </li>
-            <li>
-              <strong>Ana</strong> - 28/05
-            </li>
-          </ul>
+          <div className="birthday-list">
+            {birthdayEmployees.length > 0 ? (
+              birthdayEmployees.map((employee) => (
+                <div key={employee.id} className="birthday-item">
+                  <div className="birthday-avatar">
+                    {employee.name.charAt(0)}
+                  </div>
+
+                  <div className="birthday-info">
+                    <strong>{employee.name}</strong>
+                    <p>{employee.birthDate}</p>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <p className="no-birthday">Nenhum aniversariante este mês</p>
+            )}
+          </div>
         </div>
       </div>
     </div>

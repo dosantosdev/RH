@@ -1,9 +1,0 @@
-.theme-lamp {
-  font-size: 26px;
-  cursor: pointer;
-  transition: 0.2s;
-}
-
-.theme-lamp:hover {
-  transform: scale(1.2);
-}

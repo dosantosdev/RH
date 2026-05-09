@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import '../components/employee.css'
+import './users.css'
 
 export default function Users() {
   const initialUser = {

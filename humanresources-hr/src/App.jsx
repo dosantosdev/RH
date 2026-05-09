@@ -1,15 +1,15 @@
 import { Routes, Route } from 'react-router-dom'
-import Navbar from './components/Navbar'
+import Navbar from './components/layout/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
 
-import Login from './pages/Login'
-import Dashboard from './pages/Dashboard'
-import EmployeeSearch from './pages/EmployeeSearch'
-import EmployeeCreate from './pages/EmployeeCreate'
-import Roles from './pages/Roles'
-import Users from './pages/Users'
+import Login from './pages/Login/Login'
+import Dashboard from './pages/Dashboard/Dashboard'
+import EmployeeSearch from './pages/EmployeeSearch/EmployeeSearch'
+import EmployeeCreate from './pages/EmployeeCreate/EmployeeCreate'
+import Roles from './pages/Roles/Roles'
+import Users from './pages/Users/Users'
 
-import Header from './components/Header'
+import Header from './components/layout/Header'
 
 function Layout({ children }) {
   return (

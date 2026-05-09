@@ -1,16 +1,12 @@
 import { useState, useEffect } from 'react'
-import ThemeToggle from '../components/ThemeToggle'
 import { useNavigate } from 'react-router-dom'
+import logo from '../../assets/logo-light.png'
 import './login.css'
-import logoLight from '../assets/logo-light.png'
-import logoDark from '../assets/logo-dark.png'
-import useTheme from '../hooks/useTheme'
 
 export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
-  const theme = useTheme()
 
   function handleLogin() {
     const users = JSON.parse(localStorage.getItem('users')) || []
@@ -35,13 +31,7 @@ export default function Login() {
       <form className="login-box" onSubmit={handleLogin}>
         {/* 🖼️ LOGO */}
         <div className="login-header">
-          <img
-            src={theme === 'dark' ? logoDark : logoLight}
-            alt="Logo"
-            className={`login-logo ${theme === 'light' ? 'logo-light' : ''}`}
-          />
-
-          <ThemeToggle />
+          <img src={logo} alt="Logo" className="login-logo" />
         </div>
 
         <h2>Login</h2>

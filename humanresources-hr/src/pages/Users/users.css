@@ -1,0 +1,32 @@
+.users-container {
+  padding: 30px;
+}
+
+.users-card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+}
+
+.users-form {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.users-form input,
+.users-form select {
+  flex: 1;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.users-form button {
+  background: #4a69bd;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+}

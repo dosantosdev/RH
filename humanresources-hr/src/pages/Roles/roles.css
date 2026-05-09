@@ -1,0 +1,31 @@
+.roles-container {
+  padding: 30px;
+}
+
+.roles-card {
+  background: white;
+  padding: 25px;
+  border-radius: 12px;
+}
+
+.roles-form {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.roles-form input {
+  flex: 1;
+  padding: 12px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.roles-form button {
+  background: #4a69bd;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+}

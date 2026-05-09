@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import EmployeeForm from '../components/EmployeeForm'
+import EmployeeForm from '../../components/employees/EmployeeForm'
 
 export default function EmployeeCreate() {
   const [formData, setFormData] = useState({

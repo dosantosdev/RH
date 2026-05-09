@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import './search.css'
+import './employeeSearch.css'
 
-import EmployeeList from '../components/EmployeeList'
-import EmployeeDetails from '../components/EmployeeDetails'
+import EmployeeList from '../../components/employees/EmployeeList'
+import EmployeeDetails from '../../components/employees/EmployeeDetails'
 
 export default function EmployeeSearch() {
   const [employees, setEmployees] = useState([])

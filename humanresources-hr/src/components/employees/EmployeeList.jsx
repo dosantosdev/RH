@@ -1,3 +1,5 @@
+import './employeeList.css'
+
 export default function EmployeeList({ employees, onSelect }) {
   return (
     <div className="employee-list">

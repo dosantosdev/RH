@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import '../components/employee.css'
+import './roles.css'
 
 export default function Roles() {
   const initialRole = {

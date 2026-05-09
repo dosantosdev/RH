@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
-import EmployeeForm from '../components/EmployeeForm'
-import EmployeeList from '../components/EmployeeList'
-import EmployeeDetails from '../components/EmployeeDetails'
-import '../styles/employees.css'
+import EmployeeForm from '../components/employees/EmployeeForm'
+import EmployeeList from '../components/employees/EmployeeList'
+import EmployeeDetails from '../components/employees/EmployeeDetails'
+import './employees.css'
 
 export default function Employees() {
   const [employees, setEmployees] = useState([])

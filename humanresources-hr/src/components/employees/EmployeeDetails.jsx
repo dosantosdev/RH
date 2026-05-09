@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import './employeeDetails.css'
 
 export default function EmployeeDetails({
   employee,
