@@ -1,3 +1,4 @@
+import EmployeeProfile from './pages/EmployeeProfile/EmployeeProfile'
 import { Routes, Route } from 'react-router-dom'
 import Navbar from './components/layout/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
@@ -45,6 +46,17 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <EmployeeSearch />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/funcionario/:id"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <EmployeeProfile />
             </Layout>
           </ProtectedRoute>
         }

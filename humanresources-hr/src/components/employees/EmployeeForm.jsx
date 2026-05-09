@@ -1,7 +1,7 @@
-import { useState, useRef } from 'react'
+import { useRef } from 'react'
 import './employeeForm.css'
 
-// ✅ FORA DO COMPONENTE (IMPORTANTÍSSIMO)
+// ✅ FORA DO COMPONENTE
 const initialForm = {
   name: '',
   cpf: '',
@@ -22,12 +22,20 @@ const initialForm = {
   photo: null
 }
 
-export default function EmployeeForm() {
-  const [form, setForm] = useState(initialForm)
+export default function EmployeeForm({
+  formData,
+  setFormData,
+  handleSaveEmployee,
+  handlePhotoUpload
+}) {
   const fileRef = useRef()
 
+  // ✅ mantém compatibilidade com o código já existente
+  const form = formData
+  const setForm = setFormData
+
   function maskCPF(value) {
-    const cleaned = value.replace(/\D/g, '').slice(0, 11) // 👈 limita a 11
+    const cleaned = value.replace(/\D/g, '').slice(0, 11)
 
     return cleaned
       .replace(/(\d{3})(\d)/, '$1.$2')
@@ -52,26 +60,19 @@ export default function EmployeeForm() {
 
   function maskRG(value, foreigner) {
     if (foreigner) {
-      return value.toUpperCase() // permite letras
+      return value.toUpperCase()
     }
-    return value.replace(/\D/g, '') // só números
+
+    return value.replace(/\D/g, '')
   }
 
   function handleChange(e) {
-    const { name, value, type, checked, files } = e.target
+    const { name, value, type, checked } = e.target
 
     if (type === 'checkbox') {
       setForm((prev) => ({
         ...prev,
         [name]: checked
-      }))
-      return
-    }
-
-    if (type === 'file') {
-      setForm((prev) => ({
-        ...prev,
-        photo: files[0]
       }))
       return
     }
@@ -113,40 +114,8 @@ export default function EmployeeForm() {
 
   function handleSubmit(e) {
     e.preventDefault()
+    handleSaveEmployee()
 
-    const existing = JSON.parse(localStorage.getItem('employees')) || []
-
-    const editData = localStorage.getItem('editEmployee')
-
-    let updated
-
-    if (editData) {
-      const old = JSON.parse(editData)
-
-      updated = existing.map((emp) =>
-        emp.id === old.id ? { ...form, id: old.id } : emp
-      )
-
-      localStorage.removeItem('editEmployee')
-    } else {
-      const newEmployee = {
-        ...form,
-        id: Date.now()
-      }
-
-      updated = [...existing, newEmployee]
-    }
-
-    // ✅ FALTAVA ISSO
-    localStorage.setItem('employees', JSON.stringify(updated))
-
-    // ✅ ALERTA (também estava faltando agora)
-    alert('Funcionário salvo!')
-
-    // 🔄 RESET
-    setForm({ ...initialForm })
-
-    // 🧹 LIMPA FOTO
     if (fileRef.current) {
       fileRef.current.value = ''
     }
@@ -154,42 +123,74 @@ export default function EmployeeForm() {
 
   return (
     <form className="form-container" onSubmit={handleSubmit}>
-      <h2>Cadastro de Funcionário</h2>
-
       {/* DADOS */}
       <div className="form-section">
-        <h3>Dados Pessoais</h3>
+        <div className="section-header">
+          <h3>Dados Pessoais</h3>
+
+          <div className="photo-upload">
+            <div className="photo-preview">
+              {form.photo ? (
+                <img
+                  src={
+                    typeof form.photo === 'string'
+                      ? form.photo
+                      : URL.createObjectURL(form.photo)
+                  }
+                  alt="Preview"
+                />
+              ) : (
+                <span>Foto</span>
+              )}
+            </div>
+
+            <label className="upload-button">
+              Alterar foto
+              <input
+                type="file"
+                ref={fileRef}
+                accept="image/*"
+                onChange={handlePhotoUpload}
+                hidden
+              />
+            </label>
+          </div>
+        </div>
 
         <div className="form-grid">
           <input
+            className="field-large"
             name="name"
             value={form.name}
             onChange={handleChange}
             placeholder="Nome completo"
           />
-          <input type="file" ref={fileRef} onChange={handleChange} />
 
           <input
-            name="cpf"
-            value={form.cpf}
-            onChange={handleChange}
-            placeholder="CPF"
-          />
-          <input
-            name="rg"
-            value={form.rg}
-            onChange={handleChange}
-            placeholder="RG"
-          />
-
-          <input
+            className="personal-input"
             name="birthDate"
             value={form.birthDate}
             onChange={handleChange}
             placeholder="Nascimento"
           />
 
-          <label>
+          <input
+            className="personal-input"
+            name="cpf"
+            value={form.cpf}
+            onChange={handleChange}
+            placeholder="CPF"
+          />
+
+          <input
+            className="personal-input"
+            name="rg"
+            value={form.rg}
+            onChange={handleChange}
+            placeholder="RG"
+          />
+
+          <label className="checkbox-field">
             <input
               type="checkbox"
               name="foreigner"
@@ -207,24 +208,31 @@ export default function EmployeeForm() {
 
         <div className="form-grid">
           <input
+            className="field-xsmall"
             name="cep"
             value={form.cep}
             onChange={handleChange}
             placeholder="CEP"
           />
+
           <input
+            className="field-medium"
             name="city"
             value={form.city}
             onChange={handleChange}
             placeholder="Cidade"
           />
+
           <input
+            className="field-xsmall"
             name="state"
             value={form.state}
             onChange={handleChange}
             placeholder="Estado"
           />
+
           <input
+            className="field-medium"
             name="country"
             value={form.country}
             onChange={handleChange}
@@ -239,12 +247,15 @@ export default function EmployeeForm() {
 
         <div className="form-grid">
           <input
+            className="field-medium"
             name="cnhNumber"
             value={form.cnhNumber}
             onChange={handleChange}
             placeholder="CNH"
           />
+
           <input
+            className="field-medium"
             name="cnhDate"
             value={form.cnhDate}
             onChange={handleChange}
@@ -292,7 +303,7 @@ export default function EmployeeForm() {
       <div className="form-section">
         <h3>Status</h3>
 
-        <label>
+        <label className="checkbox-field">
           <input
             type="checkbox"
             name="active"
@@ -304,6 +315,7 @@ export default function EmployeeForm() {
 
         <div className="form-grid">
           <input
+            className="field-medium"
             name="admissionDate"
             value={form.admissionDate}
             onChange={handleChange}
@@ -312,6 +324,7 @@ export default function EmployeeForm() {
 
           {!form.active && (
             <input
+              className="field-medium"
               name="dismissalDate"
               value={form.dismissalDate}
               onChange={handleChange}

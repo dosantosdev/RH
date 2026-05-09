@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import EmployeeForm from '../../components/employees/EmployeeForm'
+import './employeeCreate.css'
 
 export default function EmployeeCreate() {
   const [formData, setFormData] = useState({
@@ -87,7 +88,13 @@ export default function EmployeeCreate() {
   }
 
   return (
-    <div className="container">
+    <div className="employee-create-page">
+      <div className="employee-create-header">
+        <h2>Cadastro de Funcionário</h2>
+
+        <p>Preencha as informações do novo funcionário</p>
+      </div>
+
       <EmployeeForm
         formData={formData}
         setFormData={setFormData}

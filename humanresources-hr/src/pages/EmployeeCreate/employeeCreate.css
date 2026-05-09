@@ -1,0 +1,19 @@
+.employee-create-page {
+  padding: 30px;
+}
+
+.employee-create-header {
+  margin-bottom: 25px;
+}
+
+.employee-create-header h2 {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 8px;
+}
+
+.employee-create-header p {
+  font-size: 15px;
+  color: #777;
+}

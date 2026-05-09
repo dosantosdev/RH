@@ -1,10 +1,15 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './dashboard.css'
 import { getBirthdayEmployees } from '../../services/dashboard'
+import sol from '../../assets/sol.png'
+import chuva from '../../assets/chuva.png'
+import nublado from '../../assets/nublado.png'
 
-export default function Dashboard() {
+export default function Dashboard({ setSelectedEmployee }) {
   const [weather, setWeather] = useState(null)
   const birthdayEmployees = getBirthdayEmployees()
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetch(
@@ -15,14 +20,29 @@ export default function Dashboard() {
       .catch((err) => console.error(err))
   }, [])
 
+  function getWeatherBackground() {
+    const condition = weather?.current?.condition?.text?.toLowerCase() || ''
+
+    if (condition.includes('chuva')) {
+      return chuva
+    }
+
+    if (condition.includes('nublado') || condition.includes('nuvem')) {
+      return nublado
+    }
+
+    return sol
+  }
+
   return (
     <div className="container">
       <div className="dashboard-cards">
         {/* 🌤️ CARD CLIMA */}
         <div
-          className={`weather-card ${
-            weather?.current?.is_day === 1 ? 'day' : 'night'
-          }`}
+          className="weather-card"
+          style={{
+            backgroundImage: `url(${getWeatherBackground()})`
+          }}
         >
           <h3>Previsão do tempo</h3>
 
@@ -30,49 +50,11 @@ export default function Dashboard() {
 
           {weather && (
             <>
-              <div className="weather-icon-top">
-                {/* DIA */}
-                {weather?.current?.is_day === 1 && (
-                  <>
-                    {(weather?.current?.condition?.text
-                      ?.toLowerCase()
-                      .includes('sol') ||
-                      weather?.current?.condition?.text
-                        ?.toLowerCase()
-                        .includes('limpo')) && <div className="sun"></div>}
-
-                    {weather?.current?.condition?.text
-                      ?.toLowerCase()
-                      .includes('nublado') && <div className="cloud"></div>}
-                  </>
-                )}
-
-                {/* NOITE */}
-                {weather?.current?.is_day === 0 && (
-                  <>
-                    {weather?.current?.condition?.text
-                      ?.toLowerCase()
-                      .includes('limpo') && <div className="moon"></div>}
-
-                    {weather?.current?.condition?.text
-                      ?.toLowerCase()
-                      .includes('nublado') && (
-                      <div className="cloud-night"></div>
-                    )}
-                  </>
-                )}
-
-                {/* CHUVA */}
-                {weather?.current?.condition?.text
-                  ?.toLowerCase()
-                  .includes('chuva') && <div className="rain"></div>}
-              </div>
-
-              <p className="location">📍 {weather.location.name}</p>
-
               <p className="temp">{weather.current.temp_c}°C</p>
 
               <p className="condition">{weather.current.condition.text}</p>
+
+              <p className="location">📍 {weather.location.name}</p>
             </>
           )}
         </div>
@@ -87,9 +69,17 @@ export default function Dashboard() {
           <div className="birthday-list">
             {birthdayEmployees.length > 0 ? (
               birthdayEmployees.map((employee) => (
-                <div key={employee.id} className="birthday-item">
+                <div
+                  key={employee.id}
+                  className="birthday-item clickable"
+                  onClick={() => navigate(`/funcionario/${employee.id}`)}
+                >
                   <div className="birthday-avatar">
-                    {employee.name.charAt(0)}
+                    {employee.photo ? (
+                      <img src={employee.photo} alt={employee.name} />
+                    ) : (
+                      employee.name.charAt(0)
+                    )}
                   </div>
 
                   <div className="birthday-info">

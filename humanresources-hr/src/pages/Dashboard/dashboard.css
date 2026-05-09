@@ -19,11 +19,22 @@
   border-radius: 18px;
   color: white;
   width: 420px;
-  min-height: 220px;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+
+  min-height: 260px;
+
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+
   overflow: hidden;
+
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-blend-mode: darken;
+  background-color: rgba(0, 0, 0, 0.15);
 }
 
 .weather-card h3 {
@@ -40,18 +51,13 @@
   background: linear-gradient(135deg, #2c3e50, #4b3f72);
 }
 
-/* ÍCONE */
-.weather-icon-top {
-  position: absolute;
-  top: 22px;
-  right: 22px;
-}
-
 /* TEXTO */
 .location {
-  font-size: 17px;
-  font-weight: 500;
-  opacity: 0.95;
+  font-size: 14px;
+  font-weight: 400;
+  opacity: 0.9;
+
+  margin-top: 8px;
 }
 
 .temp {
@@ -59,80 +65,15 @@
   font-weight: 700;
   margin: 12px 0;
   line-height: 1;
+
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.45),
+    0 6px 18px rgba(0, 0, 0, 0.35);
 }
 
 .condition {
   font-size: 18px;
   opacity: 0.9;
-}
-
-/* SOL */
-.sun {
-  width: 52px;
-  height: 52px;
-  background: yellow;
-  border-radius: 50%;
-  animation: spin 6s linear infinite;
-}
-
-/* LUA */
-.moon {
-  width: 52px;
-  height: 52px;
-  background: #f1c40f;
-  border-radius: 50%;
-  position: relative;
-}
-
-.moon::after {
-  content: '';
-  position: absolute;
-  width: 52px;
-  height: 52px;
-  background: #2c3e50;
-  border-radius: 50%;
-  top: -5px;
-  left: 10px;
-}
-
-/* NUVEM */
-.cloud {
-  width: 50px;
-  height: 25px;
-  background: #ecf0f1;
-  border-radius: 20px;
-}
-
-.cloud-night {
-  width: 50px;
-  height: 25px;
-  background: #bdc3c7;
-  border-radius: 20px;
-}
-
-/* CHUVA */
-.rain {
-  width: 52px;
-  height: 52px;
-  background: #3498db;
-  border-radius: 50%;
-  animation: rainDrop 1s infinite;
-}
-
-/* ANIMAÇÕES */
-@keyframes spin {
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes rainDrop {
-  0% {
-    transform: translateY(0);
-  }
-  100% {
-    transform: translateY(10px);
-  }
 }
 
 /* CARD ANIVERSÁRIOS */
@@ -152,6 +93,9 @@
   width: 420px;
   background: white;
   border-radius: 14px;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
   padding: 25px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
   display: flex;
@@ -214,16 +158,23 @@
 }
 
 .birthday-avatar {
-  width: 45px;
-  height: 45px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: #4a69bd;
+  background: #4f67c6;
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: bold;
-  font-size: 18px;
+  font-weight: 600;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.birthday-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .birthday-info {
@@ -245,4 +196,21 @@
   text-align: center;
   color: #888;
   padding: 20px 0;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  transform: translateY(-2px);
+}
+
+.weather-card:hover,
+.birthday-card:hover {
+  transform: translateY(-6px) scale(1.01);
+
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.15),
+    0 4px 10px rgba(0, 0, 0, 0.08);
 }
