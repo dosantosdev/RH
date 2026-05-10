@@ -22,11 +22,19 @@ export default function EmployeeProfile() {
   }
 
   function handleDelete(employeeToDelete) {
+    const confirmDelete = window.confirm(
+      'Tem certeza que deseja excluir este cadastro?'
+    )
+
+    if (!confirmDelete) return
+
     const updatedEmployees = employees.filter(
       (emp) => emp.id !== employeeToDelete.id
     )
 
     localStorage.setItem('employees', JSON.stringify(updatedEmployees))
+
+    setEmployees(updatedEmployees)
 
     navigate('/buscar')
   }
