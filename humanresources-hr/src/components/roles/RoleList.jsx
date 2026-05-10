@@ -1,5 +1,7 @@
 import './roleList.css'
 
+import { hasPermission } from '../../services/permissions'
+
 export default function RoleList({ roles, handleEdit, handleDelete }) {
   return (
     <>
@@ -18,9 +20,13 @@ export default function RoleList({ roles, handleEdit, handleDelete }) {
               </div>
 
               <div className="role-actions">
-                <button onClick={() => handleEdit(r)}>✏️</button>
+                {hasPermission('roles_edit') && (
+                  <button onClick={() => handleEdit(r)}>✏️</button>
+                )}
 
-                <button onClick={() => handleDelete(r.id)}>🗑️</button>
+                {hasPermission('roles_delete') && (
+                  <button onClick={() => handleDelete(r.id)}>🗑️</button>
+                )}
               </div>
             </div>
           </div>

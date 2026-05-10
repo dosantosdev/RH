@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import './employeeSearch.css'
+import { hasPermission } from '../../services/permissions'
 
 import EmployeeList from '../../components/employees/EmployeeList'
 
 export default function EmployeeSearch() {
+  if (!hasPermission('employees_view')) {
+    return <h2>Acesso negado</h2>
+  }
   const [employees, setEmployees] = useState([])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)

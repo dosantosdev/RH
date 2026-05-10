@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import logo from '../../assets/logo-light.png'
 import './header.css'
 

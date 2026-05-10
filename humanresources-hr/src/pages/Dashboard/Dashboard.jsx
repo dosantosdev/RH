@@ -5,6 +5,7 @@ import { getBirthdayEmployees } from '../../services/dashboard'
 import sol from '../../assets/sol.png'
 import chuva from '../../assets/chuva.png'
 import nublado from '../../assets/nublado.png'
+import { hasPermission } from '../../services/permissions'
 
 export default function Dashboard({ setSelectedEmployee }) {
   const [weather, setWeather] = useState(null)
@@ -38,61 +39,67 @@ export default function Dashboard({ setSelectedEmployee }) {
     <div className="container">
       <div className="dashboard-cards">
         {/* 🌤️ CARD CLIMA */}
-        <div
-          className="weather-card"
-          style={{
-            backgroundImage: `url(${getWeatherBackground()})`
-          }}
-        >
-          <h3>Previsão do tempo</h3>
+        {hasPermission('dashboard_weather') && (
+          <div
+            className="weather-card"
+            style={{
+              backgroundImage: `url(${getWeatherBackground()})`
+            }}
+          >
+            <h3>Previsão do tempo</h3>
 
-          {!weather && <p>Carregando...</p>}
+            {!weather && <p>Carregando...</p>}
 
-          {weather && (
-            <>
-              <p className="temp">{weather.current.temp_c}°C</p>
+            {weather && (
+              <>
+                <p className="temp">{weather.current.temp_c}°C</p>
 
-              <p className="condition">{weather.current.condition.text}</p>
+                <p className="condition">{weather.current.condition.text}</p>
 
-              <p className="location">📍 {weather.location.name}</p>
-            </>
-          )}
-        </div>
-
-        {/* 🎂 CARD ANIVERSÁRIOS */}
-        <div className="birthday-card">
-          <div className="birthday-header">
-            <h3>🎂 Aniversariantes do Mês</h3>
-            <span>{birthdayEmployees.length} funcionário(s)</span>
-          </div>
-
-          <div className="birthday-list">
-            {birthdayEmployees.length > 0 ? (
-              birthdayEmployees.map((employee) => (
-                <div
-                  key={employee.id}
-                  className="birthday-item clickable"
-                  onClick={() => navigate(`/funcionario/${employee.id}`)}
-                >
-                  <div className="birthday-avatar">
-                    {employee.photo ? (
-                      <img src={employee.photo} alt={employee.name} />
-                    ) : (
-                      employee.name.charAt(0)
-                    )}
-                  </div>
-
-                  <div className="birthday-info">
-                    <strong>{employee.name}</strong>
-                    <p>{employee.birthDate}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="no-birthday">Nenhum aniversariante este mês</p>
+                <p className="location">📍 {weather.location.name}</p>
+              </>
             )}
           </div>
-        </div>
+        )}
+
+        {/* 🎂 CARD ANIVERSÁRIOS */}
+        {hasPermission('dashboard_birthdays') && (
+          <div className="birthday-card">
+            <div className="birthday-header">
+              <h3>🎂 Aniversariantes do Mês</h3>
+
+              <span>{birthdayEmployees.length} funcionário(s)</span>
+            </div>
+
+            <div className="birthday-list">
+              {birthdayEmployees.length > 0 ? (
+                birthdayEmployees.map((employee) => (
+                  <div
+                    key={employee.id}
+                    className="birthday-item clickable"
+                    onClick={() => navigate(`/funcionario/${employee.id}`)}
+                  >
+                    <div className="birthday-avatar">
+                      {employee.photo ? (
+                        <img src={employee.photo} alt={employee.name} />
+                      ) : (
+                        employee.name.charAt(0)
+                      )}
+                    </div>
+
+                    <div className="birthday-info">
+                      <strong>{employee.name}</strong>
+
+                      <p>{employee.birthDate}</p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="no-birthday">Nenhum aniversariante este mês</p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

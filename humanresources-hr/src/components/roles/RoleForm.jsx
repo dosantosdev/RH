@@ -1,11 +1,53 @@
 import './roleForm.css'
 
+import { permissions } from '../../data/permissions'
+
+import { hasPermission } from '../../services/permissions'
+
 export default function RoleForm({
   role,
   editingId,
   handleChange,
   handleSubmit
 }) {
+  function handlePermissionChange(permissionKey) {
+    const exists = role.permissions.includes(permissionKey)
+
+    let updatedPermissions
+
+    if (exists) {
+      updatedPermissions = role.permissions.filter((p) => p !== permissionKey)
+    } else {
+      updatedPermissions = [...role.permissions, permissionKey]
+    }
+
+    handleChange({
+      target: {
+        name: 'permissions',
+        value: updatedPermissions,
+        type: 'custom'
+      }
+    })
+  }
+
+  const allPermissions = permissions.flatMap((group) =>
+    group.items.map((permission) => permission.key)
+  )
+
+  const allSelected = role.permissions.length === allPermissions.length
+
+  function handleSelectAll() {
+    handleChange({
+      target: {
+        name: 'permissions',
+
+        value: allSelected ? [] : allPermissions,
+
+        type: 'custom'
+      }
+    })
+  }
+
   return (
     <div className="role-form-container">
       <div className="form-card">
@@ -48,9 +90,50 @@ export default function RoleForm({
             </label>
           </div>
 
-          <button className="save-btn" type="submit">
-            {editingId ? 'Atualizar cargo' : 'Salvar cargo'}
-          </button>
+          <div className="form-section">
+            <div className="permissions-header">
+              <h3>Permissões</h3>
+
+              <label className="select-all">
+                <input
+                  type="checkbox"
+                  checked={allSelected}
+                  onChange={handleSelectAll}
+                />
+                Selecionar tudo
+              </label>
+            </div>
+
+            <div className="permissions-container">
+              {permissions.map((group) => (
+                <div key={group.category} className="permission-group">
+                  <h4>{group.category}</h4>
+
+                  <div className="permissions-grid">
+                    {group.items.map((permission) => (
+                      <label key={permission.key} className="permission-item">
+                        <input
+                          type="checkbox"
+                          checked={role.permissions.includes(permission.key)}
+                          onChange={() =>
+                            handlePermissionChange(permission.key)
+                          }
+                        />
+
+                        {permission.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {(hasPermission('roles_create') || hasPermission('roles_edit')) && (
+            <button className="save-btn" type="submit">
+              {editingId ? 'Atualizar cargo' : 'Salvar cargo'}
+            </button>
+          )}
         </form>
       </div>
     </div>

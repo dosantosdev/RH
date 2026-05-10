@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import EmployeeForm from '../../components/employees/EmployeeForm'
 import './employeeCreate.css'
+import { hasPermission } from '../../services/permissions'
 
 export default function EmployeeCreate() {
+  if (!hasPermission('employees_create')) {
+    return <h2>Acesso negado</h2>
+  }
   const [formData, setFormData] = useState({
     name: '',
     cpf: '',
@@ -31,6 +35,12 @@ export default function EmployeeCreate() {
   })
 
   function handleSaveEmployee() {
+    // 🔒 BLOQUEIA CADASTRO
+    if (!hasPermission('employees_create')) {
+      alert('Você não tem permissão para cadastrar funcionários')
+
+      return
+    }
     const employees = JSON.parse(localStorage.getItem('employees')) || []
 
     const newEmployee = {

@@ -63,3 +63,74 @@
 .save-btn:hover {
   opacity: 0.9;
 }
+
+.permissions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.permission-group h4 {
+  margin-bottom: 15px;
+  color: #333;
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.permission-item input[type='checkbox'] {
+  width: auto !important;
+
+  min-width: 16px;
+
+  max-width: 16px;
+
+  height: 16px;
+
+  margin: 0;
+
+  flex-shrink: 0;
+}
+
+.permission-item {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  padding: 18px;
+
+  border-radius: 12px;
+
+  background: #f7f7f9;
+
+  font-size: 15px;
+}
+
+.permission-item:hover {
+  background: #eef2ff;
+}
+
+.permissions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  margin-bottom: 20px;
+}
+
+.select-all {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  white-space: nowrap;
+
+  font-size: 14px;
+}

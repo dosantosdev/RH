@@ -1,11 +1,15 @@
 import { Link, useNavigate } from 'react-router-dom'
+
 import './navbar.css'
+
+import { hasPermission } from '../../services/permissions'
 
 export default function Navbar() {
   const navigate = useNavigate()
 
   function handleLogout() {
     localStorage.removeItem('loggedUser')
+
     navigate('/')
   }
 
@@ -20,10 +24,21 @@ export default function Navbar() {
           <button className="dropbtn">Cadastro</button>
 
           <div className="dropdown-content">
-            <Link to="/buscar">Buscar Funcionários</Link>
-            <Link to="/cadastrar">Cadastrar Funcionários</Link>
-            <Link to="/cargos">Cadastrar Cargos</Link>
-            <Link to="/usuarios">Cadastrar Usuários</Link>
+            {hasPermission('employees_view') && (
+              <Link to="/buscar">Buscar Funcionários</Link>
+            )}
+
+            {hasPermission('employees_create') && (
+              <Link to="/cadastrar">Cadastrar Funcionários</Link>
+            )}
+
+            {hasPermission('roles_view') && (
+              <Link to="/cargos">Cadastrar Cargos</Link>
+            )}
+
+            {hasPermission('users_view') && (
+              <Link to="/usuarios">Cadastrar Usuários</Link>
+            )}
           </div>
         </div>
       </div>

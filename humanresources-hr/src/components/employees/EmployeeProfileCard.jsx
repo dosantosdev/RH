@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import './employeeProfileCard.css'
 import EmployeeForm from './EmployeeForm'
+import { hasPermission } from '../../services/permissions'
 
 export default function EmployeeProfileCard({ employee, onDelete, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false)
@@ -156,9 +157,13 @@ export default function EmployeeProfileCard({ employee, onDelete, onUpdate }) {
       </div>
 
       <div className="profile-actions">
-        <button onClick={() => setIsEditing(true)}>✏️ Editar</button>
+        {hasPermission('employees_edit') && (
+          <button onClick={() => setIsEditing(true)}>✏️ Editar</button>
+        )}
 
-        <button onClick={() => onDelete(edited)}>🗑️ Excluir</button>
+        {hasPermission('employees_delete') && (
+          <button onClick={() => onDelete(edited)}>🗑️ Excluir</button>
+        )}
       </div>
     </div>
   )

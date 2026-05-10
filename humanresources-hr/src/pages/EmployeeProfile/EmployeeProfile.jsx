@@ -2,8 +2,12 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import EmployeeProfileCard from '../../components/employees/EmployeeProfileCard'
 import './employeeProfile.css'
+import { hasPermission } from '../../services/permissions'
 
 export default function EmployeeProfile() {
+  if (!hasPermission('employees_view')) {
+    return <h2>Acesso negado</h2>
+  }
   const { id } = useParams()
   const navigate = useNavigate()
 
@@ -14,6 +18,13 @@ export default function EmployeeProfile() {
   const employee = employees.find((emp) => emp.id === Number(id))
 
   function handleUpdate(updatedEmployee) {
+    // 🔒 BLOQUEIA EDIÇÃO
+    if (!hasPermission('employees_edit')) {
+      alert('Você não tem permissão para editar funcionários')
+
+      return
+    }
+
     const updatedEmployees = employees.map((emp) =>
       emp.id === updatedEmployee.id ? updatedEmployee : emp
     )
@@ -22,6 +33,13 @@ export default function EmployeeProfile() {
   }
 
   function handleDelete(employeeToDelete) {
+    // 🔒 BLOQUEIA EXCLUSÃO
+    if (!hasPermission('employees_delete')) {
+      alert('Você não tem permissão para excluir funcionários')
+
+      return
+    }
+
     const confirmDelete = window.confirm(
       'Tem certeza que deseja excluir este cadastro?'
     )

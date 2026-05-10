@@ -1,0 +1,15 @@
+.layout-page {
+  min-height: 100vh;
+
+  background: #f5f7fb;
+}
+
+.layout-body {
+  display: flex;
+}
+
+.layout-content {
+  flex: 1;
+
+  padding: 25px;
+}

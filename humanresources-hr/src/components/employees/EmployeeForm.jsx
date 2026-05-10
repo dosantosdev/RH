@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import './employeeForm.css'
+import { hasPermission } from '../../services/permissions'
 
 // ✅ FORA DO COMPONENTE
 const initialForm = {
@@ -334,7 +335,10 @@ export default function EmployeeForm({
         </div>
       </div>
 
-      <button type="submit">Salvar</button>
+      {(hasPermission('employees_create') ||
+        hasPermission('employees_edit')) && (
+        <button type="submit">Salvar</button>
+      )}
     </form>
   )
 }
