@@ -1,0 +1,51 @@
+.toast {
+  position: fixed;
+
+  top: 24px;
+
+  right: 24px;
+
+  min-width: 260px;
+
+  max-width: 420px;
+
+  padding: 14px 18px;
+
+  border-radius: 14px;
+
+  color: white;
+
+  font-weight: 600;
+
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+
+  z-index: 9999;
+
+  animation: toastShow 0.25s ease;
+}
+
+.toast-success {
+  background: #2e9b62;
+}
+
+.toast-error {
+  background: #d64545;
+}
+
+@keyframes toastShow {
+  from {
+    opacity: 0;
+
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform: translateY(0);
+  }
+}
+
+.toast-warning {
+  background: #d48b1f;
+}

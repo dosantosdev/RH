@@ -2,13 +2,18 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import logo from '../../assets/logo-light.png'
 import './login.css'
+import Toast from '../../components/ui/Toast'
+import useToast from '../../hooks/useToast'
 
 export default function Login() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const navigate = useNavigate()
+  const { toast, showToast } = useToast()
 
-  function handleLogin() {
+  function handleLogin(e) {
+    e.preventDefault()
+
     const users = JSON.parse(localStorage.getItem('users')) || []
 
     const user = users.find(
@@ -16,14 +21,14 @@ export default function Login() {
     )
 
     if (!user) {
-      alert('Usuário ou senha inválidos')
+      showToast('Usuário ou senha inválidos', 'error')
+
       return
     }
 
-    // salva usuário logado
     localStorage.setItem('loggedUser', JSON.stringify(user))
 
-    navigate('/dashboard') // redireciona após login
+    navigate('/dashboard')
   }
 
   return (
@@ -51,6 +56,8 @@ export default function Login() {
 
         <button type="submit">Entrar</button>
       </form>
+
+      <Toast show={toast.show} message={toast.message} type={toast.type} />
     </div>
   )
 }

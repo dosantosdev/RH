@@ -5,6 +5,8 @@ import './users.css'
 import UserForm from '../../components/users/UserForm'
 import UserList from '../../components/users/UserList'
 import ConfirmModal from '../../components/ui/ConfirmModal'
+import Toast from '../../components/ui/Toast'
+import useToast from '../../hooks/useToast'
 
 import { hasPermission } from '../../services/permissions'
 
@@ -35,6 +37,8 @@ export default function Users() {
 
   const [deleteId, setDeleteId] = useState(null)
 
+  const { toast, showToast } = useToast()
+
   useEffect(() => {
     const storedUsers = JSON.parse(localStorage.getItem('users')) || []
 
@@ -64,14 +68,14 @@ export default function Users() {
 
     // 🔒 BLOQUEIA CRIAÇÃO
     if (!editingId && !hasPermission('users_create')) {
-      alert('Você não tem permissão para cadastrar usuários')
+      showToast('Você não tem permissão para cadastrar usuários', 'warning')
 
       return
     }
 
     // 🔒 BLOQUEIA EDIÇÃO
     if (editingId && !hasPermission('users_edit')) {
-      alert('Você não tem permissão para editar usuários')
+      showToast('Você não tem permissão para editar usuários', 'warning')
 
       return
     }
@@ -100,7 +104,10 @@ export default function Users() {
 
     setUsers(updated)
 
-    alert(editingId ? 'Usuário atualizado!' : 'Usuário cadastrado!')
+    showToast(
+      editingId ? 'Usuário atualizado!' : 'Usuário cadastrado!',
+      'success'
+    )
 
     setUser(initialUser)
 
@@ -110,7 +117,7 @@ export default function Users() {
   function handleEdit(u) {
     // 🔒 BLOQUEIA EDIÇÃO
     if (!hasPermission('users_edit')) {
-      alert('Você não tem permissão para editar usuários')
+      showToast('Você não tem permissão para editar usuários', 'warning')
 
       return
     }
@@ -123,7 +130,7 @@ export default function Users() {
   function handleDelete(id) {
     // 🔒 BLOQUEIA EXCLUSÃO
     if (!hasPermission('users_delete')) {
-      alert('Você não tem permissão para excluir usuários')
+      showToast('Você não tem permissão para excluir usuários', 'warning')
 
       return
     }
@@ -167,6 +174,8 @@ export default function Users() {
         onConfirm={confirmDeleteUser}
         onCancel={() => setDeleteId(null)}
       />
+
+      <Toast show={toast.show} message={toast.message} type={toast.type} />
     </div>
   )
 }

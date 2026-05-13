@@ -4,6 +4,8 @@ import './roles.css'
 import RoleForm from '../../components/roles/RoleForm'
 import RoleList from '../../components/roles/RoleList'
 import ConfirmModal from '../../components/ui/ConfirmModal'
+import Toast from '../../components/ui/Toast'
+import useToast from '../../hooks/useToast'
 
 import { hasPermission } from '../../services/permissions'
 
@@ -30,6 +32,8 @@ export default function Roles() {
 
   const [deleteId, setDeleteId] = useState(null)
 
+  const { toast, showToast } = useToast()
+
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('roles')) || []
 
@@ -55,14 +59,14 @@ export default function Roles() {
 
     // 🔒 BLOQUEIA CRIAÇÃO
     if (!editingId && !hasPermission('roles_create')) {
-      alert('Você não tem permissão para criar cargos')
+      showToast('Você não tem permissão para criar cargos', 'warning')
 
       return
     }
 
     // 🔒 BLOQUEIA EDIÇÃO
     if (editingId && !hasPermission('roles_edit')) {
-      alert('Você não tem permissão para editar cargos')
+      showToast('Você não tem permissão para editar cargos', 'warning')
 
       return
     }
@@ -91,7 +95,7 @@ export default function Roles() {
 
     setRoles(updated)
 
-    alert(editingId ? 'Cargo atualizado!' : 'Cargo cadastrado!')
+    showToast(editingId ? 'Cargo atualizado!' : 'Cargo cadastrado!', 'success')
 
     setRole(initialRole)
 
@@ -101,7 +105,7 @@ export default function Roles() {
   function handleEdit(r) {
     // 🔒 BLOQUEIA EDIÇÃO
     if (!hasPermission('roles_edit')) {
-      alert('Você não tem permissão para editar cargos')
+      showToast('Você não tem permissão para editar cargos', 'warning')
 
       return
     }
@@ -113,7 +117,7 @@ export default function Roles() {
 
   function handleDelete(id) {
     if (!hasPermission('roles_delete')) {
-      alert('Você não tem permissão para excluir cargos')
+      showToast('Você não tem permissão para excluir cargos', 'warning')
 
       return
     }
@@ -162,6 +166,8 @@ export default function Roles() {
         onConfirm={confirmDeleteRole}
         onCancel={() => setDeleteId(null)}
       />
+
+      <Toast show={toast.show} message={toast.message} type={toast.type} />
     </div>
   )
 }
