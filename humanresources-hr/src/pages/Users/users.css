@@ -11,25 +11,3 @@
 
   gap: 20px;
 }
-
-.users-search {
-  width: 100%;
-
-  max-width: 760px;
-
-  margin: 0 auto;
-}
-
-.users-search input {
-  width: 100%;
-
-  padding: 12px 14px;
-
-  border: 1px solid #dcdcdc;
-
-  border-radius: 12px;
-
-  font-size: 14px;
-
-  background: #fff;
-}

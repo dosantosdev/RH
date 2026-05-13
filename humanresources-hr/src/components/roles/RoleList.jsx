@@ -9,8 +9,8 @@ export default function RoleList({ roles, handleEdit, handleDelete }) {
         {roles.length === 0 && <p>Nenhum cargo cadastrado</p>}
 
         {roles.map((r) => (
-          <div key={r.id} className="roles-list-card">
-            <div className="role-item">
+          <div key={r.id} className="roles-list-card default-card">
+            <div className="role-item default-inner-card">
               <div className="role-info">
                 <h4>{r.name}</h4>
 
@@ -19,7 +19,7 @@ export default function RoleList({ roles, handleEdit, handleDelete }) {
                 <span>{r.active ? '🟢 Ativo' : '🔴 Inativo'}</span>
               </div>
 
-              <div className="role-actions">
+              <div className="role-actions default-actions">
                 {hasPermission('roles_edit') && (
                   <button onClick={() => handleEdit(r)}>✏️</button>
                 )}

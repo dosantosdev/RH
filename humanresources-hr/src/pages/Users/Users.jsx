@@ -4,6 +4,7 @@ import './users.css'
 
 import UserForm from '../../components/users/UserForm'
 import UserList from '../../components/users/UserList'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 
 import { hasPermission } from '../../services/permissions'
 
@@ -31,6 +32,8 @@ export default function Users() {
   const [search, setSearch] = useState('')
 
   const [editingId, setEditingId] = useState(null)
+
+  const [deleteId, setDeleteId] = useState(null)
 
   useEffect(() => {
     const storedUsers = JSON.parse(localStorage.getItem('users')) || []
@@ -125,21 +128,25 @@ export default function Users() {
       return
     }
 
-    const confirmDelete = confirm('Deseja excluir este usuário?')
+    setDeleteId(id)
+  }
 
-    if (!confirmDelete) return
-
-    const updated = users.filter((u) => u.id !== id)
+  function confirmDeleteUser() {
+    const updated = users.filter((u) => u.id !== deleteId)
 
     localStorage.setItem('users', JSON.stringify(updated))
 
     setUsers(updated)
+
+    setDeleteId(null)
   }
 
   return (
     <div className="users-page">
       <UserForm
         user={user}
+        search={search}
+        setSearch={setSearch}
         roles={roles}
         editingId={editingId}
         handleChange={handleChange}
@@ -147,19 +154,18 @@ export default function Users() {
         setUser={setUser}
       />
 
-      <div className="users-search">
-        <input
-          type="text"
-          placeholder="🔍 Buscar usuário..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-      </div>
-
       <UserList
         users={filteredUsers}
         handleEdit={handleEdit}
         handleDelete={handleDelete}
+      />
+
+      <ConfirmModal
+        isOpen={deleteId !== null}
+        title="Excluir usuário"
+        message="Tem certeza que deseja excluir este usuário?"
+        onConfirm={confirmDeleteUser}
+        onCancel={() => setDeleteId(null)}
       />
     </div>
   )

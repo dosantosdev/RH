@@ -8,7 +8,9 @@ export default function UserForm({
   editingId,
   handleChange,
   handleSubmit,
-  setUser
+  setUser,
+  search,
+  setSearch
 }) {
   return (
     <div className="user-form-container">
@@ -17,7 +19,18 @@ export default function UserForm({
 
         <form onSubmit={handleSubmit}>
           <div className="form-section">
-            <h3>Informações do Usuário</h3>
+            <div className="user-form-header">
+              <h3>Informações do Usuário</h3>
+
+              <div className="users-search default-search">
+                <input
+                  type="text"
+                  placeholder="🔍 Buscar usuário..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+            </div>
 
             <div className="form-grid">
               <input

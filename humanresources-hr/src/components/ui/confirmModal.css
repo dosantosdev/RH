@@ -1,0 +1,106 @@
+.modal-overlay {
+  position: fixed;
+
+  inset: 0;
+
+  background: rgba(0, 0, 0, 0.45);
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  z-index: 9999;
+
+  backdrop-filter: blur(2px);
+}
+
+.confirm-modal {
+  width: 100%;
+
+  max-width: 420px;
+
+  background: white;
+
+  border-radius: 18px;
+
+  padding: 24px;
+
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+
+  animation: modalShow 0.2s ease;
+}
+
+.confirm-modal h3 {
+  margin: 0 0 12px;
+
+  color: #222;
+}
+
+.confirm-modal p {
+  margin: 0;
+
+  color: #555;
+
+  line-height: 1.5;
+}
+
+.modal-actions {
+  display: flex;
+
+  justify-content: flex-end;
+
+  gap: 10px;
+
+  margin-top: 24px;
+}
+
+.modal-cancel,
+.modal-confirm {
+  border: none;
+
+  border-radius: 10px;
+
+  padding: 10px 16px;
+
+  cursor: pointer;
+
+  font-weight: 600;
+
+  transition: 0.2s;
+}
+
+.modal-cancel {
+  background: #eceff3;
+
+  color: #333;
+}
+
+.modal-cancel:hover {
+  opacity: 0.9;
+}
+
+.modal-confirm {
+  background: #4f67c6;
+
+  color: white;
+}
+
+.modal-confirm:hover {
+  opacity: 0.9;
+}
+
+@keyframes modalShow {
+  from {
+    opacity: 0;
+
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+
+    transform: translateY(0);
+  }
+}

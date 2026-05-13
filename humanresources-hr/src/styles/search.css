@@ -1,0 +1,27 @@
+.default-search {
+  width: 100%;
+
+  max-width: 400px;
+
+  margin: 0 auto;
+}
+
+.default-search input {
+  width: 100%;
+
+  padding: 12px 14px;
+
+  border: 1px solid #dcdcdc;
+
+  border-radius: 12px;
+
+  font-size: 14px;
+
+  background: #fff;
+}
+
+.default-search input:focus {
+  outline: none;
+
+  border-color: #4f67c6;
+}

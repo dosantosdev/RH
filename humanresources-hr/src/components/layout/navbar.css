@@ -72,17 +72,8 @@
   display: block;
 }
 
-/* BOTÃO SAIR */
-.logout-btn {
-  background-color: #e74c3c;
-  color: white;
-  border: none;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: 0.3s;
-}
+.logout-btn.primary-btn {
+  padding: 8px 16px;
 
-.logout-btn:hover {
-  background-color: #c0392b;
+  font-size: 13px;
 }

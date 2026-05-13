@@ -3,6 +3,7 @@ import './roles.css'
 
 import RoleForm from '../../components/roles/RoleForm'
 import RoleList from '../../components/roles/RoleList'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 
 import { hasPermission } from '../../services/permissions'
 
@@ -26,6 +27,8 @@ export default function Roles() {
   const [search, setSearch] = useState('')
 
   const [editingId, setEditingId] = useState(null)
+
+  const [deleteId, setDeleteId] = useState(null)
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('roles')) || []
@@ -109,22 +112,23 @@ export default function Roles() {
   }
 
   function handleDelete(id) {
-    // 🔒 BLOQUEIA EXCLUSÃO
     if (!hasPermission('roles_delete')) {
       alert('Você não tem permissão para excluir cargos')
 
       return
     }
 
-    const confirmDelete = confirm('Deseja excluir este cargo?')
+    setDeleteId(id)
+  }
 
-    if (!confirmDelete) return
-
-    const updated = roles.filter((r) => r.id !== id)
+  function confirmDeleteRole() {
+    const updated = roles.filter((r) => r.id !== deleteId)
 
     localStorage.setItem('roles', JSON.stringify(updated))
 
     setRoles(updated)
+
+    setDeleteId(null)
   }
 
   return (
@@ -149,6 +153,14 @@ export default function Roles() {
         roles={filteredRoles}
         handleEdit={handleEdit}
         handleDelete={handleDelete}
+      />
+
+      <ConfirmModal
+        isOpen={deleteId !== null}
+        title="Excluir cargo"
+        message="Tem certeza que deseja excluir este cargo?"
+        onConfirm={confirmDeleteRole}
+        onCancel={() => setDeleteId(null)}
       />
     </div>
   )

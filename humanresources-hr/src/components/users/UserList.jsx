@@ -8,8 +8,8 @@ export default function UserList({ users, handleEdit, handleDelete }) {
       {users.length === 0 && <p>Nenhum usuário cadastrado</p>}
 
       {users.map((u) => (
-        <div key={u.id} className="users-list-card">
-          <div className="user-item">
+        <div key={u.id} className="users-list-card default-card">
+          <div className="user-item default-inner-card">
             <div className="user-info">
               <h4>{u.name}</h4>
 
@@ -20,7 +20,7 @@ export default function UserList({ users, handleEdit, handleDelete }) {
               <strong>{u.active ? '🟢 Ativo' : '🔴 Inativo'}</strong>
             </div>
 
-            <div className="user-actions">
+            <div className="user-actions default-actions">
               {hasPermission('users_edit') && (
                 <button onClick={() => handleEdit(u)}>✏️</button>
               )}
