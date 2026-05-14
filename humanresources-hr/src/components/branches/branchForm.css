@@ -1,0 +1,35 @@
+.branch-form-container {
+  max-width: 700px;
+
+  margin: 0 auto 30px;
+}
+
+.form-grid {
+  display: grid;
+
+  grid-template-columns: repeat(12, 1fr);
+
+  gap: 16px;
+}
+
+.form-grid input {
+  padding: 12px;
+
+  border-radius: 10px;
+
+  border: 1px solid #dcdcdc;
+
+  font-size: 15px;
+}
+
+.field-large {
+  grid-column: span 12;
+}
+
+.field-medium {
+  grid-column: span 6;
+}
+
+.field-small {
+  grid-column: span 3;
+}

@@ -68,6 +68,32 @@ export const permissions = [
     ]
   },
   {
+    category: 'Filiais',
+
+    items: [
+      {
+        key: 'branches_view',
+        label: 'Visualizar filiais'
+      },
+
+      {
+        key: 'branches_create',
+        label: 'Criar filiais'
+      },
+
+      {
+        key: 'branches_edit',
+        label: 'Editar filiais'
+      },
+
+      {
+        key: 'branches_delete',
+        label: 'Excluir filiais'
+      }
+    ]
+  },
+
+  {
     category: 'Dashboard',
 
     items: [

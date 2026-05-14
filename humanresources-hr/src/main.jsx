@@ -7,6 +7,7 @@ import './styles/forms.css'
 import './styles/cards.css'
 import './styles/buttons.css'
 import './styles/search.css'
+import './styles/sections.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <BrowserRouter>

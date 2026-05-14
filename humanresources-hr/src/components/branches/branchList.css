@@ -1,0 +1,19 @@
+.branches-grid {
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 20px;
+}
+
+.branch-info h4 {
+  margin-bottom: 5px;
+
+  color: #222;
+}
+
+.branch-info p {
+  margin-bottom: 8px;
+
+  color: #666;
+}

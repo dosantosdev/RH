@@ -9,6 +9,7 @@ import EmployeeSearch from './pages/EmployeeSearch/EmployeeSearch'
 import EmployeeCreate from './pages/EmployeeCreate/EmployeeCreate'
 import Roles from './pages/Roles/Roles'
 import Users from './pages/Users/Users'
+import Branches from './pages/branches/Branches'
 
 import Header from './components/layout/Header'
 
@@ -90,6 +91,17 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <Users />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/filiais"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Branches />
             </Layout>
           </ProtectedRoute>
         }

@@ -14,6 +14,8 @@ export default function Sidebar() {
 
         {hasPermission('roles_view') && <Link to="/cargos">Cargos</Link>}
 
+        {hasPermission('branches_view') && <Link to="/filiais">Filiais</Link>}
+
         {hasPermission('users_view') && <Link to="/usuarios">Usuários</Link>}
       </nav>
     </aside>

@@ -1,0 +1,17 @@
+.form-section {
+  margin-bottom: 32px;
+}
+
+.form-section-title {
+  margin-bottom: 18px;
+
+  font-size: 18px;
+
+  font-weight: 700;
+
+  color: #2b2b2b;
+
+  padding-bottom: 10px;
+
+  border-bottom: 1px solid #ececec;
+}

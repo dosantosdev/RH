@@ -1,0 +1,81 @@
+.branches-container {
+  padding: 30px;
+}
+
+.branches-card {
+  background: white;
+
+  padding: 25px;
+
+  border-radius: 12px;
+}
+
+.branches-form {
+  display: flex;
+
+  gap: 15px;
+
+  margin-bottom: 25px;
+
+  flex-wrap: wrap;
+}
+
+.branches-form input {
+  flex: 1;
+
+  min-width: 220px;
+
+  padding: 12px;
+
+  border-radius: 6px;
+
+  border: 1px solid #ccc;
+}
+
+.branches-form button {
+  background: #4a69bd;
+
+  color: white;
+
+  border: none;
+
+  padding: 12px 20px;
+
+  border-radius: 6px;
+
+  cursor: pointer;
+}
+
+.branches-search {
+  margin: 25px auto 20px;
+
+  max-width: 700px;
+}
+
+.branches-search input {
+  width: 100%;
+
+  padding: 12px 14px;
+
+  border: 1px solid #dcdcdc;
+
+  border-radius: 10px;
+
+  font-size: 14px;
+
+  outline: none;
+
+  transition: 0.2s;
+}
+
+.branches-search input:focus {
+  border-color: #4f67c6;
+
+  box-shadow: 0 0 0 3px rgba(79, 103, 198, 0.12);
+}
+
+.branches-page {
+  max-width: 1600px;
+
+  margin: 0 auto;
+}

@@ -36,6 +36,10 @@ export default function Navbar() {
               <Link to="/cargos">Cadastrar Cargos</Link>
             )}
 
+            {hasPermission('branches_view') && (
+              <Link to="/filiais">Cadastrar Filiais</Link>
+            )}
+
             {hasPermission('users_view') && (
               <Link to="/usuarios">Cadastrar Usuários</Link>
             )}
