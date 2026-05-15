@@ -41,20 +41,22 @@ export default function UserForm({
                 onChange={handleChange}
               />
 
-              <input
-                name="username"
-                value={user.username}
-                placeholder="Usuário"
-                onChange={handleChange}
-              />
+              <div className="user-credentials-grid field-full">
+                <input
+                  name="username"
+                  value={user.username}
+                  placeholder="Usuário"
+                  onChange={handleChange}
+                />
 
-              <input
-                name="password"
-                type="password"
-                value={user.password}
-                placeholder="Senha"
-                onChange={handleChange}
-              />
+                <input
+                  name="password"
+                  type="password"
+                  value={user.password}
+                  placeholder="Senha"
+                  onChange={handleChange}
+                />
+              </div>
 
               <select
                 className="field-full"

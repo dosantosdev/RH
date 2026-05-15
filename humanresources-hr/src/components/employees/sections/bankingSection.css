@@ -1,0 +1,19 @@
+.bank-grid {
+  display: grid;
+
+  grid-template-columns:
+    180px
+    1fr
+    160px
+    200px;
+
+  gap: 12px;
+
+  align-items: center;
+}
+
+.bank-pix {
+  grid-column: 1 / -1;
+
+  margin-top: 2px;
+}

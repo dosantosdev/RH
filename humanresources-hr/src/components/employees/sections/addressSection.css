@@ -1,0 +1,68 @@
+.address-street {
+  grid-column: 1 / -1;
+}
+
+.address-details-grid {
+  display: grid;
+
+  grid-template-columns:
+    120px
+    1fr
+    1fr;
+
+  gap: 12px;
+
+  margin-top: 12px;
+}
+
+.address-top-grid {
+  display: grid;
+
+  grid-template-columns:
+    180px
+    1fr;
+
+  gap: 12px;
+
+  margin-top: 14px;
+}
+
+.address-details-grid {
+  display: grid;
+
+  grid-template-columns:
+    140px
+    1fr
+    1fr;
+
+  gap: 12px;
+
+  margin-top: 12px;
+}
+
+.address-location-grid {
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    220px
+    180px;
+
+  gap: 12px;
+
+  margin-top: 12px;
+}
+
+.address-grid {
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    2fr
+    120px
+    160px;
+
+  gap: 12px;
+
+  align-items: center;
+}

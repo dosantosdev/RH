@@ -1,0 +1,21 @@
+.spouse-grid {
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    1fr
+    180px
+    100px;
+
+  gap: 12px;
+
+  align-items: center;
+}
+
+.spouse-full {
+  grid-column: 1 / -1;
+}
+
+.spouse-city {
+  grid-column: span 2;
+}

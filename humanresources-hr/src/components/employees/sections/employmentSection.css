@@ -1,0 +1,66 @@
+.employment-grid {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr)
+    180px;
+
+  gap: 12px;
+
+  align-items: center;
+
+  margin-bottom: 12px;
+}
+
+.employment-dates-grid {
+  display: grid;
+
+  grid-template-columns:
+    180px
+    180px
+    180px
+    auto;
+
+  gap: 12px;
+
+  align-items: center;
+}
+
+.employment-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  margin-bottom: 20px;
+}
+
+.employment-active {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  background: #eef2ff;
+
+  padding: 10px 16px;
+
+  border-radius: 12px;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  color: #4a69bd;
+
+  cursor: pointer;
+}
+
+.employment-active input {
+  width: 16px;
+
+  height: 16px;
+}
