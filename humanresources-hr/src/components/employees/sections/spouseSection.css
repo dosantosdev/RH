@@ -1,21 +1,36 @@
 .spouse-grid {
   display: grid;
 
+  grid-template-columns: 1fr;
+
+  gap: 14px;
+}
+
+.spouse-docs-grid {
+  display: grid;
+
   grid-template-columns:
-    1fr
-    1fr
-    180px
-    100px;
+    120px
+    200px
+    200px
+    160px
+    140px
+    88px;
 
   gap: 12px;
 
   align-items: center;
 }
+.spouse-extra-grid {
+  display: grid;
 
-.spouse-full {
-  grid-column: 1 / -1;
-}
+  grid-template-columns:
+    160px
+    1fr
+    90px
+    160px;
 
-.spouse-city {
-  grid-column: span 2;
+  gap: 12px;
+
+  align-items: center;
 }

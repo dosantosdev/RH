@@ -1,26 +1,63 @@
 import './certificatesSection.css'
 
-export default function CertificatesSection({ form, handleCheckboxArray }) {
+export default function CertificatesSection({
+  form,
+  selectedRole,
+  handleCheckboxArray
+}) {
+  const certificates = JSON.parse(localStorage.getItem('certificates')) || []
+
+  const requiredCertificates = certificates.filter((certificate) =>
+    selectedRole?.requiredCertificates?.includes(certificate.id)
+  )
+
+  const requiredCategories = selectedRole?.requiredCnhCategories || []
+
+  const requiresCnh = selectedRole?.requiresCnh
+
+  // ✅ não renderiza se não houver exigências
+  if (!requiresCnh && requiredCertificates.length === 0) {
+    return null
+  }
+
   return (
     <div className="form-section">
-      <h3 className="form-section-title">Certificados</h3>
+      <h3 className="form-section-title">Certificações obrigatórias</h3>
 
-      <div className="certificates-group">
-        {['NR20', 'NR35', 'NR31.12', 'MOPP', 'Cargas Indivisíveis'].map(
-          (cert) => (
-            <label key={cert}>
+      {/* CNH */}
+
+      {requiresCnh && (
+        <div className="required-cnh">
+          <span className="required-label">CNH obrigatória:</span>
+
+          <div className="required-categories">
+            {requiredCategories.map((category) => (
+              <span key={category} className="category-badge">
+                Categoria {category}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* CERTIFICADOS */}
+
+      {requiredCertificates.length > 0 && (
+        <div className="certificates-group">
+          {requiredCertificates.map((certificate) => (
+            <label key={certificate.id}>
               <input
                 type="checkbox"
-                value={cert}
-                checked={form.certificates.includes(cert)}
+                value={certificate.name}
+                checked={form.certificates.includes(certificate.name)}
                 onChange={(e) => handleCheckboxArray(e, 'certificates')}
               />
 
-              {cert}
+              {certificate.name}
             </label>
-          )
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

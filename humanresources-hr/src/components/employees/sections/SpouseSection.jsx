@@ -11,6 +11,8 @@ export default function SpouseSection({ form, handleChange }) {
       <h3 className="form-section-title">Dados do cônjuge</h3>
 
       <div className="spouse-grid">
+        {/* LINHA 1 */}
+
         <input
           className="field-full"
           name="spouseName"
@@ -19,73 +21,88 @@ export default function SpouseSection({ form, handleChange }) {
           placeholder="Nome do cônjuge"
         />
 
-        <input
-          name="spouseCpf"
-          value={form.spouseCpf}
-          onChange={handleChange}
-          placeholder="CPF"
-        />
+        {/* LINHA 2 */}
 
-        <input
-          name="spousePhone"
-          value={form.spousePhone}
-          onChange={handleChange}
-          placeholder="Telefone"
-        />
+        <div className="spouse-docs-grid">
+          <select
+            name="spouseGender"
+            value={form.spouseGender}
+            onChange={handleChange}
+          >
+            <option value="">Sexo</option>
 
-        <input
-          name="spouseRg"
-          value={form.spouseRg}
-          onChange={handleChange}
-          placeholder="RG"
-        />
+            <option value="Masculino">Masculino</option>
 
-        <input
-          name="spouseRgIssuer"
-          value={form.spouseRgIssuer}
-          onChange={handleChange}
-          placeholder="Emissor RG"
-        />
+            <option value="Feminino">Feminino</option>
+          </select>
 
-        <input
-          name="spouseUf"
-          value={form.spouseUf}
-          onChange={handleChange}
-          placeholder="UF"
-        />
+          <input
+            name="spousePhone"
+            value={form.spousePhone}
+            onChange={handleChange}
+            placeholder="Telefone"
+          />
 
-        <input
-          name="spouseBirthDate"
-          value={form.spouseBirthDate}
-          onChange={handleChange}
-          placeholder="Nascimento"
-        />
+          <input
+            name="spouseCpf"
+            value={form.spouseCpf}
+            onChange={handleChange}
+            placeholder="CPF"
+          />
 
-        <select
-          name="spouseGender"
-          value={form.spouseGender}
-          onChange={handleChange}
-        >
-          <option value="">Sexo</option>
+          <input
+            name="spouseRg"
+            value={form.spouseRg}
+            onChange={handleChange}
+            placeholder="RG"
+          />
 
-          <option value="Masculino">Masculino</option>
+          <input
+            name="spouseRgIssuer"
+            value={form.spouseRgIssuer}
+            onChange={handleChange}
+            placeholder="Emissor RG"
+          />
 
-          <option value="Feminino">Feminino</option>
-        </select>
+          <input
+            name="spouseUf"
+            value={form.spouseUf}
+            onChange={handleChange}
+            placeholder="UF RG"
+          />
+        </div>
 
-        <input
-          name="spouseBirthCity"
-          value={form.spouseBirthCity}
-          onChange={handleChange}
-          placeholder="Cidade nascimento"
-        />
+        {/* LINHA 3 */}
 
-        <input
-          name="marriageDate"
-          value={form.marriageDate}
-          onChange={handleChange}
-          placeholder="Data casamento"
-        />
+        <div className="spouse-extra-grid">
+          <input
+            name="spouseBirthDate"
+            value={form.spouseBirthDate}
+            onChange={handleChange}
+            placeholder="Nascimento"
+          />
+
+          <input
+            name="spouseBirthCity"
+            value={form.spouseBirthCity}
+            onChange={handleChange}
+            placeholder="Cidade nascimento"
+          />
+
+          <input
+            name="spouseUf"
+            value={form.spouseUf}
+            onChange={handleChange}
+            placeholder="UF"
+          />
+
+          <input
+            name="marriageDate"
+            value={form.marriageDate}
+            onChange={handleChange}
+            placeholder="Data casamento"
+          />
+        </div>
       </div>
     </div>
   )

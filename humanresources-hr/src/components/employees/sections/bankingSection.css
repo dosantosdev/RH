@@ -3,17 +3,12 @@
 
   grid-template-columns:
     180px
-    1fr
+    220px
+    140px
     160px
-    200px;
+    1fr;
 
   gap: 12px;
 
   align-items: center;
-}
-
-.bank-pix {
-  grid-column: 1 / -1;
-
-  margin-top: 2px;
 }

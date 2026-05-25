@@ -42,7 +42,6 @@ export default function BankingSection({ form, handleChange }) {
         />
 
         <input
-          className="field-full"
           name="pixKey"
           value={form.pixKey}
           onChange={handleChange}

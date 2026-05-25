@@ -20,6 +20,8 @@ export default function Navbar() {
           Dashboard
         </Link>
 
+        {/* CADASTRO */}
+
         <div className="dropdown">
           <button className="dropbtn">Cadastro</button>
 
@@ -43,6 +45,62 @@ export default function Navbar() {
             {hasPermission('users_view') && (
               <Link to="/usuarios">Cadastrar Usuários</Link>
             )}
+          </div>
+        </div>
+
+        {/* FINANCEIRO */}
+
+        <div className="dropdown">
+          <button className="dropbtn">Financeiro</button>
+
+          <div className="dropdown-content">
+            <Link to="#">Horas</Link>
+
+            <Link to="#">Folha</Link>
+          </div>
+        </div>
+
+        {/* RELATÓRIOS */}
+
+        <div className="dropdown">
+          <button className="dropbtn">Relatórios</button>
+
+          <div className="dropdown-content">
+            <Link to="#">Checklist</Link>
+
+            <Link to="#">Exames</Link>
+
+            <Link to="#">Quadro de Funcionários</Link>
+          </div>
+        </div>
+
+        {/* ÁREA DO CANDIDATO */}
+
+        <div className="dropdown">
+          <button className="dropbtn">Área do Candidato</button>
+
+          <div className="dropdown-content">
+            <Link to="#">Currículo</Link>
+
+            <Link to="#">Pré-cadastro</Link>
+
+            <Link to="#">Vagas</Link>
+
+            <Link to="#">Entrevistas</Link>
+          </div>
+        </div>
+
+        {/* ARQUIVO */}
+
+        <div className="dropdown">
+          <button className="dropbtn">Arquivo</button>
+
+          <div className="dropdown-content">
+            <Link to="#">Busca</Link>
+
+            <Link to="#">Docs</Link>
+
+            <Link to="#">Currículos</Link>
           </div>
         </div>
       </div>

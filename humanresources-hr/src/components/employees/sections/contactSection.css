@@ -2,16 +2,13 @@
   display: grid;
 
   grid-template-columns:
-    1fr
     180px
-    1fr
-    180px;
+    140px
+    180px
+    140px
+    1fr;
 
   gap: 12px;
 
   align-items: center;
-}
-
-.contact-email {
-  grid-column: 1 / -1;
 }

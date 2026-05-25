@@ -26,6 +26,8 @@ export default function EmploymentSection({
       </div>
 
       <div className="employment-grid">
+        {/* ✅ RELACIONAMENTO VIA ID */}
+
         <select name="roleId" value={form.roleId} onChange={handleChange}>
           <option value="">Cargo</option>
 
@@ -37,6 +39,8 @@ export default function EmploymentSection({
               </option>
             ))}
         </select>
+
+        {/* ✅ RELACIONAMENTO VIA ID */}
 
         <select name="branchId" value={form.branchId} onChange={handleChange}>
           <option value="">Filial</option>

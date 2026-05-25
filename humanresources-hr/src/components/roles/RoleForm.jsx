@@ -10,6 +10,8 @@ export default function RoleForm({
   handleChange,
   handleSubmit
 }) {
+  const certificates = JSON.parse(localStorage.getItem('certificates')) || []
+
   function handlePermissionChange(permissionKey) {
     const exists = role.permissions.includes(permissionKey)
 
@@ -54,6 +56,8 @@ export default function RoleForm({
         <h2>Cadastro de Cargos</h2>
 
         <form onSubmit={handleSubmit}>
+          {/* INFORMAÇÕES */}
+
           <div className="form-section">
             <h3>Informações do Cargo</h3>
 
@@ -76,6 +80,8 @@ export default function RoleForm({
             </div>
           </div>
 
+          {/* STATUS */}
+
           <div className="form-section">
             <h3>Status</h3>
 
@@ -89,6 +95,116 @@ export default function RoleForm({
               Cargo ativo
             </label>
           </div>
+
+          {/* REQUISITOS */}
+
+          <div className="form-section">
+            <h3>Requisitos do Cargo</h3>
+
+            <div className="requirements-grid">
+              <label className="checkbox-field">
+                <input
+                  type="checkbox"
+                  name="requiresCnh"
+                  checked={role.requiresCnh}
+                  onChange={handleChange}
+                />
+                Requer CNH
+              </label>
+            </div>
+
+            {role.requiresCnh && (
+              <div className="cnh-categories-role">
+                {['A', 'B', 'C', 'D', 'E'].map((category) => (
+                  <label key={category} className="permission-item">
+                    <input
+                      type="checkbox"
+                      checked={role.requiredCnhCategories?.includes(category)}
+                      onChange={() => {
+                        const exists =
+                          role.requiredCnhCategories?.includes(category)
+
+                        let updated = []
+
+                        if (exists) {
+                          updated = role.requiredCnhCategories.filter(
+                            (c) => c !== category
+                          )
+                        } else {
+                          updated = [
+                            ...(role.requiredCnhCategories || []),
+
+                            category
+                          ]
+                        }
+
+                        handleChange({
+                          target: {
+                            name: 'requiredCnhCategories',
+
+                            value: updated,
+
+                            type: 'custom'
+                          }
+                        })
+                      }}
+                    />
+                    Categoria {category}
+                  </label>
+                ))}
+              </div>
+            )}
+
+            <div className="required-certificates">
+              <h4>Certificados obrigatórios</h4>
+
+              <div className="permissions-grid">
+                {certificates.map((certificate) => (
+                  <label key={certificate.id} className="permission-item">
+                    <input
+                      type="checkbox"
+                      checked={role.requiredCertificates?.includes(
+                        certificate.id
+                      )}
+                      onChange={() => {
+                        const exists = role.requiredCertificates?.includes(
+                          certificate.id
+                        )
+
+                        let updated = []
+
+                        if (exists) {
+                          updated = role.requiredCertificates.filter(
+                            (id) => id !== certificate.id
+                          )
+                        } else {
+                          updated = [
+                            ...(role.requiredCertificates || []),
+
+                            certificate.id
+                          ]
+                        }
+
+                        handleChange({
+                          target: {
+                            name: 'requiredCertificates',
+
+                            value: updated,
+
+                            type: 'custom'
+                          }
+                        })
+                      }}
+                    />
+
+                    {certificate.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* PERMISSÕES */}
 
           <div className="form-section">
             <div className="permissions-header">

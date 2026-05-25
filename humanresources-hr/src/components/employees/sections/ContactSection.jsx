@@ -33,11 +33,7 @@ export default function ContactSection({ form, handleChange }) {
           onChange={handleChange}
           placeholder="Operadora 2"
         />
-      </div>
-
-      <div className="email-grid">
         <input
-          className="field-full"
           name="email"
           value={form.email}
           onChange={handleChange}

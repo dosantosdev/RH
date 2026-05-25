@@ -1,0 +1,64 @@
+.cnh-section {
+  margin-top: 22px;
+
+  padding: 0;
+
+  border: none;
+
+  background: transparent;
+}
+
+.cnh-grid {
+  display: grid;
+
+  grid-template-columns:
+    160px
+    140px
+    140px
+    1fr
+    140px;
+
+  gap: 12px;
+
+  align-items: center;
+
+  margin-bottom: 14px;
+}
+
+.cnh-grid input {
+  min-width: 0;
+}
+
+.cnh-categories {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  flex-wrap: wrap;
+}
+
+.cnh-categories label {
+  display: flex;
+
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 8px 12px;
+
+  border-radius: 8px;
+
+  background: #f7f7f9;
+
+  font-size: 13px;
+
+  cursor: pointer;
+
+  transition: background 0.2s ease;
+}
+
+.cnh-categories label:hover {
+  background: #eef2ff;
+}

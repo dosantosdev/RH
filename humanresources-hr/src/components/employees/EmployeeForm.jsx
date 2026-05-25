@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+
 import './employeeForm.css'
 
 import { hasPermission } from '../../services/permissions'
@@ -36,6 +37,12 @@ export default function EmployeeForm({
     handleDependentsChange,
     handleDependentFieldChange
   } = useEmployeeForm(formData, setFormData)
+
+  // ✅ SELECT RETORNA STRING
+  // ✅ role.id geralmente é NUMBER
+  // ✅ precisa converter
+
+  const selectedRole = roles.find((role) => role.id === Number(form.roleId))
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -90,6 +97,7 @@ export default function EmployeeForm({
 
       <CertificatesSection
         form={form}
+        selectedRole={selectedRole}
         handleCheckboxArray={handleCheckboxChange}
       />
 

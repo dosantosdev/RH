@@ -1,4 +1,5 @@
 import './documentsSection.css'
+import CnhSection from './CnhSection'
 
 export default function DocumentsSection({
   form,
@@ -7,9 +8,23 @@ export default function DocumentsSection({
 }) {
   return (
     <div className="form-section">
-      <h3 className="form-section-title">Documentação</h3>
+      <div className="documents-header">
+        <h3 className="form-section-title">Documentação</h3>
 
-      <div className="documents-grid">
+        <label className="foreign-toggle">
+          <input
+            type="checkbox"
+            name="foreigner"
+            checked={form.foreigner}
+            onChange={handleChange}
+          />
+          Estrangeiro
+        </label>
+      </div>
+
+      {/* CPF → RG → ORGÃO → DATA → MUNICÍPIO → UF */}
+
+      <div className="rg-grid">
         <input
           name="cpf"
           value={form.cpf}
@@ -24,18 +39,6 @@ export default function DocumentsSection({
           placeholder="RG"
         />
 
-        <label className="personal-checkbox">
-          <input
-            type="checkbox"
-            name="foreigner"
-            checked={form.foreigner}
-            onChange={handleChange}
-          />
-          Estrangeiro
-        </label>
-      </div>
-
-      <div className="rg-grid">
         <input
           name="rgIssuer"
           value={form.rgIssuer}
@@ -65,14 +68,9 @@ export default function DocumentsSection({
         />
       </div>
 
-      <div className="documents-extra-grid">
-        <input
-          name="pis"
-          value={form.pis}
-          onChange={handleChange}
-          placeholder="PIS"
-        />
+      {/* CTPS → SÉRIE → MUNICÍPIO → PIS */}
 
+      <div className="documents-extra-grid">
         <input
           name="ctpsNumber"
           value={form.ctpsNumber}
@@ -93,9 +91,25 @@ export default function DocumentsSection({
           onChange={handleChange}
           placeholder="Município CTPS"
         />
+
+        <input
+          name="pis"
+          value={form.pis}
+          onChange={handleChange}
+          placeholder="PIS"
+        />
       </div>
 
+      {/* SUS → TITULO → ZONA → SEÇÃO */}
+
       <div className="voter-grid">
+        <input
+          name="susCard"
+          value={form.susCard}
+          onChange={handleChange}
+          placeholder="Cartão SUS"
+        />
+
         <input
           name="voterTitle"
           value={form.voterTitle}
@@ -116,68 +130,12 @@ export default function DocumentsSection({
           onChange={handleChange}
           placeholder="Seção"
         />
-
-        <input
-          name="susCard"
-          value={form.susCard}
-          onChange={handleChange}
-          placeholder="Cartão SUS"
-        />
       </div>
-
-      <div className="cnh-grid">
-        <input
-          name="cnhNumber"
-          value={form.cnhNumber}
-          onChange={handleChange}
-          placeholder="CNH"
-        />
-
-        <input
-          name="cnhDate"
-          value={form.cnhDate}
-          onChange={handleChange}
-          placeholder="1ª habilitação"
-        />
-
-        <input
-          name="cnhValidity"
-          value={form.cnhValidity}
-          onChange={handleChange}
-          placeholder="Validade"
-        />
-      </div>
-
-      <div className="cnh-extra-grid">
-        <input
-          name="cnhCity"
-          value={form.cnhCity}
-          onChange={handleChange}
-          placeholder="Município CNH"
-        />
-
-        <input
-          name="cnhFirstLicenseUF"
-          value={form.cnhFirstLicenseUF}
-          onChange={handleChange}
-          placeholder="UF 1ª habilitação"
-        />
-      </div>
-
-      <div className="cnh-categories">
-        {['A', 'B', 'C', 'D', 'E'].map((cat) => (
-          <label key={cat}>
-            <input
-              type="checkbox"
-              value={cat}
-              checked={form.cnhCategories.includes(cat)}
-              onChange={(e) => handleCheckboxArray(e, 'cnhCategories')}
-            />
-
-            {cat}
-          </label>
-        ))}
-      </div>
+      <CnhSection
+        form={form}
+        handleChange={handleChange}
+        handleCheckboxArray={handleCheckboxArray}
+      />
     </div>
   )
 }
