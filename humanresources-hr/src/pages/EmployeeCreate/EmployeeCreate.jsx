@@ -1,198 +1,84 @@
 import { useState } from 'react'
 
+import EmployeeForm from '../../components/employees/EmployeeForm'
+import Toast from '../../components/ui/Toast'
+
 import useToast from '../../hooks/useToast'
 
-import EmployeeForm from '../../components/employees/EmployeeForm'
+import { hasPermission } from '../../services/permissions'
+import { addEmployee, getEmployees } from '../../services/employee'
+import { getStoredArray } from '../../services/storage'
+import { validateEmployee } from '../../services/employeeValidation'
+import { initialEmployeeForm } from '../../data/initialEmployeeForm'
 
 import './employeeCreate.css'
 
-import { hasPermission } from '../../services/permissions'
+function createInitialForm() {
+  return {
+    ...initialEmployeeForm,
+    cnhCategories: [],
+    certificates: [],
+    dependents: []
+  }
+}
 
 export default function EmployeeCreate() {
+  const [formData, setFormData] = useState(createInitialForm)
+  const { toast, showToast } = useToast()
+
   if (!hasPermission('employees_create')) {
     return <h2>Acesso negado</h2>
   }
 
-  const [formData, setFormData] = useState({
-    name: '',
-    cpf: '',
-    rg: '',
-    birthDate: '',
-
-    phone: '',
-    email: '',
-
-    address: '',
-    cep: '',
-    city: '',
-    state: '',
-    country: '',
-
-    isActive: true,
-    isForeigner: false,
-
-    roleId: '',
-
-    admissionDate: '',
-    dismissalDate: '',
-
-    cnhNumber: '',
-    cnhFirstDate: '',
-
-    cnhCategories: [],
-
-    certificates: [],
-
-    photo: null
-  })
-
-  // ✅ CORRETO
-  const { toast, showToast } = useToast()
-
   function handleSaveEmployee() {
-    // 🔒 BLOQUEIA CADASTRO
-
     if (!hasPermission('employees_create')) {
-      showToast('Você não tem permissão para cadastrar funcionários', 'error')
-
-      return
-    }
-
-    const roles = JSON.parse(localStorage.getItem('roles')) || []
-
-    const certificates = JSON.parse(localStorage.getItem('certificates')) || []
-
-    const selectedRole = roles.find(
-      (role) => role.id === Number(formData.roleId)
-    )
-
-    // =========================
-    // VALIDA CERTIFICADOS
-    // =========================
-
-    if (selectedRole?.requiredCertificates?.length > 0) {
-      const requiredCertificates = certificates.filter((certificate) =>
-        selectedRole.requiredCertificates.includes(certificate.id)
+      showToast(
+        'Você não tem permissão para cadastrar funcionários.',
+        'error'
       )
 
-      const missingCertificates = requiredCertificates.filter(
-        (certificate) => !formData.certificates.includes(certificate.name)
-      )
-
-      if (missingCertificates.length > 0) {
-        showToast(
-          `Funcionário não possui os certificados obrigatórios: ${missingCertificates
-            .map((c) => c.name)
-            .join(', ')}`,
-
-          'warning'
-        )
-
-        return
-      }
+      return false
     }
 
-    // =========================
-    // VALIDA CNH
-    // =========================
+    const roles = getStoredArray('roles')
+    const employees = getEmployees()
 
-    if (selectedRole?.requiresCnh) {
-      if (!formData.cnhCategories || formData.cnhCategories.length === 0) {
-        showToast(
-          'Este cargo exige CNH.',
+    const errors = validateEmployee(formData, employees, roles)
 
-          'warning'
-        )
-
-        return
-      }
-
-      const hasRequiredCategory = selectedRole.requiredCnhCategories.some(
-        (category) => formData.cnhCategories.includes(category)
-      )
-
-      if (!hasRequiredCategory) {
-        showToast(
-          `Este cargo exige CNH categoria: ${selectedRole.requiredCnhCategories.join(
-            ', '
-          )}`,
-
-          'warning'
-        )
-
-        return
-      }
+    if (errors.length > 0) {
+      showToast(errors[0], 'warning')
+      return false
     }
-
-    // =========================
-    // SALVA FUNCIONÁRIO
-    // =========================
-
-    const employees = JSON.parse(localStorage.getItem('employees')) || []
 
     const newEmployee = {
       ...formData,
-
       id: Date.now()
     }
 
-    localStorage.setItem(
-      'employees',
+    addEmployee(newEmployee)
 
-      JSON.stringify([...employees, newEmployee])
-    )
+    showToast('Funcionário cadastrado com sucesso!', 'success')
 
-    showToast('Funcionário cadastrado!', 'success')
+    setFormData(createInitialForm())
 
-    // =========================
-    // LIMPA FORMULÁRIO
-    // =========================
-
-    setFormData({
-      name: '',
-      cpf: '',
-      rg: '',
-      birthDate: '',
-
-      phone: '',
-      email: '',
-
-      address: '',
-      cep: '',
-      city: '',
-      state: '',
-      country: '',
-
-      isActive: true,
-      isForeigner: false,
-
-      roleId: '',
-
-      admissionDate: '',
-      dismissalDate: '',
-
-      cnhNumber: '',
-      cnhFirstDate: '',
-
-      cnhCategories: [],
-
-      certificates: [],
-
-      photo: null
-    })
+    return true
   }
 
   function handlePhotoUpload(e) {
-    const file = e.target.files[0]
+    const file = e.target.files?.[0]
 
     if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      showToast('Selecione um arquivo de imagem válido.', 'warning')
+      return
+    }
 
     const reader = new FileReader()
 
     reader.onloadend = () => {
       setFormData((prev) => ({
         ...prev,
-
         photo: reader.result
       }))
     }
@@ -208,11 +94,7 @@ export default function EmployeeCreate() {
         <p>Preencha as informações do novo funcionário</p>
       </div>
 
-      {/* ✅ TOAST */}
-
-      {toast.show && (
-        <div className={`toast toast-${toast.type}`}>{toast.message}</div>
-      )}
+      <Toast show={toast.show} message={toast.message} type={toast.type} />
 
       <EmployeeForm
         formData={formData}

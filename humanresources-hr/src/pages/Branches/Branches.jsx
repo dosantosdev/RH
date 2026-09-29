@@ -21,11 +21,6 @@ export default function Branches() {
     active: true
   }
 
-  // 🔒 BLOQUEIA ACESSO À PÁGINA
-  if (!hasPermission('branches_view')) {
-    return <h2>Acesso negado</h2>
-  }
-
   const [branch, setBranch] = useState(initialBranch)
 
   const [branches, setBranches] = useState([])
@@ -38,11 +33,17 @@ export default function Branches() {
 
   const { toast, showToast } = useToast()
 
+
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('branches')) || []
 
     setBranches(stored)
   }, [])
+
+  // 🔒 BLOQUEIA ACESSO À PÁGINA
+  if (!hasPermission('branches_view')) {
+    return <h2>Acesso negado</h2>
+  }
 
   const filteredBranches = branches.filter((branch) =>
     branch.name?.toLowerCase().includes(search.toLowerCase())

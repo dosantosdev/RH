@@ -11,6 +11,9 @@ import './styles/search.css'
 import './styles/sections.css'
 
 import { defaultCertificates } from './data/defaultCertificates'
+import { initializeSystem } from './services/auth'
+
+initializeSystem()
 
 if (!localStorage.getItem('certificates')) {
   localStorage.setItem('certificates', JSON.stringify(defaultCertificates))

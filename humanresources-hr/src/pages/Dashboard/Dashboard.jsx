@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom'
 
 import './dashboard.css'
 
-import { getBirthdayEmployees } from '../../services/dashboard'
+import {
+  getBirthdayEmployees,
+  getPeriodicExamAlerts
+} from '../../services/dashboard'
 
 import sol from '../../assets/sol.png'
 import chuva from '../../assets/chuva.png'
@@ -11,12 +14,11 @@ import nublado from '../../assets/nublado.png'
 
 import { hasPermission } from '../../services/permissions'
 
-export default function Dashboard({ setSelectedEmployee }) {
+export default function Dashboard() {
   const [weather, setWeather] = useState(null)
-
   const [examAlerts, setExamAlerts] = useState([])
 
-  const birthdayEmployees = getBirthdayEmployees()
+  const [birthdayEmployees, setBirthdayEmployees] = useState([])
 
   const navigate = useNavigate()
 
@@ -25,44 +27,13 @@ export default function Dashboard({ setSelectedEmployee }) {
       'https://api.weatherapi.com/v1/current.json?key=0274017409e24f7b9da21350260305&q=Sao Lourenco do Sul&lang=pt'
     )
       .then((res) => res.json())
-
       .then((data) => setWeather(data))
-
       .catch((err) => console.error(err))
   }, [])
 
-  // ⚠️ ALERTAS EXAMES
-
   useEffect(() => {
-    const employees = JSON.parse(localStorage.getItem('employees')) || []
-
-    const today = new Date()
-
-    const alerts = employees.filter((employee) => {
-      if (!employee.periodicExamDate) return false
-
-      const [day, month, year] = employee.periodicExamDate.split('/')
-
-      const examDate = new Date(`${year}-${month}-${day}`)
-
-      // +6 meses
-
-      const expirationDate = new Date(examDate)
-
-      expirationDate.setMonth(expirationDate.getMonth() + 6)
-
-      // diferença dias
-
-      const diffTime = expirationDate - today
-
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-      // alerta 30 dias antes
-
-      return diffDays <= 30 && diffDays >= 0
-    })
-
-    setExamAlerts(alerts)
+    setExamAlerts(getPeriodicExamAlerts())
+    setBirthdayEmployees(getBirthdayEmployees())
   }, [])
 
   function getWeatherBackground() {
@@ -83,7 +54,6 @@ export default function Dashboard({ setSelectedEmployee }) {
     <div className="container">
       <div className="dashboard-cards">
         {/* 👤 PERFIL */}
-
         <div className="profile-card">
           <div className="profile-left">
             <div className="profile-avatar">D</div>
@@ -98,16 +68,15 @@ export default function Dashboard({ setSelectedEmployee }) {
           </div>
 
           <div className="profile-actions">
-            <button>Editar perfil</button>
+            <button type="button">Editar perfil</button>
 
-            <button>Alterar senha</button>
+            <button type="button">Alterar senha</button>
           </div>
         </div>
-        {/* TOPO DASHBOARD */}
 
+        {/* TOPO DASHBOARD */}
         <div className="top-dashboard-cards">
           {/* 🌤️ CARD CLIMA */}
-
           {hasPermission('dashboard_weather') && (
             <div
               className="weather-card"
@@ -121,10 +90,7 @@ export default function Dashboard({ setSelectedEmployee }) {
 
               {weather && (
                 <>
-                  <p className="temp">
-                    {weather.current.temp_c}
-                    °C
-                  </p>
+                  <p className="temp">{weather.current.temp_c}°C</p>
 
                   <p className="condition">{weather.current.condition.text}</p>
 
@@ -135,7 +101,6 @@ export default function Dashboard({ setSelectedEmployee }) {
           )}
 
           {/* ⚠️ CARD EXAMES */}
-
           <div className="exam-card">
             <div className="birthday-header">
               <h3>⚠️ Exames Periódicos</h3>
@@ -145,44 +110,31 @@ export default function Dashboard({ setSelectedEmployee }) {
 
             <div className="birthday-list">
               {examAlerts.length > 0 ? (
-                examAlerts.map((employee) => {
-                  const [day, month, year] =
-                    employee.periodicExamDate.split('/')
-
-                  const examDate = new Date(`${year}-${month}-${day}`)
-
-                  const expirationDate = new Date(examDate)
-
-                  expirationDate.setMonth(expirationDate.getMonth() + 6)
-
-                  const today = new Date()
-
-                  const diffTime = expirationDate - today
-
-                  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-
-                  return (
-                    <div
-                      key={employee.id}
-                      className="birthday-item clickable"
-                      onClick={() => navigate(`/funcionario/${employee.id}`)}
-                    >
-                      <div className="birthday-avatar">
-                        {employee.photo ? (
-                          <img src={employee.photo} alt={employee.name} />
-                        ) : (
-                          employee.name.charAt(0)
-                        )}
-                      </div>
-
-                      <div className="birthday-info">
-                        <strong>{employee.name}</strong>
-
-                        <p>Exame vence em {diffDays} dia(s)</p>
-                      </div>
+                examAlerts.map((employee) => (
+                  <div
+                    key={employee.id}
+                    className="birthday-item clickable"
+                    onClick={() => navigate(`/funcionario/${employee.id}`)}
+                  >
+                    <div className="birthday-avatar">
+                      {employee.photo ? (
+                        <img src={employee.photo} alt={employee.name} />
+                      ) : (
+                        employee.name.charAt(0)
+                      )}
                     </div>
-                  )
-                })
+
+                    <div className="birthday-info">
+                      <strong>{employee.name}</strong>
+
+                      <p>
+                        {employee.daysUntilExpiration === 0
+                          ? 'Exame vence hoje'
+                          : `Exame vence em ${employee.daysUntilExpiration} dia(s)`}
+                      </p>
+                    </div>
+                  </div>
+                ))
               ) : (
                 <p className="no-birthday">Nenhum exame próximo</p>
               )}
@@ -191,7 +143,6 @@ export default function Dashboard({ setSelectedEmployee }) {
         </div>
 
         {/* 🎂 CARD ANIVERSÁRIOS */}
-
         {hasPermission('dashboard_birthdays') && (
           <div className="birthday-card">
             <div className="birthday-header">

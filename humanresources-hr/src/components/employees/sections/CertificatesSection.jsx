@@ -1,11 +1,13 @@
 import './certificatesSection.css'
 
+import { getStoredArray } from '../../../services/storage'
+
 export default function CertificatesSection({
   form,
   selectedRole,
   handleCheckboxArray
 }) {
-  const certificates = JSON.parse(localStorage.getItem('certificates')) || []
+  const certificates = getStoredArray('certificates')
 
   const requiredCertificates = certificates.filter((certificate) =>
     selectedRole?.requiredCertificates?.includes(certificate.id)

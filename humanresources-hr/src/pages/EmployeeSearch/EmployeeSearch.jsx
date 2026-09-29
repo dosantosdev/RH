@@ -6,9 +6,6 @@ import { hasPermission } from '../../services/permissions'
 import EmployeeList from '../../components/employees/EmployeeList'
 
 export default function EmployeeSearch() {
-  if (!hasPermission('employees_view')) {
-    return <h2>Acesso negado</h2>
-  }
   const [employees, setEmployees] = useState([])
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
@@ -16,6 +13,10 @@ export default function EmployeeSearch() {
   const navigate = useNavigate()
 
   const itemsPerPage = 50
+
+  if (!hasPermission('employees_view')) {
+    return <h2>Acesso negado</h2>
+  }
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('employees')) || []

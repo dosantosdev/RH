@@ -47,9 +47,9 @@ export default function EmployeeForm({
   function handleSubmit(e) {
     e.preventDefault()
 
-    handleSaveEmployee()
+    const saved = handleSaveEmployee()
 
-    if (fileRef.current) {
+    if (saved && fileRef.current) {
       fileRef.current.value = ''
     }
   }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
   createHandleChange,
@@ -7,47 +7,34 @@ import {
   handleDependentChange
 } from '../utils/employeeHelpers'
 
+import { getStoredArray } from '../services/storage'
+
 export default function useEmployeeForm(formData, setFormData) {
-  const form = formData
-
-  const setForm = setFormData
-
   const [roles, setRoles] = useState([])
-
   const [branches, setBranches] = useState([])
 
-  const handleChange = createHandleChange(form, setForm)
+  const handleChange = createHandleChange(formData, setFormData)
 
   const handleCheckboxChange = (e, field) =>
-    handleCheckboxArray(e, field, setForm)
+    handleCheckboxArray(e, field, setFormData)
 
   const handleDependentsChange = (count) =>
-    handleDependents(count, form, setForm)
+    handleDependents(count, formData, setFormData)
 
   const handleDependentFieldChange = (index, field, value) =>
-    handleDependentChange(index, field, value, form, setForm)
+    handleDependentChange(index, field, value, formData, setFormData)
 
   useEffect(() => {
-    const storedRoles = JSON.parse(localStorage.getItem('roles')) || []
-
-    const storedBranches = JSON.parse(localStorage.getItem('branches')) || []
-
-    setRoles(storedRoles)
-
-    setBranches(storedBranches)
+    setRoles(getStoredArray('roles'))
+    setBranches(getStoredArray('branches'))
   }, [])
 
   return {
     roles,
-
     branches,
-
     handleChange,
-
     handleCheckboxChange,
-
     handleDependentsChange,
-
     handleDependentFieldChange
   }
 }

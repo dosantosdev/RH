@@ -1,58 +1,69 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+
 import EmployeeProfileCard from '../../components/employees/EmployeeProfileCard'
+import ConfirmModal from '../../components/ui/ConfirmModal'
+import Toast from '../../components/ui/Toast'
+
+import useToast from '../../hooks/useToast'
+
 import './employeeProfile.css'
+
 import { hasPermission } from '../../services/permissions'
+import { deleteEmployee, updateEmployee, getEmployees } from '../../services/employee'
 
 export default function EmployeeProfile() {
-  if (!hasPermission('employees_view')) {
-    return <h2>Acesso negado</h2>
-  }
   const { id } = useParams()
   const navigate = useNavigate()
 
-  const [employees, setEmployees] = useState(
-    JSON.parse(localStorage.getItem('employees')) || []
-  )
+  const [employees, setEmployees] = useState(getEmployees)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+
+  const { toast, showToast } = useToast()
+
+  if (!hasPermission('employees_view')) {
+    return <h2>Acesso negado</h2>
+  }
 
   const employee = employees.find((emp) => emp.id === Number(id))
 
   function handleUpdate(updatedEmployee) {
-    // 🔒 BLOQUEIA EDIÇÃO
     if (!hasPermission('employees_edit')) {
-      alert('Você não tem permissão para editar funcionários')
+      showToast(
+        'Você não tem permissão para editar funcionários.',
+        'warning'
+      )
 
       return
     }
 
-    const updatedEmployees = employees.map((emp) =>
-      emp.id === updatedEmployee.id ? updatedEmployee : emp
-    )
-
-    localStorage.setItem('employees', JSON.stringify(updatedEmployees))
-  }
-
-  function handleDelete(employeeToDelete) {
-    // 🔒 BLOQUEIA EXCLUSÃO
-    if (!hasPermission('employees_delete')) {
-      alert('Você não tem permissão para excluir funcionários')
-
-      return
-    }
-
-    const confirmDelete = window.confirm(
-      'Tem certeza que deseja excluir este cadastro?'
-    )
-
-    if (!confirmDelete) return
-
-    const updatedEmployees = employees.filter(
-      (emp) => emp.id !== employeeToDelete.id
-    )
-
-    localStorage.setItem('employees', JSON.stringify(updatedEmployees))
+    const updatedEmployees = updateEmployee(updatedEmployee)
 
     setEmployees(updatedEmployees)
+
+    showToast('Funcionário atualizado com sucesso!', 'success')
+  }
+
+  function handleDeleteRequest() {
+    if (!hasPermission('employees_delete')) {
+      showToast(
+        'Você não tem permissão para excluir funcionários.',
+        'warning'
+      )
+
+      return
+    }
+
+    setDeleteOpen(true)
+  }
+
+  function confirmDelete() {
+    const updatedEmployees = deleteEmployee(Number(id))
+
+    setEmployees(updatedEmployees)
+    setDeleteOpen(false)
+
+    showToast('Funcionário excluído com sucesso!', 'success')
 
     navigate('/buscar')
   }
@@ -73,9 +84,19 @@ export default function EmployeeProfile() {
 
       <EmployeeProfileCard
         employee={employee}
-        onDelete={handleDelete}
+        onDelete={handleDeleteRequest}
         onUpdate={handleUpdate}
       />
+
+      <ConfirmModal
+        isOpen={deleteOpen}
+        title="Excluir funcionário"
+        message="Tem certeza que deseja excluir este cadastro?"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteOpen(false)}
+      />
+
+      <Toast show={toast.show} message={toast.message} type={toast.type} />
     </div>
   )
 }

@@ -1,31 +1,32 @@
-// 🧑‍💼 Buscar todos os funcionários
+import { getStoredArray, setStored } from './storage'
+
 export function getEmployees() {
-  return JSON.parse(localStorage.getItem('employees')) || []
+  return getStoredArray('employees')
 }
 
-// ➕ Adicionar funcionário
 export function addEmployee(employee) {
   const employees = getEmployees()
-  employees.push(employee)
-  localStorage.setItem('employees', JSON.stringify(employees))
+  const updatedEmployees = [...employees, employee]
+
+  setStored('employees', updatedEmployees)
+
+  return employee
 }
 
-// 🗑️ Excluir funcionário
 export function deleteEmployee(id) {
-  const employees = getEmployees()
+  const updated = getEmployees().filter((employee) => employee.id !== id)
 
-  const updated = employees.filter((emp) => emp.id !== id)
+  setStored('employees', updated)
 
-  localStorage.setItem('employees', JSON.stringify(updated))
+  return updated
 }
 
-// ✏️ Atualizar funcionário
 export function updateEmployee(updatedEmployee) {
-  const employees = getEmployees()
-
-  const updated = employees.map((emp) =>
-    emp.id === updatedEmployee.id ? updatedEmployee : emp
+  const updated = getEmployees().map((employee) =>
+    employee.id === updatedEmployee.id ? updatedEmployee : employee
   )
 
-  localStorage.setItem('employees', JSON.stringify(updated))
+  setStored('employees', updated)
+
+  return updated
 }

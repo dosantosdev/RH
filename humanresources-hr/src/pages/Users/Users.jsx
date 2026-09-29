@@ -20,11 +20,6 @@ export default function Users() {
     active: true
   }
 
-  // 🔒 BLOQUEIA ACESSO
-  if (!hasPermission('users_view')) {
-    return <h2>Acesso negado</h2>
-  }
-
   const [user, setUser] = useState(initialUser)
 
   const [users, setUsers] = useState([])
@@ -39,6 +34,7 @@ export default function Users() {
 
   const { toast, showToast } = useToast()
 
+
   useEffect(() => {
     const storedUsers = JSON.parse(localStorage.getItem('users')) || []
 
@@ -48,6 +44,11 @@ export default function Users() {
 
     setRoles(storedRoles)
   }, [])
+
+  // 🔒 BLOQUEIA ACESSO À PÁGINA
+  if (!hasPermission('users_view')) {
+    return <h2>Acesso negado</h2>
+  }
 
   const filteredUsers = users.filter((u) =>
     u.name?.toLowerCase().includes(search.toLowerCase())

@@ -14,12 +14,10 @@ export default function Roles() {
     name: '',
     description: '',
     active: true,
+    requiresCnh: false,
+    requiredCnhCategories: [],
+    requiredCertificates: [],
     permissions: []
-  }
-
-  // 🔒 BLOQUEIA ACESSO À PÁGINA
-  if (!hasPermission('roles_view')) {
-    return <h2>Acesso negado</h2>
   }
 
   const [role, setRole] = useState(initialRole)
@@ -34,11 +32,17 @@ export default function Roles() {
 
   const { toast, showToast } = useToast()
 
+
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('roles')) || []
 
     setRoles(stored)
   }, [])
+
+  // 🔒 BLOQUEIA ACESSO À PÁGINA
+  if (!hasPermission('roles_view')) {
+    return <h2>Acesso negado</h2>
+  }
 
   const filteredRoles = roles.filter((role) =>
     role.name?.toLowerCase().includes(search.toLowerCase())

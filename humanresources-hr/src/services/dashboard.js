@@ -1,22 +1,46 @@
-export function getBirthdayEmployees() {
-  const employees = JSON.parse(localStorage.getItem('employees')) || []
+import { getEmployees } from './employee'
+import { addMonths, differenceInDays, parseBrazilianDate } from '../utils/date'
 
-  const currentMonth = new Date().getMonth() + 1
+export function getBirthdayEmployees(date = new Date()) {
+  const currentMonth = date.getMonth() + 1
 
-  return employees
+  return getEmployees()
     .filter((employee) => {
-      if (!employee.birthDate) return false
+      const birthDate = parseBrazilianDate(employee.birthDate)
 
-      const parts = employee.birthDate.split('/')
-
-      const birthMonth = Number(parts[1])
-
-      return birthMonth === currentMonth
+      return birthDate && birthDate.getMonth() + 1 === currentMonth
     })
     .sort((a, b) => {
-      const dayA = Number(a.birthDate.split('/')[0])
-      const dayB = Number(b.birthDate.split('/')[0])
+      const dayA = parseBrazilianDate(a.birthDate)?.getDate() || 0
+      const dayB = parseBrazilianDate(b.birthDate)?.getDate() || 0
 
       return dayA - dayB
     })
+}
+
+export function getPeriodicExamAlerts(
+  date = new Date(),
+  alertWindowInDays = 30
+) {
+  return getEmployees()
+    .map((employee) => {
+      const examDate = parseBrazilianDate(employee.periodicExamDate)
+
+      if (!examDate) return null
+
+      const expirationDate = addMonths(examDate, 6)
+      const daysUntilExpiration = differenceInDays(date, expirationDate)
+
+      if (daysUntilExpiration < 0 || daysUntilExpiration > alertWindowInDays) {
+        return null
+      }
+
+      return {
+        ...employee,
+        examExpirationDate: expirationDate,
+        daysUntilExpiration
+      }
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.daysUntilExpiration - b.daysUntilExpiration)
 }

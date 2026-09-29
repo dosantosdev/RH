@@ -14,3 +14,10 @@ The React Compiler is not enabled on this template because of its impact on dev 
 ## Expanding the ESLint configuration
 
 If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+
+## Estrutura e evolução
+
+A base do projeto foi organizada para separar interface, hooks, serviços, utilitários e dados iniciais. A documentação da estrutura está em `docs/ARCHITECTURE.md`.
+
+As tecnologias planejadas para futuras etapas — TanStack Query, Firebase, Tailwind CSS, Framer Motion, Next.js e Vercel — não foram adicionadas como dependências nesta etapa. A prioridade foi organizar a base atual sem causar uma mudança visual ou arquitetural brusca.

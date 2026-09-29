@@ -25,6 +25,7 @@ export function createHandleChange(form, setForm) {
 
     if (
       name === 'birthDate' ||
+      name === 'periodicExamDate' ||
       name === 'admissionDate' ||
       name === 'dismissalDate' ||
       name === 'cnhDate' ||

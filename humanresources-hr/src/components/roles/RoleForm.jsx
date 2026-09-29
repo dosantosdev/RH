@@ -3,6 +3,7 @@ import './roleForm.css'
 import { permissions } from '../../data/permissions'
 
 import { hasPermission } from '../../services/permissions'
+import { getStoredArray } from '../../services/storage'
 
 export default function RoleForm({
   role,
@@ -10,7 +11,7 @@ export default function RoleForm({
   handleChange,
   handleSubmit
 }) {
-  const certificates = JSON.parse(localStorage.getItem('certificates')) || []
+  const certificates = getStoredArray('certificates')
 
   function handlePermissionChange(permissionKey) {
     const exists = role.permissions.includes(permissionKey)

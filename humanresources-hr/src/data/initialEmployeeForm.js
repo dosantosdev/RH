@@ -78,6 +78,6 @@ export const initialEmployeeForm = {
   cnhFirstLicenseUF: '',
   cnhCategories: [],
   certificates: [],
-  active: false,
+  active: true,
   photo: null
 }

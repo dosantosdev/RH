@@ -399,3 +399,59 @@
 .profile-actions button:hover {
   background: #dfe7ff;
 }
+
+@media (max-width: 1100px) {
+  .dashboard-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .profile-card {
+    grid-column: 1 / -1;
+    grid-row: auto;
+    min-height: 0;
+  }
+
+  .top-dashboard-cards {
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .weather-card,
+  .birthday-card,
+  .exam-card {
+    width: auto;
+  }
+
+  .birthday-card {
+    grid-column: 1;
+    grid-row: auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .dashboard-cards,
+  .top-dashboard-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-card,
+  .top-dashboard-cards,
+  .birthday-card,
+  .weather-card,
+  .exam-card {
+    grid-column: 1;
+  }
+
+  .profile-card {
+    min-height: 0;
+  }
+
+  .profile-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .profile-actions button {
+    width: auto;
+  }
+}
