@@ -1,6 +1,6 @@
 import './documentsSection.css'
 import CnhSection from './CnhSection'
-import FieldTooltip from '../../ui/FieldTooltip'
+import ValidatedField from '../../ui/ValidatedField'
 
 export default function DocumentsSection({
   form,
@@ -25,129 +25,109 @@ export default function DocumentsSection({
       </div>
 
       <div className="rg-grid">
-        {/* CPF */}
-        <div className="field-tooltip-wrapper">
+        <ValidatedField name="cpf" error={errors.cpf}>
+          <input value={form.cpf} onChange={handleChange} placeholder="CPF" />
+        </ValidatedField>
+
+        <ValidatedField name="rg" error={errors.rg}>
+          <input value={form.rg} onChange={handleChange} placeholder="RG" />
+        </ValidatedField>
+
+        <ValidatedField name="rgIssuer" error={errors.rgIssuer}>
           <input
-            className={errors.cpf ? 'field-error' : ''}
-            name="cpf"
-            value={form.cpf}
+            value={form.rgIssuer}
             onChange={handleChange}
-            placeholder="CPF"
+            placeholder="Órgão emissor"
           />
+        </ValidatedField>
 
-          <FieldTooltip message={errors.cpf} visible={Boolean(errors.cpf)} />
-        </div>
-
-        {/* RG */}
-        <div className="field-tooltip-wrapper">
+        <ValidatedField name="rgDate" error={errors.rgDate}>
           <input
-            className={errors.rg ? 'field-error' : ''}
-            name="rg"
-            value={form.rg}
-            onChange={handleChange}
-            placeholder="RG"
-          />
-
-          <FieldTooltip message={errors.rg} visible={Boolean(errors.rg)} />
-        </div>
-
-        {/* ÓRGÃO EMISSOR */}
-        <input
-          name="rgIssuer"
-          value={form.rgIssuer}
-          onChange={handleChange}
-          placeholder="Órgão emissor"
-        />
-
-        {/* DATA RG */}
-        <div className="field-tooltip-wrapper">
-          <input
-            className={errors.rgDate ? 'field-error' : ''}
-            name="rgDate"
             value={form.rgDate}
             onChange={handleChange}
             placeholder="Data RG"
           />
+        </ValidatedField>
 
-          <FieldTooltip
-            message={errors.rgDate}
-            visible={Boolean(errors.rgDate)}
+        <ValidatedField name="rgCity" error={errors.rgCity}>
+          <input
+            value={form.rgCity}
+            onChange={handleChange}
+            placeholder="Município RG"
           />
-        </div>
+        </ValidatedField>
 
-        <input
-          name="rgCity"
-          value={form.rgCity}
-          onChange={handleChange}
-          placeholder="Município RG"
-        />
-
-        <input
-          name="rgState"
-          value={form.rgState}
-          onChange={handleChange}
-          placeholder="UF RG"
-        />
+        <ValidatedField name="rgState" error={errors.rgState}>
+          <input
+            value={form.rgState}
+            onChange={handleChange}
+            placeholder="UF RG"
+          />
+        </ValidatedField>
       </div>
 
       <div className="documents-extra-grid">
-        <input
-          name="ctpsNumber"
-          value={form.ctpsNumber}
-          onChange={handleChange}
-          placeholder="CTPS"
-        />
+        <ValidatedField name="ctpsNumber" error={errors.ctpsNumber}>
+          <input
+            value={form.ctpsNumber}
+            onChange={handleChange}
+            placeholder="CTPS"
+          />
+        </ValidatedField>
 
-        <input
-          name="ctpsSeries"
-          value={form.ctpsSeries}
-          onChange={handleChange}
-          placeholder="Série"
-        />
+        <ValidatedField name="ctpsSeries" error={errors.ctpsSeries}>
+          <input
+            value={form.ctpsSeries}
+            onChange={handleChange}
+            placeholder="Série"
+          />
+        </ValidatedField>
 
-        <input
-          name="ctpsCity"
-          value={form.ctpsCity}
-          onChange={handleChange}
-          placeholder="Município CTPS"
-        />
+        <ValidatedField name="ctpsCity" error={errors.ctpsCity}>
+          <input
+            value={form.ctpsCity}
+            onChange={handleChange}
+            placeholder="Município CTPS"
+          />
+        </ValidatedField>
 
-        <input
-          name="pis"
-          value={form.pis}
-          onChange={handleChange}
-          placeholder="PIS"
-        />
+        <ValidatedField name="pis" error={errors.pis}>
+          <input value={form.pis} onChange={handleChange} placeholder="PIS" />
+        </ValidatedField>
       </div>
 
       <div className="voter-grid">
-        <input
-          name="susCard"
-          value={form.susCard}
-          onChange={handleChange}
-          placeholder="Cartão SUS"
-        />
+        <ValidatedField name="susCard" error={errors.susCard}>
+          <input
+            value={form.susCard}
+            onChange={handleChange}
+            placeholder="Cartão SUS"
+          />
+        </ValidatedField>
 
-        <input
-          name="voterTitle"
-          value={form.voterTitle}
-          onChange={handleChange}
-          placeholder="Título eleitoral"
-        />
+        <ValidatedField name="voterTitle" error={errors.voterTitle}>
+          <input
+            value={form.voterTitle}
+            onChange={handleChange}
+            placeholder="Título eleitoral"
+          />
+        </ValidatedField>
 
-        <input
-          name="voterZone"
-          value={form.voterZone}
-          onChange={handleChange}
-          placeholder="Zona"
-        />
+        <ValidatedField name="voterZone" error={errors.voterZone}>
+          <input
+            value={form.voterZone}
+            onChange={handleChange}
+            placeholder="Zona"
+          />
+        </ValidatedField>
 
-        <input
-          name="voterSection"
-          value={form.voterSection}
-          onChange={handleChange}
-          placeholder="Seção"
-        />
+        <ValidatedField name="voterSection" error={errors.voterSection}>
+          <input
+            value={form.voterSection}
+            onChange={handleChange}
+            placeholder="Seção"
+          />
+        </ValidatedField>
       </div>
 
       <CnhSection

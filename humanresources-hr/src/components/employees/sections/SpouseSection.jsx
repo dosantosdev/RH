@@ -1,6 +1,7 @@
 import './spouseSection.css'
+import ValidatedField from '../../ui/ValidatedField'
 
-export default function SpouseSection({ form, handleChange }) {
+export default function SpouseSection({ form, handleChange, errors = {} }) {
   const showSpouse =
     form.maritalStatus === 'Casado' || form.maritalStatus === 'União estável'
 
@@ -11,97 +12,97 @@ export default function SpouseSection({ form, handleChange }) {
       <h3 className="form-section-title">Dados do cônjuge</h3>
 
       <div className="spouse-grid">
-        {/* LINHA 1 */}
-
-        <input
-          className="field-full"
-          name="spouseName"
-          value={form.spouseName}
-          onChange={handleChange}
-          placeholder="Nome do cônjuge"
-        />
-
-        {/* LINHA 2 */}
+        <ValidatedField name="spouseName" error={errors.spouseName}>
+          <input
+            value={form.spouseName}
+            onChange={handleChange}
+            placeholder="Nome do cônjuge"
+          />
+        </ValidatedField>
 
         <div className="spouse-docs-grid">
-          <select
-            name="spouseGender"
-            value={form.spouseGender}
-            onChange={handleChange}
-          >
-            <option value="">Sexo</option>
+          <ValidatedField name="spouseGender" error={errors.spouseGender}>
+            <select value={form.spouseGender} onChange={handleChange}>
+              <option value="">Sexo</option>
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+            </select>
+          </ValidatedField>
 
-            <option value="Masculino">Masculino</option>
+          <ValidatedField name="spousePhone" error={errors.spousePhone}>
+            <input
+              value={form.spousePhone}
+              onChange={handleChange}
+              placeholder="Telefone"
+            />
+          </ValidatedField>
 
-            <option value="Feminino">Feminino</option>
-          </select>
+          <ValidatedField name="spouseCpf" error={errors.spouseCpf}>
+            <input
+              value={form.spouseCpf}
+              onChange={handleChange}
+              placeholder="CPF"
+            />
+          </ValidatedField>
 
-          <input
-            name="spousePhone"
-            value={form.spousePhone}
-            onChange={handleChange}
-            placeholder="Telefone"
-          />
+          <ValidatedField name="spouseRg" error={errors.spouseRg}>
+            <input
+              value={form.spouseRg}
+              onChange={handleChange}
+              placeholder="RG"
+            />
+          </ValidatedField>
 
-          <input
-            name="spouseCpf"
-            value={form.spouseCpf}
-            onChange={handleChange}
-            placeholder="CPF"
-          />
-
-          <input
-            name="spouseRg"
-            value={form.spouseRg}
-            onChange={handleChange}
-            placeholder="RG"
-          />
-
-          <input
+          <ValidatedField
             name="spouseRgIssuer"
-            value={form.spouseRgIssuer}
-            onChange={handleChange}
-            placeholder="Emissor RG"
-          />
+            error={errors.spouseRgIssuer}
+          >
+            <input
+              value={form.spouseRgIssuer}
+              onChange={handleChange}
+              placeholder="Emissor RG"
+            />
+          </ValidatedField>
 
-          <input
-            name="spouseUf"
-            value={form.spouseUf}
-            onChange={handleChange}
-            placeholder="UF RG"
-          />
+          <ValidatedField name="spouseUf" error={errors.spouseUf}>
+            <input
+              value={form.spouseUf}
+              onChange={handleChange}
+              placeholder="UF RG"
+            />
+          </ValidatedField>
         </div>
 
-        {/* LINHA 3 */}
-
         <div className="spouse-extra-grid">
-          <input
+          <ValidatedField
             name="spouseBirthDate"
-            value={form.spouseBirthDate}
-            onChange={handleChange}
-            placeholder="Nascimento"
-          />
+            error={errors.spouseBirthDate}
+          >
+            <input
+              value={form.spouseBirthDate}
+              onChange={handleChange}
+              placeholder="Nascimento"
+            />
+          </ValidatedField>
 
-          <input
+          <ValidatedField
             name="spouseBirthCity"
-            value={form.spouseBirthCity}
-            onChange={handleChange}
-            placeholder="Cidade nascimento"
-          />
+            error={errors.spouseBirthCity}
+          >
+            <input
+              value={form.spouseBirthCity}
+              onChange={handleChange}
+              placeholder="Cidade nascimento"
+            />
+          </ValidatedField>
 
-          <input
-            name="spouseUf"
-            value={form.spouseUf}
-            onChange={handleChange}
-            placeholder="UF"
-          />
-
-          <input
-            name="marriageDate"
-            value={form.marriageDate}
-            onChange={handleChange}
-            placeholder="Data casamento"
-          />
+          <ValidatedField name="marriageDate" error={errors.marriageDate}>
+            <input
+              value={form.marriageDate}
+              onChange={handleChange}
+              placeholder="Data casamento/união"
+            />
+          </ValidatedField>
         </div>
       </div>
     </div>

@@ -1,6 +1,6 @@
 import './certificatesSection.css'
 import { getStoredArray } from '../../../services/storage'
-import FieldError from './FieldError'
+import FieldTooltip from '../../ui/FieldTooltip'
 
 export default function CertificatesSection({
   form,
@@ -28,6 +28,7 @@ export default function CertificatesSection({
       {requiresCnh && (
         <div className="required-cnh">
           <span className="required-label">CNH obrigatória:</span>
+
           <div className="required-categories">
             {requiredCategories.map((category) => (
               <span key={category} className="category-badge">
@@ -39,19 +40,31 @@ export default function CertificatesSection({
       )}
 
       {requiredCertificates.length > 0 && (
-        <div className={errors.certificates ? 'certificates-group field-error-box' : 'certificates-group'}>
+        <div
+          className={
+            errors.certificates
+              ? 'certificates-group field-error-box'
+              : 'certificates-group'
+          }
+        >
           {requiredCertificates.map((certificate) => (
             <label key={certificate.id}>
               <input
                 type="checkbox"
                 value={certificate.name}
                 checked={form.certificates.includes(certificate.name)}
-                onChange={(e) => handleCheckboxArray(e, 'certificates')}
+                onChange={(e) =>
+                  handleCheckboxArray(e, 'certificates')
+                }
               />
               {certificate.name}
             </label>
           ))}
-          <FieldError message={errors.certificates} />
+
+          <FieldTooltip
+            message={errors.certificates}
+            visible={Boolean(errors.certificates)}
+          />
         </div>
       )}
     </div>

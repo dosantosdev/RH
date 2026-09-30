@@ -56,7 +56,6 @@ export default function Navbar() {
 
           <div className="dropdown-content">
             <Link to="#">Horas</Link>
-
             <Link to="#">Folha</Link>
           </div>
         </div>
@@ -68,9 +67,7 @@ export default function Navbar() {
 
           <div className="dropdown-content">
             <Link to="#">Checklist</Link>
-
             <Link to="#">Exames</Link>
-
             <Link to="#">Quadro de Funcionários</Link>
           </div>
         </div>
@@ -82,11 +79,8 @@ export default function Navbar() {
 
           <div className="dropdown-content">
             <Link to="#">Currículo</Link>
-
             <Link to="#">Pré-cadastro</Link>
-
             <Link to="#">Vagas</Link>
-
             <Link to="#">Entrevistas</Link>
           </div>
         </div>
@@ -98,12 +92,18 @@ export default function Navbar() {
 
           <div className="dropdown-content">
             <Link to="#">Busca</Link>
-
             <Link to="#">Docs</Link>
-
             <Link to="#">Currículos</Link>
           </div>
         </div>
+
+        {/* CONFIGURAÇÕES */}
+
+        {hasPermission('system_settings') && (
+          <Link to="/configuracoes" className="nav-link">
+            Configurações
+          </Link>
+        )}
       </div>
 
       <button className="logout-btn primary-btn" onClick={handleLogout}>

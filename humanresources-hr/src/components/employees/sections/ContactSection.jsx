@@ -1,17 +1,15 @@
 import './contactSection.css'
+import ValidatedField from '../../ui/ValidatedField'
 
-export default function ContactSection({ form, handleChange }) {
+export default function ContactSection({ form, handleChange, errors = {} }) {
   return (
     <div className="form-section">
       <h3 className="form-section-title">Contato</h3>
 
       <div className="contact-grid">
-        <input
-          name="phone"
-          value={form.phone}
-          onChange={handleChange}
-          placeholder="Celular"
-        />
+        <ValidatedField name="phone" error={errors.phone}>
+          <input value={form.phone} onChange={handleChange} placeholder="Celular" />
+        </ValidatedField>
 
         <input
           name="carrier"
@@ -20,12 +18,16 @@ export default function ContactSection({ form, handleChange }) {
           placeholder="Operadora"
         />
 
-        <input
+        <ValidatedField
           name="secondaryPhone"
-          value={form.secondaryPhone}
-          onChange={handleChange}
-          placeholder="Celular complementar"
-        />
+          error={errors.secondaryPhone}
+        >
+          <input
+            value={form.secondaryPhone}
+            onChange={handleChange}
+            placeholder="Celular complementar"
+          />
+        </ValidatedField>
 
         <input
           name="secondaryCarrier"
@@ -33,12 +35,10 @@ export default function ContactSection({ form, handleChange }) {
           onChange={handleChange}
           placeholder="Operadora 2"
         />
-        <input
-          name="email"
-          value={form.email}
-          onChange={handleChange}
-          placeholder="E-mail"
-        />
+
+        <ValidatedField name="email" error={errors.email}>
+          <input value={form.email} onChange={handleChange} placeholder="E-mail" />
+        </ValidatedField>
       </div>
     </div>
   )

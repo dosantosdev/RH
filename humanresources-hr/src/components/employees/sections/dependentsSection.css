@@ -1,24 +1,22 @@
-.dependents-controls {
+.dependents-control {
   display: flex;
-
-  align-items: center;
-
+  align-items: flex-start;
   gap: 16px;
-
   margin-bottom: 18px;
+}
+
+.dependents-control > .field-tooltip-wrapper {
+  width: 180px;
 }
 
 .dependent-grid {
   display: grid;
-
   grid-template-columns:
     1fr
     180px
     180px
     180px;
-
   gap: 12px;
-
   margin-bottom: 16px;
 }
 

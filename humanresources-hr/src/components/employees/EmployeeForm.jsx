@@ -16,7 +16,7 @@ import PhysicalSection from './sections/PhysicalSection'
 import TransportSection from './sections/TransportSection'
 import CertificatesSection from './sections/CertificatesSection'
 
-import useEmployeeForm from '../../hooks/useEmployeeForm'
+import useEmployeeForm from '../../Hooks/useEmployeeForm'
 
 export default function EmployeeForm({
   formData,
@@ -28,7 +28,6 @@ export default function EmployeeForm({
   validationAttempt = 0
 }) {
   const fileRef = useRef()
-
   const form = formData
 
   const {
@@ -40,32 +39,51 @@ export default function EmployeeForm({
     handleDependentFieldChange
   } = useEmployeeForm(formData, setFormData)
 
-  const selectedRole = roles.find((role) => role.id === Number(form.roleId))
+  const selectedRole = roles.find(
+    (role) => role.id === Number(form.roleId)
+  )
+
+  function clearFieldError(fieldName) {
+    if (!fieldName) return
+
+    setFieldErrors((prev) => {
+      const updated = { ...prev }
+
+      Object.keys(updated).forEach((key) => {
+        if (
+          key === fieldName ||
+          key.startsWith(`${fieldName}.`) ||
+          (fieldName === 'maritalStatus' && key.startsWith('spouse')) ||
+          (fieldName === 'hasDependents' && key.startsWith('dependents'))
+        ) {
+          delete updated[key]
+        }
+      })
+
+      return updated
+    })
+  }
 
   function handleFieldChange(e) {
     const fieldName = e.target.name
 
     handleChange(e)
-
-    if (fieldErrors[fieldName]) {
-      setFieldErrors((prev) => {
-        const updated = { ...prev }
-        delete updated[fieldName]
-        return updated
-      })
-    }
+    clearFieldError(fieldName)
   }
 
   function handleFieldCheckboxChange(e, field) {
     handleCheckboxChange(e, field)
+    clearFieldError(field)
+  }
 
-    if (fieldErrors[field]) {
-      setFieldErrors((prev) => {
-        const updated = { ...prev }
-        delete updated[field]
-        return updated
-      })
-    }
+  function handleFieldDependentChange(index, field, value) {
+    handleDependentFieldChange(index, field, value)
+    clearFieldError(`dependents[${index}].${field}`)
+  }
+
+  function handleFieldDependentsChange(value) {
+    handleDependentsChange(value)
+    clearFieldError('dependentsCount')
   }
 
   function handleSubmit(e) {
@@ -78,8 +96,6 @@ export default function EmployeeForm({
     }
   }
 
-  // O foco/rolagem acontece somente quando uma nova tentativa de envio é feita.
-  // Assim, digitar em um campo inválido não faz a página pular para outro campo.
   useEffect(() => {
     if (!validationAttempt) return
 
@@ -87,7 +103,9 @@ export default function EmployeeForm({
 
     if (!firstError) return
 
-    const field = document.querySelector(`[name="${firstError}"]`)
+    const field = document.querySelector(
+      `[data-error-field="${firstError}"]`
+    )
 
     if (!field) return
 
@@ -97,9 +115,13 @@ export default function EmployeeForm({
     })
 
     setTimeout(() => {
-      field.focus({ preventScroll: true })
+      const focusable = field.querySelector(
+        'input, select, textarea, button'
+      )
+
+      focusable?.focus({ preventScroll: true })
     }, 350)
-  }, [validationAttempt])
+  }, [validationAttempt, fieldErrors])
 
   return (
     <form className="form-container" onSubmit={handleSubmit}>
@@ -119,9 +141,16 @@ export default function EmployeeForm({
         errors={fieldErrors}
       />
 
-      <PhysicalSection form={form} handleChange={handleFieldChange} />
+      <PhysicalSection
+        form={form}
+        handleChange={handleFieldChange}
+      />
 
-      <ContactSection form={form} handleChange={handleFieldChange} />
+      <ContactSection
+        form={form}
+        handleChange={handleFieldChange}
+        errors={fieldErrors}
+      />
 
       <DocumentsSection
         form={form}
@@ -130,16 +159,36 @@ export default function EmployeeForm({
         errors={fieldErrors}
       />
 
-      <AddressSection form={form} handleChange={handleFieldChange} />
-      <BankingSection form={form} handleChange={handleFieldChange} />
-      <TransportSection form={form} handleChange={handleFieldChange} />
-      <SpouseSection form={form} handleChange={handleFieldChange} />
+      <AddressSection
+        form={form}
+        handleChange={handleFieldChange}
+        errors={fieldErrors}
+      />
+
+      <BankingSection
+        form={form}
+        handleChange={handleFieldChange}
+        errors={fieldErrors}
+      />
+
+      <TransportSection
+        form={form}
+        handleChange={handleFieldChange}
+        errors={fieldErrors}
+      />
+
+      <SpouseSection
+        form={form}
+        handleChange={handleFieldChange}
+        errors={fieldErrors}
+      />
 
       <DependentsSection
         form={form}
         handleChange={handleFieldChange}
-        handleDependents={handleDependentsChange}
-        handleDependentChange={handleDependentFieldChange}
+        handleDependents={handleFieldDependentsChange}
+        handleDependentChange={handleFieldDependentChange}
+        errors={fieldErrors}
       />
 
       <CertificatesSection

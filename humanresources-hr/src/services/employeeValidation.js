@@ -1,4 +1,5 @@
 import { getStoredArray } from './storage'
+import { isFieldRequired } from './requiredFields'
 import { parseBrazilianDate } from '../utils/date'
 
 function normalizeText(value) {
@@ -12,20 +13,13 @@ function digitsOnly(value) {
 }
 
 function createError(field, message) {
-  return {
-    field,
-    message
-  }
+  return { field, message }
 }
 
 function isValidCPF(value) {
   const cpf = digitsOnly(value)
 
-  if (cpf.length !== 11) {
-    return false
-  }
-
-  if (/^(\d)\1{10}$/.test(cpf)) {
+  if (cpf.length !== 11 || /^(\d)\1{10}$/.test(cpf)) {
     return false
   }
 
@@ -37,13 +31,8 @@ function isValidCPF(value) {
 
   let remainder = (sum * 10) % 11
 
-  if (remainder === 10) {
-    remainder = 0
-  }
-
-  if (remainder !== Number(cpf[9])) {
-    return false
-  }
+  if (remainder === 10) remainder = 0
+  if (remainder !== Number(cpf[9])) return false
 
   sum = 0
 
@@ -53,30 +42,21 @@ function isValidCPF(value) {
 
   remainder = (sum * 10) % 11
 
-  if (remainder === 10) {
-    remainder = 0
-  }
+  if (remainder === 10) remainder = 0
 
   return remainder === Number(cpf[10])
 }
 
 function isValidDate(value) {
-  if (!value) {
-    return false
-  }
-
-  return Boolean(parseBrazilianDate(value))
+  return Boolean(value && parseBrazilianDate(value))
 }
 
 function isFutureDate(value) {
   const date = parseBrazilianDate(value)
 
-  if (!date) {
-    return false
-  }
+  if (!date) return false
 
   const today = new Date()
-
   today.setHours(0, 0, 0, 0)
   date.setHours(0, 0, 0, 0)
 
@@ -87,14 +67,38 @@ function isBeforeDate(firstValue, secondValue) {
   const firstDate = parseBrazilianDate(firstValue)
   const secondDate = parseBrazilianDate(secondValue)
 
-  if (!firstDate || !secondDate) {
-    return false
-  }
+  if (!firstDate || !secondDate) return false
 
   firstDate.setHours(0, 0, 0, 0)
   secondDate.setHours(0, 0, 0, 0)
 
   return firstDate < secondDate
+}
+
+function isEmpty(value) {
+  if (Array.isArray(value)) {
+    return value.length === 0
+  }
+
+  return !String(value ?? '').trim()
+}
+
+function validateRequiredField(errors, section, field, value, message) {
+  if (isFieldRequired(section, field) && isEmpty(value)) {
+    errors.push(createError(field, message))
+  }
+}
+
+function validateConditionalRequiredField(
+  errors,
+  section,
+  field,
+  value,
+  message
+) {
+  if (isFieldRequired(section, field) && isEmpty(value)) {
+    errors.push(createError(field, message))
+  }
 }
 
 export function getSelectedRole(formData, roles = getStoredArray('roles')) {
@@ -120,21 +124,79 @@ export function validateEmployee(
   // DADOS PESSOAIS
   // ==============================
 
-  if (!normalizeText(formData.name)) {
-    errors.push(createError('name', 'O nome completo é obrigatório.'))
-  }
+  validateRequiredField(
+    errors,
+    'personal',
+    'name',
+    formData.name,
+    'O nome completo é obrigatório.'
+  )
 
-  if (!formData.cpf) {
-    errors.push(createError('cpf', 'O CPF é obrigatório.'))
-  } else if (!isValidCPF(formData.cpf)) {
+  validateRequiredField(
+    errors,
+    'personal',
+    'cpf',
+    formData.cpf,
+    'O CPF é obrigatório.'
+  )
+
+  validateRequiredField(
+    errors,
+    'personal',
+    'birthDate',
+    formData.birthDate,
+    'A data de nascimento é obrigatória.'
+  )
+
+  validateRequiredField(
+    errors,
+    'personal',
+    'gender',
+    formData.gender,
+    'O sexo é obrigatório.'
+  )
+
+  validateRequiredField(
+    errors,
+    'personal',
+    'maritalStatus',
+    formData.maritalStatus,
+    'O estado civil é obrigatório.'
+  )
+
+  validateRequiredField(
+    errors,
+    'personal',
+    'education',
+    formData.education,
+    'A escolaridade é obrigatória.'
+  )
+
+  validateRequiredField(
+    errors,
+    'personal',
+    'motherName',
+    formData.motherName,
+    'O nome da mãe é obrigatório.'
+  )
+
+  validateRequiredField(
+    errors,
+    'personal',
+    'fatherName',
+    formData.fatherName,
+    'O nome do pai é obrigatório.'
+  )
+
+  if (formData.cpf && !isValidCPF(formData.cpf)) {
     errors.push(createError('cpf', 'Informe um CPF válido.'))
   }
 
-  if (!formData.birthDate) {
-    errors.push(createError('birthDate', 'A data de nascimento é obrigatória.'))
-  } else if (!isValidDate(formData.birthDate)) {
+  if (formData.birthDate && !isValidDate(formData.birthDate)) {
     errors.push(createError('birthDate', 'A data de nascimento é inválida.'))
-  } else if (isFutureDate(formData.birthDate)) {
+  }
+
+  if (formData.birthDate && isFutureDate(formData.birthDate)) {
     errors.push(
       createError('birthDate', 'A data de nascimento não pode ser futura.')
     )
@@ -144,9 +206,25 @@ export function validateEmployee(
   // DOCUMENTAÇÃO
   // ==============================
 
-  if (!formData.foreigner && !formData.rg) {
-    errors.push(createError('rg', 'O RG é obrigatório.'))
-  }
+  const documentFields = [
+    ['rg', formData.rg, 'O RG é obrigatório.'],
+    ['rgIssuer', formData.rgIssuer, 'O órgão emissor do RG é obrigatório.'],
+    ['rgDate', formData.rgDate, 'A data de emissão do RG é obrigatória.'],
+    ['rgCity', formData.rgCity, 'O município do RG é obrigatório.'],
+    ['rgState', formData.rgState, 'A UF do RG é obrigatória.'],
+    ['ctpsNumber', formData.ctpsNumber, 'A CTPS é obrigatória.'],
+    ['ctpsSeries', formData.ctpsSeries, 'A série da CTPS é obrigatória.'],
+    ['ctpsCity', formData.ctpsCity, 'O município da CTPS é obrigatório.'],
+    ['pis', formData.pis, 'O PIS é obrigatório.'],
+    ['susCard', formData.susCard, 'O Cartão SUS é obrigatório.'],
+    ['voterTitle', formData.voterTitle, 'O título eleitoral é obrigatório.'],
+    ['voterZone', formData.voterZone, 'A zona eleitoral é obrigatória.'],
+    ['voterSection', formData.voterSection, 'A seção eleitoral é obrigatória.']
+  ]
+
+  documentFields.forEach(([field, value, message]) => {
+    validateRequiredField(errors, 'documents', field, value, message)
+  })
 
   if (formData.rgDate && !isValidDate(formData.rgDate)) {
     errors.push(createError('rgDate', 'A data de emissão do RG é inválida.'))
@@ -162,23 +240,27 @@ export function validateEmployee(
   // VÍNCULO PROFISSIONAL
   // ==============================
 
-  if (!formData.roleId) {
-    errors.push(createError('roleId', 'Selecione o cargo do funcionário.'))
-  }
+  const employmentFields = [
+    ['roleId', formData.roleId, 'Selecione o cargo do funcionário.'],
+    ['branchId', formData.branchId, 'Selecione a filial do funcionário.'],
+    ['registration', formData.registration, 'A matrícula é obrigatória.'],
+    [
+      'admissionDate',
+      formData.admissionDate,
+      'A data de admissão é obrigatória.'
+    ],
+    [
+      'periodicExamDate',
+      formData.periodicExamDate,
+      'A data do exame periódico é obrigatória.'
+    ]
+  ]
 
-  if (!formData.branchId) {
-    errors.push(createError('branchId', 'Selecione a filial do funcionário.'))
-  }
+  employmentFields.forEach(([field, value, message]) => {
+    validateRequiredField(errors, 'employment', field, value, message)
+  })
 
-  // ==============================
-  // DATA DE ADMISSÃO
-  // ==============================
-
-  if (!formData.admissionDate) {
-    errors.push(
-      createError('admissionDate', 'A data de admissão é obrigatória.')
-    )
-  } else if (!isValidDate(formData.admissionDate)) {
+  if (formData.admissionDate && !isValidDate(formData.admissionDate)) {
     errors.push(createError('admissionDate', 'A data de admissão é inválida.'))
   }
 
@@ -216,8 +298,6 @@ export function validateEmployee(
       )
     }
   } else if (formData.dismissalDate) {
-    // Se o funcionário estiver ativo e, por algum motivo,
-    // existir uma data demissional preenchida, ainda validamos a data.
     if (!isValidDate(formData.dismissalDate)) {
       errors.push(
         createError('dismissalDate', 'A data de desligamento é inválida.')
@@ -235,20 +315,14 @@ export function validateEmployee(
     }
   }
 
-  // ==============================
-  // EXAME PERIÓDICO
-  // ==============================
-
-  if (formData.periodicExamDate) {
-    if (!isValidDate(formData.periodicExamDate)) {
-      errors.push(
-        createError('periodicExamDate', 'A data do exame periódico é inválida.')
-      )
-    }
+  if (formData.periodicExamDate && !isValidDate(formData.periodicExamDate)) {
+    errors.push(
+      createError('periodicExamDate', 'A data do exame periódico é inválida.')
+    )
   }
 
   // ==============================
-  // CNH
+  // CNH — VINCULADA AO CARGO
   // ==============================
 
   const role = getSelectedRole(formData, roles)
@@ -297,7 +371,7 @@ export function validateEmployee(
   }
 
   // ==============================
-  // CERTIFICADOS
+  // CERTIFICADOS — VINCULADOS AO CARGO
   // ==============================
 
   const requiredCertificates = getRequiredCertificates(role)
@@ -318,13 +392,164 @@ export function validateEmployee(
   }
 
   // ==============================
+  // CÔNJUGE — CONDICIONAL
+  // Casado ou união estável ativa esta seção.
+  // Os campos marcados como obrigatórios na configuração
+  // passam a ser validados somente quando a seção estiver ativa.
+  // ==============================
+
+  const hasSpouse =
+    formData.maritalStatus === 'Casado' ||
+    formData.maritalStatus === 'União estável'
+
+  if (hasSpouse) {
+    const spouseFields = [
+      ['spouseName', formData.spouseName, 'O nome do cônjuge é obrigatório.'],
+      ['spouseGender', formData.spouseGender, 'O sexo do cônjuge é obrigatório.'],
+      [
+        'spousePhone',
+        formData.spousePhone,
+        'O telefone do cônjuge é obrigatório.'
+      ],
+      ['spouseCpf', formData.spouseCpf, 'O CPF do cônjuge é obrigatório.'],
+      ['spouseRg', formData.spouseRg, 'O RG do cônjuge é obrigatório.'],
+      [
+        'spouseRgIssuer',
+        formData.spouseRgIssuer,
+        'O emissor do RG do cônjuge é obrigatório.'
+      ],
+      ['spouseUf', formData.spouseUf, 'A UF do RG do cônjuge é obrigatória.'],
+      [
+        'spouseBirthDate',
+        formData.spouseBirthDate,
+        'A data de nascimento do cônjuge é obrigatória.'
+      ],
+      [
+        'spouseBirthCity',
+        formData.spouseBirthCity,
+        'A cidade de nascimento do cônjuge é obrigatória.'
+      ],
+      [
+        'marriageDate',
+        formData.marriageDate,
+        'A data do casamento/união é obrigatória.'
+      ]
+    ]
+
+    spouseFields.forEach(([field, value, message]) => {
+      validateConditionalRequiredField(
+        errors,
+        'spouse',
+        field,
+        value,
+        message
+      )
+    })
+
+    if (formData.spouseCpf && !isValidCPF(formData.spouseCpf)) {
+      errors.push(createError('spouseCpf', 'Informe um CPF válido para o cônjuge.'))
+    }
+
+    if (
+      formData.spouseBirthDate &&
+      !isValidDate(formData.spouseBirthDate)
+    ) {
+      errors.push(
+        createError(
+          'spouseBirthDate',
+          'A data de nascimento do cônjuge é inválida.'
+        )
+      )
+    }
+
+    if (formData.marriageDate && !isValidDate(formData.marriageDate)) {
+      errors.push(
+        createError(
+          'marriageDate',
+          'A data do casamento/união é inválida.'
+        )
+      )
+    }
+  }
+
+  // ==============================
+  // DEPENDENTES — CONDICIONAL
+  // ==============================
+
+  if (formData.hasDependents) {
+    const count = Number(formData.dependentsCount)
+
+    if (!count || count < 1) {
+      errors.push(
+        createError(
+          'dependentsCount',
+          'Informe a quantidade de dependentes.'
+        )
+      )
+    }
+
+    const dependents = formData.dependents || []
+
+    if (count > 0 && dependents.length !== count) {
+      errors.push(
+        createError(
+          'dependentsCount',
+          'A quantidade de dependentes não corresponde aos dados preenchidos.'
+        )
+      )
+    }
+
+    dependents.forEach((dependent, index) => {
+      const dependentFields = [
+        ['name', dependent.name, 'O nome do dependente é obrigatório.'],
+        ['cpf', dependent.cpf, 'O CPF do dependente é obrigatório.'],
+        [
+          'birthDate',
+          dependent.birthDate,
+          'A data de nascimento do dependente é obrigatória.'
+        ],
+        ['rg', dependent.rg, 'O RG do dependente é obrigatório.']
+      ]
+
+      dependentFields.forEach(([field, value, message]) => {
+        const errorField = `dependents[${index}].${field}`
+
+        if (isFieldRequired('dependents', field) && isEmpty(value)) {
+          errors.push(createError(errorField, message))
+        }
+      })
+
+      if (dependent.cpf && !isValidCPF(dependent.cpf)) {
+        errors.push(
+          createError(
+            `dependents[${index}].cpf`,
+            'Informe um CPF válido para o dependente.'
+          )
+        )
+      }
+
+      if (dependent.birthDate && !isValidDate(dependent.birthDate)) {
+        errors.push(
+          createError(
+            `dependents[${index}].birthDate`,
+            'A data de nascimento do dependente é inválida.'
+          )
+        )
+      }
+    })
+  }
+
+  // ==============================
   // DUPLICIDADE
   // ==============================
 
   const currentEmployeeId = formData.id
 
   const duplicate = employees.find((employee) => {
-    if (currentEmployeeId !== undefined && employee.id === currentEmployeeId) {
+    if (
+      currentEmployeeId !== undefined &&
+      employee.id === currentEmployeeId
+    ) {
       return false
     }
 

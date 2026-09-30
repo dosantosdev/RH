@@ -1,88 +1,76 @@
 import './addressSection.css'
+import ValidatedField from '../../ui/ValidatedField'
 
-export default function AddressSection({ form, handleChange }) {
+export default function AddressSection({ form, handleChange, errors = {} }) {
   return (
     <div className="form-section">
       <h3 className="form-section-title">Endereço</h3>
 
       <div className="address-grid">
-        <input
-          name="cep"
-          value={form.cep}
-          onChange={handleChange}
-          placeholder="CEP"
-        />
+        <ValidatedField name="cep" error={errors.cep}>
+          <input value={form.cep} onChange={handleChange} placeholder="CEP" />
+        </ValidatedField>
 
-        <input
-          className="street-field"
+        <ValidatedField
           name="street"
-          value={form.street}
-          onChange={handleChange}
-          placeholder="Rua"
-        />
-
-        <input
-          name="number"
-          value={form.number}
-          onChange={handleChange}
-          placeholder="Número"
-        />
-
-        <input
-          name="complement"
-          value={form.complement}
-          onChange={handleChange}
-          placeholder="Complemento"
-        />
-
-        <input
-          name="district"
-          value={form.district}
-          onChange={handleChange}
-          placeholder="Bairro"
-        />
-
-        <input
-          name="city"
-          value={form.city}
-          onChange={handleChange}
-          placeholder="Cidade"
-        />
-
-        <input
-          name="state"
-          value={form.state}
-          onChange={handleChange}
-          placeholder="Estado"
-        />
-
-        <input
-          name="country"
-          value={form.country}
-          onChange={handleChange}
-          placeholder="País"
-        />
-
-        <select
-          name="propertyType"
-          value={form.propertyType}
-          onChange={handleChange}
+          error={errors.street}
+          inputClassName="street-field"
         >
-          <option value="">Tipo propriedade</option>
+          <input value={form.street} onChange={handleChange} placeholder="Rua" />
+        </ValidatedField>
 
-          <option value="Própria">Própria</option>
+        <ValidatedField name="number" error={errors.number}>
+          <input
+            value={form.number}
+            onChange={handleChange}
+            placeholder="Número"
+          />
+        </ValidatedField>
 
-          <option value="Alugada">Alugada</option>
+        <ValidatedField name="complement" error={errors.complement}>
+          <input
+            value={form.complement}
+            onChange={handleChange}
+            placeholder="Complemento"
+          />
+        </ValidatedField>
 
-          <option value="Cedida">Cedida</option>
-        </select>
+        <ValidatedField name="district" error={errors.district}>
+          <input
+            value={form.district}
+            onChange={handleChange}
+            placeholder="Bairro"
+          />
+        </ValidatedField>
 
-        <input
-          name="livingSince"
-          value={form.livingSince}
-          onChange={handleChange}
-          placeholder="Reside desde"
-        />
+        <ValidatedField name="city" error={errors.city}>
+          <input value={form.city} onChange={handleChange} placeholder="Cidade" />
+        </ValidatedField>
+
+        <ValidatedField name="state" error={errors.state}>
+          <input value={form.state} onChange={handleChange} placeholder="Estado" />
+        </ValidatedField>
+
+        <ValidatedField name="country" error={errors.country}>
+          <input value={form.country} onChange={handleChange} placeholder="País" />
+        </ValidatedField>
+
+        <ValidatedField name="propertyType" error={errors.propertyType}>
+          <select value={form.propertyType} onChange={handleChange}>
+            <option value="">Tipo propriedade</option>
+            <option value="Própria">Própria</option>
+            <option value="Alugada">Alugada</option>
+            <option value="Cedida">Cedida</option>
+          </select>
+        </ValidatedField>
+
+        <ValidatedField name="livingSince" error={errors.livingSince}>
+          <input
+            value={form.livingSince}
+            onChange={handleChange}
+            placeholder="Reside desde"
+          />
+        </ValidatedField>
       </div>
     </div>
   )

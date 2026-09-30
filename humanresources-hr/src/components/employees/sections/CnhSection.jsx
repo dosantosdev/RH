@@ -1,5 +1,5 @@
 import './cnhSection.css'
-import FieldError from './FieldError'
+import FieldTooltip from '../../ui/FieldTooltip'
 
 export default function CnhSection({
   form,
@@ -10,7 +10,8 @@ export default function CnhSection({
   return (
     <div className="cnh-section">
       <div className="cnh-grid">
-        <div>
+        {/* CNH */}
+        <div className="field-tooltip-wrapper">
           <input
             className={errors.cnhNumber ? 'field-error' : ''}
             name="cnhNumber"
@@ -18,12 +19,31 @@ export default function CnhSection({
             onChange={handleChange}
             placeholder="CNH"
           />
-          <FieldError message={errors.cnhNumber} />
+
+          <FieldTooltip
+            message={errors.cnhNumber}
+            visible={Boolean(errors.cnhNumber)}
+          />
         </div>
 
-        <input name="cnhDate" value={form.cnhDate} onChange={handleChange} placeholder="1ª habilitação" />
+        {/* 1ª HABILITAÇÃO */}
+        <div className="field-tooltip-wrapper">
+          <input
+            className={errors.cnhDate ? 'field-error' : ''}
+            name="cnhDate"
+            value={form.cnhDate}
+            onChange={handleChange}
+            placeholder="1ª habilitação"
+          />
 
-        <div>
+          <FieldTooltip
+            message={errors.cnhDate}
+            visible={Boolean(errors.cnhDate)}
+          />
+        </div>
+
+        {/* VALIDADE */}
+        <div className="field-tooltip-wrapper">
           <input
             className={errors.cnhValidity ? 'field-error' : ''}
             name="cnhValidity"
@@ -31,14 +51,54 @@ export default function CnhSection({
             onChange={handleChange}
             placeholder="Validade"
           />
-          <FieldError message={errors.cnhValidity} />
+
+          <FieldTooltip
+            message={errors.cnhValidity}
+            visible={Boolean(errors.cnhValidity)}
+          />
         </div>
 
-        <input name="cnhCity" value={form.cnhCity} onChange={handleChange} placeholder="Município CNH" />
-        <input name="cnhFirstLicenseUF" value={form.cnhFirstLicenseUF} onChange={handleChange} placeholder="UF 1ª habilitação" />
+        {/* MUNICÍPIO CNH */}
+        <div className="field-tooltip-wrapper">
+          <input
+            className={errors.cnhCity ? 'field-error' : ''}
+            name="cnhCity"
+            value={form.cnhCity}
+            onChange={handleChange}
+            placeholder="Município CNH"
+          />
+
+          <FieldTooltip
+            message={errors.cnhCity}
+            visible={Boolean(errors.cnhCity)}
+          />
+        </div>
+
+        {/* UF 1ª HABILITAÇÃO */}
+        <div className="field-tooltip-wrapper">
+          <input
+            className={errors.cnhFirstLicenseUF ? 'field-error' : ''}
+            name="cnhFirstLicenseUF"
+            value={form.cnhFirstLicenseUF}
+            onChange={handleChange}
+            placeholder="UF 1ª habilitação"
+          />
+
+          <FieldTooltip
+            message={errors.cnhFirstLicenseUF}
+            visible={Boolean(errors.cnhFirstLicenseUF)}
+          />
+        </div>
       </div>
 
-      <div className={errors.cnhCategories ? 'cnh-categories field-error-box' : 'cnh-categories'}>
+      {/* CATEGORIAS */}
+      <div
+        className={
+          errors.cnhCategories
+            ? 'cnh-categories field-error-box'
+            : 'cnh-categories'
+        }
+      >
         {['A', 'B', 'C', 'D', 'E'].map((cat) => (
           <label key={cat}>
             <input
@@ -47,10 +107,15 @@ export default function CnhSection({
               checked={form.cnhCategories.includes(cat)}
               onChange={(e) => handleCheckboxArray(e, 'cnhCategories')}
             />
+
             {cat}
           </label>
         ))}
-        <FieldError message={errors.cnhCategories} />
+
+        <FieldTooltip
+          message={errors.cnhCategories}
+          visible={Boolean(errors.cnhCategories)}
+        />
       </div>
     </div>
   )

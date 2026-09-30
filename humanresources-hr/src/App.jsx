@@ -10,6 +10,7 @@ import EmployeeCreate from './pages/EmployeeCreate/EmployeeCreate'
 import Roles from './pages/Roles/Roles'
 import Users from './pages/Users/Users'
 import Branches from './pages/branches/Branches'
+import Settings from './pages/Settings/Settings'
 
 import Header from './components/layout/Header'
 
@@ -27,6 +28,7 @@ function App() {
   return (
     <Routes>
       {/* LOGIN */}
+
       <Route path="/" element={<Login />} />
 
       {/* ROTAS PROTEGIDAS */}
@@ -41,6 +43,7 @@ function App() {
           </ProtectedRoute>
         }
       />
+
       <Route
         path="/buscar"
         element={
@@ -102,6 +105,19 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <Branches />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* CONFIGURAÇÕES */}
+
+      <Route
+        path="/configuracoes"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Settings />
             </Layout>
           </ProtectedRoute>
         }

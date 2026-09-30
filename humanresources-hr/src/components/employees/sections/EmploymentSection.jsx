@@ -1,5 +1,5 @@
 import './employmentSection.css'
-import FieldTooltip from '../../ui/FieldTooltip'
+import ValidatedField from '../../ui/ValidatedField'
 
 export default function EmploymentSection({
   form,
@@ -20,7 +20,6 @@ export default function EmploymentSection({
             checked={form.active}
             onChange={handleChange}
           />
-
           <span>
             {form.active ? 'Funcionário ativo' : 'Funcionário inativo'}
           </span>
@@ -28,15 +27,9 @@ export default function EmploymentSection({
       </div>
 
       <div className="employment-grid">
-        <div className="field-tooltip-wrapper">
-          <select
-            className={errors.roleId ? 'field-error' : ''}
-            name="roleId"
-            value={form.roleId}
-            onChange={handleChange}
-          >
+        <ValidatedField name="roleId" error={errors.roleId}>
+          <select value={form.roleId} onChange={handleChange}>
             <option value="">Cargo</option>
-
             {roles
               .filter((role) => role.active)
               .map((role) => (
@@ -45,22 +38,11 @@ export default function EmploymentSection({
                 </option>
               ))}
           </select>
+        </ValidatedField>
 
-          <FieldTooltip
-            message={errors.roleId}
-            visible={Boolean(errors.roleId)}
-          />
-        </div>
-
-        <div className="field-tooltip-wrapper">
-          <select
-            className={errors.branchId ? 'field-error' : ''}
-            name="branchId"
-            value={form.branchId}
-            onChange={handleChange}
-          >
+        <ValidatedField name="branchId" error={errors.branchId}>
+          <select value={form.branchId} onChange={handleChange}>
             <option value="">Filial</option>
-
             {branches
               .filter((branch) => branch.active)
               .map((branch) => (
@@ -69,67 +51,48 @@ export default function EmploymentSection({
                 </option>
               ))}
           </select>
+        </ValidatedField>
 
-          <FieldTooltip
-            message={errors.branchId}
-            visible={Boolean(errors.branchId)}
+        <ValidatedField name="registration" error={errors.registration}>
+          <input
+            value={form.registration}
+            onChange={handleChange}
+            placeholder="Matrícula"
           />
-        </div>
-
-        <input
-          name="registration"
-          value={form.registration}
-          onChange={handleChange}
-          placeholder="Matrícula"
-        />
+        </ValidatedField>
       </div>
 
       <div className="employment-dates-grid">
-        <div className="field-tooltip-wrapper">
+        <ValidatedField
+          name="periodicExamDate"
+          error={errors.periodicExamDate}
+        >
           <input
-            className={errors.periodicExamDate ? 'field-error' : ''}
-            name="periodicExamDate"
             value={form.periodicExamDate}
             onChange={handleChange}
             placeholder="Exame periódico"
           />
+        </ValidatedField>
 
-          <FieldTooltip
-            message={errors.periodicExamDate}
-            visible={Boolean(errors.periodicExamDate)}
-          />
-        </div>
-
-        <div className="field-tooltip-wrapper">
+        <ValidatedField name="admissionDate" error={errors.admissionDate}>
           <input
-            className={errors.admissionDate ? 'field-error' : ''}
-            name="admissionDate"
             value={form.admissionDate}
             onChange={handleChange}
             placeholder="Admissão"
           />
-
-          <FieldTooltip
-            message={errors.admissionDate}
-            visible={Boolean(errors.admissionDate)}
-          />
-        </div>
+        </ValidatedField>
 
         {!form.active && (
-          <div className="field-tooltip-wrapper">
+          <ValidatedField
+            name="dismissalDate"
+            error={errors.dismissalDate}
+          >
             <input
-              className={errors.dismissalDate ? 'field-error' : ''}
-              name="dismissalDate"
               value={form.dismissalDate}
               onChange={handleChange}
               placeholder="Data demissional"
             />
-
-            <FieldTooltip
-              message={errors.dismissalDate}
-              visible={Boolean(errors.dismissalDate)}
-            />
-          </div>
+          </ValidatedField>
         )}
       </div>
     </div>

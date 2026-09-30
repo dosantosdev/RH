@@ -1,5 +1,5 @@
 import './personalSection.css'
-import FieldTooltip from '../../ui/FieldTooltip.jsx'
+import ValidatedField from '../../ui/ValidatedField'
 
 export default function PersonalSection({
   form,
@@ -15,91 +15,85 @@ export default function PersonalSection({
           <h3 className="form-section-title">Dados pessoais</h3>
 
           <div className="personal-grid">
-            {/* NOME */}
-            <div className="field-tooltip-wrapper field-full">
+            <ValidatedField
+              name="name"
+              error={errors.name}
+              wrapperClassName="field-full"
+            >
               <input
-                className={errors.name ? 'field-error' : ''}
-                name="name"
                 value={form.name}
                 onChange={handleChange}
                 placeholder="Nome completo"
               />
+            </ValidatedField>
 
-              <FieldTooltip
-                message={errors.name}
-                visible={Boolean(errors.name)}
-              />
-            </div>
-
-            {/* SEXO */}
-            <select
-              className="field-small"
+            <ValidatedField
               name="gender"
-              value={form.gender}
-              onChange={handleChange}
+              error={errors.gender}
+              wrapperClassName="field-small"
             >
-              <option value="">Sexo</option>
-              <option value="Masculino">Masculino</option>
-              <option value="Feminino">Feminino</option>
-            </select>
+              <select value={form.gender} onChange={handleChange}>
+                <option value="">Sexo</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Feminino">Feminino</option>
+              </select>
+            </ValidatedField>
 
-            {/* ESTADO CIVIL */}
-            <select
-              className="field-small"
+            <ValidatedField
               name="maritalStatus"
-              value={form.maritalStatus}
-              onChange={handleChange}
+              error={errors.maritalStatus}
+              wrapperClassName="field-small"
             >
-              <option value="">Estado civil</option>
-              <option value="Solteiro">Solteiro</option>
-              <option value="Casado">Casado</option>
-              <option value="União estável">União estável</option>
-              <option value="Divorciado">Divorciado</option>
-              <option value="Viúvo">Viúvo</option>
-            </select>
+              <select value={form.maritalStatus} onChange={handleChange}>
+                <option value="">Estado civil</option>
+                <option value="Solteiro">Solteiro</option>
+                <option value="Casado">Casado</option>
+                <option value="União estável">União estável</option>
+                <option value="Divorciado">Divorciado</option>
+                <option value="Viúvo">Viúvo</option>
+              </select>
+            </ValidatedField>
 
-            {/* ESCOLARIDADE */}
-            <select
-              className="field-small"
+            <ValidatedField
               name="education"
-              value={form.education}
-              onChange={handleChange}
+              error={errors.education}
+              wrapperClassName="field-small"
             >
-              <option value="">Escolaridade</option>
-              <option value="Fundamental Incompleto">
-                Fundamental Incompleto
-              </option>
-              <option value="Fundamental Completo">Fundamental Completo</option>
-              <option value="Ensino Médio Incompleto">
-                Ensino Médio Incompleto
-              </option>
-              <option value="Ensino Médio Completo">
-                Ensino Médio Completo
-              </option>
-              <option value="Ensino Superior Incompleto">
-                Ensino Superior Incompleto
-              </option>
-              <option value="Ensino Superior Completo">
-                Ensino Superior Completo
-              </option>
-            </select>
+              <select value={form.education} onChange={handleChange}>
+                <option value="">Escolaridade</option>
+                <option value="Fundamental Incompleto">
+                  Fundamental Incompleto
+                </option>
+                <option value="Fundamental Completo">
+                  Fundamental Completo
+                </option>
+                <option value="Ensino Médio Incompleto">
+                  Ensino Médio Incompleto
+                </option>
+                <option value="Ensino Médio Completo">
+                  Ensino Médio Completo
+                </option>
+                <option value="Ensino Superior Incompleto">
+                  Ensino Superior Incompleto
+                </option>
+                <option value="Ensino Superior Completo">
+                  Ensino Superior Completo
+                </option>
+              </select>
+            </ValidatedField>
 
-            {/* DADOS DE NASCIMENTO */}
             <div className="birth-grid">
-              <div className="field-tooltip-wrapper birth-date">
+              <ValidatedField
+                name="birthDate"
+                error={errors.birthDate}
+                wrapperClassName="birth-date"
+              >
                 <input
-                  className={errors.birthDate ? 'field-error' : ''}
-                  name="birthDate"
                   value={form.birthDate}
                   onChange={handleChange}
                   placeholder="Nascimento"
                 />
-
-                <FieldTooltip
-                  message={errors.birthDate}
-                  visible={Boolean(errors.birthDate)}
-                />
-              </div>
+              </ValidatedField>
 
               <input
                 className="birth-city"
@@ -126,26 +120,32 @@ export default function PersonalSection({
               />
             </div>
 
-            {/* FILIAÇÃO */}
-            <input
-              className="field-medium"
+            <ValidatedField
               name="motherName"
-              value={form.motherName}
-              onChange={handleChange}
-              placeholder="Nome da mãe"
-            />
+              error={errors.motherName}
+              wrapperClassName="field-medium"
+            >
+              <input
+                value={form.motherName}
+                onChange={handleChange}
+                placeholder="Nome da mãe"
+              />
+            </ValidatedField>
 
-            <input
-              className="field-medium"
+            <ValidatedField
               name="fatherName"
-              value={form.fatherName}
-              onChange={handleChange}
-              placeholder="Nome do pai"
-            />
+              error={errors.fatherName}
+              wrapperClassName="field-medium"
+            >
+              <input
+                value={form.fatherName}
+                onChange={handleChange}
+                placeholder="Nome do pai"
+              />
+            </ValidatedField>
           </div>
         </div>
 
-        {/* FOTO */}
         <div className="photo-upload">
           <button
             type="button"
