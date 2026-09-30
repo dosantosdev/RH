@@ -1,279 +1,48 @@
-/* CONTAINER DOS CARDS */
+/* =========================================================
+   CONTAINER PRINCIPAL DOS CARDS
+========================================================= */
+
 .dashboard-cards {
   display: grid;
 
-  grid-template-columns:
-    320px
-    420px
-    420px;
+  grid-template-columns: 420px minmax(650px, 1fr);
 
-  grid-template-rows:
-    auto
-    auto;
+  /*
+   * Mantemos as três linhas com alturas definidas.
+   * Isso impede que o Turnover aumente o espaço
+   * entre os cards da lateral esquerda.
+   */
+  grid-template-rows: 140px 250px 240px;
 
   gap: 20px;
 
   align-items: start;
+
+  width: 100%;
+
+  box-sizing: border-box;
 }
 
-.dashboard-row {
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-  flex-wrap: wrap;
-}
+/* =========================================================
+   CONTAINER
+========================================================= */
 
-/* CARD CLIMA */
-.weather-card {
-  position: relative;
-  padding: 28px;
-  border-radius: 18px;
-  color: white;
-  width: 420px;
-  transition:
-    transform 0.25s ease,
-    box-shadow 0.25s ease;
-
-  min-height: 260px;
-
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-
-  grid-column: 1;
-  grid-row: 1;
-  overflow: hidden;
-
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-blend-mode: darken;
-  background-color: rgba(0, 0, 0, 0.15);
-}
-
-.weather-card h3 {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 18px;
-} /* DIA */
-.weather-card.day {
-  background: linear-gradient(135deg, #74b9ff, #a29bfe);
-}
-
-/* NOITE */
-.weather-card.night {
-  background: linear-gradient(135deg, #2c3e50, #4b3f72);
-}
-
-/* TEXTO */
-.location {
-  font-size: 14px;
-  font-weight: 400;
-  opacity: 0.9;
-
-  margin-top: 8px;
-}
-
-.temp {
-  font-size: 50px;
-  font-weight: 700;
-  margin: 12px 0;
-  line-height: 1;
-
-  text-shadow:
-    0 2px 4px rgba(0, 0, 0, 0.45),
-    0 6px 18px rgba(0, 0, 0, 0.35);
-}
-
-.condition {
-  font-size: 18px;
-  opacity: 0.9;
-}
-
-/* CARD ANIVERSÁRIOS */
 .container {
   margin-top: 20px;
+
   padding: 0 20px;
+
+  box-sizing: border-box;
 }
 
-.dashboard-row {
-  display: flex;
-  gap: 20px;
-  align-items: flex-start;
-  flex-wrap: wrap;
-}
-
-.birthday-card {
-  width: 420px;
-  background: white;
-  border-radius: 14px;
-  transition:
-    transform 0.25s ease,
-    box-shadow 0.25s ease;
-  padding: 25px;
-  grid-column: 2;
-  grid-row: 2;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
-  color: #333;
-}
-
-.birthday-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 20px;
-}
-
-.birthday-header h3 {
-  margin: 0;
-  color: #333;
-  font-size: 18px;
-  font-weight: 600;
-  line-height: 1.3;
-}
-
-.birthday-header span {
-  font-size: 14px;
-  color: #777;
-  white-space: nowrap;
-}
-
-.birthday-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  max-height: 270px;
-  overflow-y: auto;
-  padding-right: 5px;
-}
-
-.birthday-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.birthday-list::-webkit-scrollbar-thumb {
-  background: #c5c5c5;
-  border-radius: 10px;
-}
-
-.birthday-item {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-  background: #f8f9fc;
-  padding: 15px;
-  border-radius: 10px;
-  transition: 0.2s;
-}
-
-.birthday-item:hover {
-  transform: translateX(3px);
-}
-
-.birthday-avatar {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: #4f67c6;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.birthday-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.birthday-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.birthday-info strong {
-  color: #333;
-}
-
-.birthday-info p {
-  margin: 0;
-  font-size: 13px;
-  color: #777;
-}
-
-.no-birthday {
-  text-align: center;
-  color: #888;
-  padding: 20px 0;
-}
-
-.clickable {
-  cursor: pointer;
-}
-
-.clickable:hover {
-  transform: translateY(-2px);
-}
-
-.weather-card:hover,
-.birthday-card:hover,
-.exam-card:hover {
-  transform: translateY(-6px) scale(1.01);
-
-  box-shadow:
-    0 10px 25px rgba(0, 0, 0, 0.15),
-    0 4px 10px rgba(0, 0, 0, 0.08);
-}
-
-.top-dashboard-cards {
-  display: grid;
-
-  grid-template-columns:
-    420px
-    420px;
-
-  gap: 20px;
-
-  align-items: stretch;
-
-  margin-bottom: 20px;
-}
-
-.exam-card {
-  background: #fff;
-
-  border-radius: 20px;
-
-  padding: 24px;
-
-  grid-column: 2;
-  grid-row: 1;
-
-  transition:
-    transform 0.25s ease,
-    box-shadow 0.25s ease;
-
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
-
-  height: 270px;
-
-  display: flex;
-
-  flex-direction: column;
-
-  overflow: hidden;
-}
+/* =========================================================
+   CARD DE BOAS-VINDAS
+========================================================= */
 
 .profile-card {
-  width: 100%;
+  width: 420px;
 
-  min-height: 675px;
+  min-height: 140px;
 
   background: white;
 
@@ -285,7 +54,7 @@
 
   flex-direction: column;
 
-  justify-content: space-between;
+  justify-content: center;
 
   align-items: flex-start;
 
@@ -295,7 +64,11 @@
     transform 0.25s ease,
     box-shadow 0.25s ease;
 
-  grid-row: span 2;
+  grid-column: 1;
+
+  grid-row: 1;
+
+  box-sizing: border-box;
 }
 
 .profile-card:hover {
@@ -304,22 +77,28 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
 }
 
+/* =========================================================
+   PERFIL
+========================================================= */
+
 .profile-left {
   display: flex;
 
-  flex-direction: column;
+  flex-direction: row;
 
-  align-items: flex-start;
+  align-items: center;
 
-  gap: 20px;
+  gap: 18px;
 
   width: 100%;
 }
 
 .profile-avatar {
-  width: 90px;
+  width: 70px;
 
-  height: 90px;
+  height: 70px;
+
+  min-width: 70px;
 
   border-radius: 50%;
 
@@ -333,21 +112,37 @@
 
   justify-content: center;
 
-  font-size: 34px;
+  font-size: 28px;
 
   font-weight: 700;
 
+  overflow: hidden;
+
   flex-shrink: 0;
+}
+
+.profile-avatar img {
+  width: 100%;
+
+  height: 100%;
+
+  object-fit: cover;
+}
+
+.profile-info {
+  min-width: 0;
 }
 
 .profile-info h2 {
   margin: 0;
 
-  font-size: 23px;
+  font-size: 20px;
 
   color: #2b2b2b;
 
   line-height: 1.2;
+
+  word-break: break-word;
 }
 
 .profile-info p {
@@ -355,7 +150,7 @@
 
   color: #666;
 
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .profile-info span {
@@ -364,94 +159,496 @@
   color: #999;
 }
 
-.profile-actions {
+/* =========================================================
+   CARD DE EXAMES
+========================================================= */
+
+.exam-card {
+  width: 420px;
+
+  height: 250px;
+
+  background: #fff;
+
+  border-radius: 20px;
+
+  padding: 24px;
+
+  box-sizing: border-box;
+
+  grid-column: 1;
+
+  grid-row: 2;
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+
   display: flex;
 
   flex-direction: column;
 
-  gap: 12px;
-
-  width: 100%;
-
-  margin-top: auto;
+  overflow: hidden;
 }
 
-.profile-actions button {
-  border: none;
+/* =========================================================
+   LISTA DE EXAMES
+========================================================= */
 
-  background: #eef2ff;
+.exam-list {
+  display: flex;
 
-  color: #4f67c6;
+  flex-direction: column;
 
-  padding: 14px 18px;
+  gap: 15px;
+
+  max-height: 170px;
+
+  overflow-y: auto;
+
+  padding-right: 5px;
+}
+
+.exam-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.exam-list::-webkit-scrollbar-thumb {
+  background: #c5c5c5;
+
+  border-radius: 10px;
+}
+
+/* =========================================================
+   ITEM DE EXAME
+========================================================= */
+
+.exam-item {
+  display: flex;
+
+  align-items: center;
+
+  gap: 15px;
+
+  background: #f8f9fc;
+
+  padding: 15px;
 
   border-radius: 10px;
 
-  font-weight: 600;
-
-  cursor: pointer;
-
   transition: 0.2s;
 
+  min-width: 0;
+}
+
+.exam-item:hover {
+  transform: translateX(3px);
+}
+
+/* =========================================================
+   AVATAR DOS EXAMES
+========================================================= */
+
+.exam-avatar {
+  width: 48px;
+
+  height: 48px;
+
+  min-width: 48px;
+
+  border-radius: 50%;
+
+  background: #4f67c6;
+
+  color: white;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-weight: 600;
+
+  overflow: hidden;
+
+  flex-shrink: 0;
+}
+
+.exam-avatar img {
   width: 100%;
+
+  height: 100%;
+
+  object-fit: cover;
 }
 
-.profile-actions button:hover {
-  background: #dfe7ff;
+/* =========================================================
+   INFORMAÇÕES DOS EXAMES
+========================================================= */
+
+.exam-info {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: flex-start;
+
+  justify-content: center;
+
+  min-width: 0;
+
+  flex: 1;
 }
 
-@media (max-width: 1100px) {
+.exam-info strong {
+  color: #333;
+
+  width: 100%;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  text-align: left;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  line-height: 1.3;
+}
+
+.exam-info p {
+  margin: 2px 0 0;
+
+  font-size: 13px;
+
+  color: #777;
+
+  white-space: nowrap;
+
+  line-height: 1.3;
+}
+
+.no-exam {
+  text-align: center;
+
+  color: #888;
+
+  padding: 20px 0;
+}
+
+/* =========================================================
+   CARD DE ANIVERSARIANTES
+========================================================= */
+
+.birthday-card {
+  width: 420px;
+
+  height: 240px;
+
+  background: white;
+
+  border-radius: 14px;
+
+  padding: 25px;
+
+  box-sizing: border-box;
+
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+
+  display: flex;
+
+  flex-direction: column;
+
+  color: #333;
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+
+  grid-column: 1;
+
+  grid-row: 3;
+}
+
+/* =========================================================
+   CABEÇALHO DOS CARDS
+========================================================= */
+
+.birthday-header {
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 20px;
+}
+
+.birthday-header h3 {
+  margin: 0;
+
+  color: #333;
+
+  font-size: 18px;
+
+  font-weight: 600;
+
+  line-height: 1.3;
+}
+
+.birthday-header span {
+  font-size: 14px;
+
+  color: #777;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   GRID DOS ANIVERSARIANTES
+========================================================= */
+
+.birthday-grid {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  grid-auto-rows: min-content;
+
+  gap: 12px;
+
+  overflow-y: auto;
+
+  max-height: 150px;
+
+  padding-right: 5px;
+}
+
+.birthday-grid::-webkit-scrollbar {
+  width: 6px;
+}
+
+.birthday-grid::-webkit-scrollbar-thumb {
+  background: #c5c5c5;
+
+  border-radius: 10px;
+}
+
+/* =========================================================
+   ITEM DE ANIVERSARIANTE
+========================================================= */
+
+.birthday-person {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 6px;
+
+  min-width: 0;
+
+  padding: 4px;
+
+  border-radius: 10px;
+
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.birthday-person:hover {
+  transform: translateY(-2px);
+
+  background: #f8f9fc;
+}
+
+/* =========================================================
+   AVATAR DOS ANIVERSARIANTES
+========================================================= */
+
+.birthday-avatar {
+  width: 48px;
+
+  height: 48px;
+
+  min-width: 48px;
+
+  border-radius: 50%;
+
+  background: #4f67c6;
+
+  color: white;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-weight: 600;
+
+  overflow: hidden;
+
+  flex-shrink: 0;
+}
+
+.birthday-avatar img {
+  width: 100%;
+
+  height: 100%;
+
+  object-fit: cover;
+}
+
+/* =========================================================
+   INFORMAÇÕES DOS ANIVERSARIANTES
+========================================================= */
+
+.birthday-info {
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  min-width: 0;
+
+  max-width: 100%;
+}
+
+.birthday-info strong {
+  color: #333;
+
+  width: 100%;
+
+  white-space: nowrap;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  text-align: center;
+
+  font-size: 13px;
+
+  font-weight: 600;
+
+  line-height: 1.3;
+}
+
+.birthday-info p {
+  margin: 0;
+
+  font-size: 12px;
+
+  color: #777;
+
+  white-space: nowrap;
+
+  line-height: 1.3;
+}
+
+.no-birthday {
+  text-align: center;
+
+  color: #888;
+
+  padding: 20px 0;
+
+  grid-column: 1 / -1;
+}
+
+/* =========================================================
+   ELEMENTOS CLICÁVEIS
+========================================================= */
+
+.clickable {
+  cursor: pointer;
+}
+
+/* =========================================================
+   HOVER DOS CARDS
+========================================================= */
+
+.profile-card:hover,
+.birthday-card:hover,
+.exam-card:hover {
+  transform: translateY(-4px);
+
+  box-shadow:
+    0 10px 25px rgba(0, 0, 0, 0.15),
+    0 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+/* =========================================================
+   RESPONSIVIDADE
+========================================================= */
+
+@media (max-width: 1250px) {
+  .dashboard-cards {
+    grid-template-columns: 380px minmax(500px, 1fr);
+  }
+
+  .profile-card,
+  .exam-card,
+  .birthday-card {
+    width: 380px;
+  }
+}
+
+@media (max-width: 1000px) {
   .dashboard-cards {
     grid-template-columns: 1fr 1fr;
   }
 
-  .profile-card {
-    grid-column: 1 / -1;
-    grid-row: auto;
-    min-height: 0;
-  }
-
-  .top-dashboard-cards {
-    grid-column: 1 / -1;
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .weather-card,
-  .birthday-card,
-  .exam-card {
-    width: auto;
-  }
-
+  .profile-card,
+  .exam-card,
   .birthday-card {
-    grid-column: 1;
-    grid-row: auto;
+    width: 100%;
   }
 }
 
 @media (max-width: 760px) {
-  .dashboard-cards,
-  .top-dashboard-cards {
+  .dashboard-cards {
     grid-template-columns: 1fr;
+
+    width: 100%;
   }
 
   .profile-card,
-  .top-dashboard-cards,
-  .birthday-card,
-  .weather-card,
-  .exam-card {
+  .exam-card,
+  .birthday-card {
     grid-column: 1;
+
+    width: 100%;
   }
 
   .profile-card {
-    min-height: 0;
+    grid-row: 1;
   }
 
-  .profile-actions {
-    flex-direction: row;
-    flex-wrap: wrap;
+  .exam-card {
+    grid-row: 2;
   }
 
-  .profile-actions button {
-    width: auto;
+  .birthday-card {
+    grid-row: 3;
+  }
+
+  .birthday-grid {
+    grid-template-columns: repeat(3, 1fr);
   }
 }

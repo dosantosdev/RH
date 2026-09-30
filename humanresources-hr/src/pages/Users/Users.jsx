@@ -17,6 +17,7 @@ export default function Users() {
     password: '',
     roleId: '',
     roleName: '',
+    employeeId: '',
     active: true
   }
 
@@ -26,6 +27,8 @@ export default function Users() {
 
   const [roles, setRoles] = useState([])
 
+  const [employees, setEmployees] = useState([])
+
   const [search, setSearch] = useState('')
 
   const [editingId, setEditingId] = useState(null)
@@ -34,15 +37,16 @@ export default function Users() {
 
   const { toast, showToast } = useToast()
 
-
   useEffect(() => {
     const storedUsers = JSON.parse(localStorage.getItem('users')) || []
 
     const storedRoles = JSON.parse(localStorage.getItem('roles')) || []
 
-    setUsers(storedUsers)
+    const storedEmployees = JSON.parse(localStorage.getItem('employees')) || []
 
+    setUsers(storedUsers)
     setRoles(storedRoles)
+    setEmployees(storedEmployees)
   }, [])
 
   // 🔒 BLOQUEIA ACESSO À PÁGINA
@@ -59,7 +63,6 @@ export default function Users() {
 
     setUser({
       ...user,
-
       [name]: type === 'checkbox' ? checked : value
     })
   }
@@ -123,7 +126,11 @@ export default function Users() {
       return
     }
 
-    setUser(u)
+    setUser({
+      ...initialUser,
+      ...u,
+      employeeId: u.employeeId || ''
+    })
 
     setEditingId(u.id)
   }
@@ -156,6 +163,7 @@ export default function Users() {
         search={search}
         setSearch={setSearch}
         roles={roles}
+        employees={employees}
         editingId={editingId}
         handleChange={handleChange}
         handleSubmit={handleSubmit}

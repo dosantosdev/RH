@@ -5,6 +5,7 @@ import { hasPermission } from '../../services/permissions'
 export default function UserForm({
   user,
   roles,
+  employees,
   editingId,
   handleChange,
   handleSubmit,
@@ -69,9 +70,7 @@ export default function UserForm({
 
                   setUser({
                     ...user,
-
                     roleId: selectedRole?.id || '',
-
                     roleName: selectedRole?.name || ''
                   })
                 }}
@@ -81,6 +80,22 @@ export default function UserForm({
                 {roles.map((r) => (
                   <option key={r.id} value={r.id}>
                     {r.name}
+                  </option>
+                ))}
+              </select>
+
+              {/* FUNCIONÁRIO VINCULADO */}
+              <select
+                className="field-full"
+                name="employeeId"
+                value={user.employeeId || ''}
+                onChange={handleChange}
+              >
+                <option value="">Nenhum funcionário vinculado</option>
+
+                {employees.map((employee) => (
+                  <option key={employee.id} value={employee.id}>
+                    {employee.name}
                   </option>
                 ))}
               </select>

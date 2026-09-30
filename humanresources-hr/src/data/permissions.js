@@ -107,5 +107,26 @@ export const permissions = [
         label: 'Visualizar aniversariantes'
       }
     ]
+  },
+
+  {
+    category: 'Perfil',
+
+    items: [
+      {
+        key: 'profile_view',
+        label: 'Visualizar próprio perfil'
+      },
+
+      {
+        key: 'profile_edit',
+        label: 'Editar próprio perfil'
+      },
+
+      {
+        key: 'password_change',
+        label: 'Alterar própria senha'
+      }
+    ]
   }
 ]

@@ -3,6 +3,8 @@ import { Routes, Route } from 'react-router-dom'
 import Navbar from './components/layout/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
 
+import Profile from './pages/Profile/Profile'
+import ChangePassword from './pages/ChangePassword/ChangePassword'
 import Login from './pages/Login/Login'
 import Dashboard from './pages/Dashboard/Dashboard'
 import EmployeeSearch from './pages/EmployeeSearch/EmployeeSearch'
@@ -105,6 +107,27 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <Branches />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/perfil"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Profile />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/alterar-senha"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ChangePassword />
             </Layout>
           </ProtectedRoute>
         }

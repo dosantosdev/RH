@@ -1,4 +1,5 @@
-import { Link, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import './navbar.css'
 
@@ -6,6 +7,34 @@ import { hasPermission } from '../../services/permissions'
 
 export default function Navbar() {
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [currentUser, setCurrentUser] = useState(null)
+  const [employee, setEmployee] = useState(null)
+
+  const profileRef = useRef(null)
+
+  // Carrega novamente os dados do usuário e do funcionário vinculado
+  // sempre que navegamos para outra página.
+  useEffect(() => {
+    const loggedUser = JSON.parse(localStorage.getItem('loggedUser'))
+
+    setCurrentUser(loggedUser)
+
+    if (!loggedUser) {
+      setEmployee(null)
+      return
+    }
+
+    const employees = JSON.parse(localStorage.getItem('employees')) || []
+
+    const linkedEmployee = employees.find(
+      (item) => item.id === Number(loggedUser.employeeId)
+    )
+
+    setEmployee(linkedEmployee || null)
+  }, [location.pathname])
 
   function handleLogout() {
     localStorage.removeItem('loggedUser')
@@ -13,6 +42,40 @@ export default function Navbar() {
 
     navigate('/')
   }
+
+  // Fecha o menu quando clicar fora dele.
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (profileRef.current && !profileRef.current.contains(event.target)) {
+        setProfileOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  function handleProfileClick() {
+    setProfileOpen((prev) => !prev)
+  }
+
+  if (!currentUser) {
+    return null
+  }
+
+  const userName = employee?.name || currentUser.name || 'Usuário'
+
+  const userInitial = userName.charAt(0).toUpperCase()
+
+  // A foto vem primeiro do funcionário vinculado.
+  // currentUser.photo fica como fallback para usuários que
+  // eventualmente tenham uma foto própria.
+  const userPhoto = employee?.photo || currentUser.photo || null
+
+  const roleName = currentUser.roleName || currentUser.role || 'Usuário'
 
   return (
     <nav className="navbar">
@@ -106,9 +169,99 @@ export default function Navbar() {
         )}
       </div>
 
-      <button className="logout-btn primary-btn" onClick={handleLogout}>
-        Sair
-      </button>
+      {/* ÁREA DO USUÁRIO */}
+
+      <div className="navbar-user-area" ref={profileRef}>
+        <button
+          type="button"
+          className="navbar-user-button"
+          onClick={handleProfileClick}
+        >
+          {userPhoto ? (
+            <img
+              src={userPhoto}
+              alt={userName}
+              className="navbar-user-avatar"
+            />
+          ) : (
+            <div className="navbar-user-avatar navbar-user-initial">
+              {userInitial}
+            </div>
+          )}
+
+          <span className="navbar-user-name">{userName}</span>
+        </button>
+
+        {profileOpen && (
+          <div className="profile-dropdown">
+            <div className="profile-dropdown-header">
+              {userPhoto ? (
+                <img
+                  src={userPhoto}
+                  alt={userName}
+                  className="profile-dropdown-avatar"
+                />
+              ) : (
+                <div className="profile-dropdown-avatar profile-dropdown-initial">
+                  {userInitial}
+                </div>
+              )}
+
+              <div>
+                <strong>{userName}</strong>
+
+                <span>{roleName}</span>
+              </div>
+            </div>
+
+            <div className="profile-dropdown-divider" />
+
+            <div className="profile-dropdown-info">
+              <span>Usuário</span>
+
+              <strong>{currentUser.username || '-'}</strong>
+            </div>
+
+            {hasPermission('profile_view') && (
+              <button
+                type="button"
+                className="profile-dropdown-item"
+                onClick={() => {
+                  setProfileOpen(false)
+                  navigate('/perfil')
+                }}
+              >
+                Meu perfil
+              </button>
+            )}
+
+            {hasPermission('password_change') && (
+              <button
+                type="button"
+                className="profile-dropdown-item"
+                onClick={() => {
+                  setProfileOpen(false)
+                  navigate('/alterar-senha')
+                }}
+              >
+                Alterar senha
+              </button>
+            )}
+
+            {/* SAIR */}
+
+            <div className="profile-dropdown-divider" />
+
+            <button
+              type="button"
+              className="profile-dropdown-item profile-logout-item"
+              onClick={handleLogout}
+            >
+              Sair
+            </button>
+          </div>
+        )}
+      </div>
     </nav>
   )
 }

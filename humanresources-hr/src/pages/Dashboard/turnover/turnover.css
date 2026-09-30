@@ -1,0 +1,376 @@
+/* =========================================================
+   CARD DE TURNOVER
+========================================================= */
+
+.turnover-card {
+  grid-column: 2;
+
+  /*
+   * O Turnover ocupa as três linhas da segunda coluna,
+   * mas não interfere na altura das linhas da primeira coluna.
+   */
+  grid-row: 1 / 4;
+
+  width: 100%;
+
+  height: 650px;
+
+  min-width: 0;
+
+  background: white;
+
+  border-radius: 20px;
+
+  padding: 28px;
+
+  box-sizing: border-box;
+
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
+
+  display: flex;
+
+  flex-direction: column;
+
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.turnover-card:hover {
+  transform: translateY(-4px);
+
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+}
+/* =========================================================
+   CABEÇALHO
+========================================================= */
+
+.turnover-header {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-bottom: 24px;
+}
+
+.turnover-header h2 {
+  margin: 0;
+
+  color: #2b2b2b;
+
+  font-size: 22px;
+
+  font-weight: 600;
+}
+
+.turnover-header p {
+  margin: 6px 0 0;
+
+  color: #888;
+
+  font-size: 14px;
+}
+
+/* =========================================================
+   CONTROLE DE PERÍODO
+========================================================= */
+
+.turnover-period {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  background: #f5f6fa;
+
+  border-radius: 10px;
+
+  padding: 5px;
+}
+
+.turnover-period button {
+  width: 32px;
+
+  height: 32px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: white;
+
+  color: #4f67c6;
+
+  font-size: 22px;
+
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.turnover-period button:hover {
+  background: #e9edff;
+
+  transform: scale(1.05);
+}
+
+.turnover-period span {
+  min-width: 75px;
+
+  text-align: center;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  color: #444;
+}
+
+/* =========================================================
+   RESUMO
+========================================================= */
+
+.turnover-summary {
+  display: grid;
+
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 12px;
+
+  margin-bottom: 28px;
+}
+
+.turnover-summary-item {
+  background: #f8f9fc;
+
+  border-radius: 12px;
+
+  padding: 16px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+
+  border: 1px solid #eef0f5;
+
+  box-sizing: border-box;
+}
+
+.turnover-summary-label {
+  color: #777;
+
+  font-size: 13px;
+
+  line-height: 1.3;
+}
+
+.turnover-summary-value {
+  color: #2b2b2b;
+
+  font-size: 24px;
+
+  font-weight: 700;
+}
+
+/* =========================================================
+   GRÁFICO
+========================================================= */
+
+.turnover-chart {
+  flex: 1;
+
+  min-height: 330px;
+
+  display: flex;
+
+  align-items: flex-end;
+
+  padding: 20px 10px 0;
+
+  border-bottom: 1px solid #e8e8e8;
+
+  overflow: hidden;
+}
+
+.turnover-chart-area {
+  width: 100%;
+
+  height: 100%;
+
+  min-height: 280px;
+
+  display: flex;
+
+  align-items: flex-end;
+
+  justify-content: space-around;
+
+  gap: 12px;
+}
+
+.turnover-column {
+  height: 100%;
+
+  flex: 1;
+
+  min-width: 0;
+
+  display: flex;
+
+  flex-direction: column;
+
+  justify-content: flex-end;
+
+  align-items: center;
+
+  gap: 10px;
+}
+
+.turnover-bars {
+  width: 100%;
+
+  height: 90%;
+
+  display: flex;
+
+  align-items: flex-end;
+
+  justify-content: center;
+
+  gap: 5px;
+}
+
+.turnover-bar {
+  width: 22px;
+
+  min-height: 4px;
+
+  border-radius: 6px 6px 0 0;
+
+  transition:
+    height 0.35s ease,
+    opacity 0.2s ease;
+}
+
+.turnover-bar:hover {
+  opacity: 0.75;
+}
+
+.turnover-bar.admitted {
+  background: #4f67c6;
+}
+
+.turnover-bar.dismissed {
+  background: #e57373;
+}
+
+.turnover-month {
+  font-size: 12px;
+
+  color: #777;
+
+  white-space: nowrap;
+}
+
+/* =========================================================
+   LEGENDA
+========================================================= */
+
+.turnover-legend {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  flex-wrap: wrap;
+
+  gap: 20px;
+
+  padding-top: 22px;
+}
+
+.turnover-legend > div {
+  display: flex;
+
+  align-items: center;
+
+  gap: 7px;
+
+  color: #666;
+
+  font-size: 13px;
+}
+
+.legend-dot {
+  width: 10px;
+
+  height: 10px;
+
+  border-radius: 50%;
+
+  display: inline-block;
+}
+
+.legend-dot.admitted {
+  background: #4f67c6;
+}
+
+.legend-dot.dismissed {
+  background: #e57373;
+}
+
+.legend-dot.employee-request {
+  background: #f0ad4e;
+}
+
+.legend-dot.company-request {
+  background: #8e7cc3;
+}
+
+/* =========================================================
+   RESPONSIVIDADE
+========================================================= */
+
+@media (max-width: 1250px) {
+  .turnover-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .turnover-card {
+    min-height: 550px;
+
+    padding: 20px;
+  }
+
+  .turnover-header {
+    flex-direction: column;
+
+    align-items: flex-start;
+  }
+
+  .turnover-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .turnover-bar {
+    width: 12px;
+  }
+
+  .turnover-legend {
+    justify-content: flex-start;
+  }
+}
