@@ -3,17 +3,31 @@
 ========================================================= */
 
 .turnover-card {
+  /*
+   * O Turnover fica na coluna central.
+   */
   grid-column: 2;
 
   /*
-   * O Turnover ocupa as três linhas da segunda coluna,
-   * mas não interfere na altura das linhas da primeira coluna.
+   * Ocupa exatamente as três linhas dos cards
+   * da lateral esquerda.
    */
   grid-row: 1 / 4;
 
-  width: 100%;
+  /*
+   * Altura total das três linhas:
+   *
+   * 140px
+   * + 20px gap
+   * + 250px
+   * + 20px gap
+   * + 240px
+   *
+   * = 670px
+   */
+  width: 820px;
 
-  height: 650px;
+  height: 670px;
 
   min-width: 0;
 
@@ -34,6 +48,12 @@
   transition:
     transform 0.25s ease,
     box-shadow 0.25s ease;
+
+  /*
+   * Mantém o conteúdo visualmente centralizado
+   * dentro do espaço disponível.
+   */
+  justify-self: center;
 }
 
 .turnover-card:hover {

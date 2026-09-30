@@ -5,13 +5,18 @@
 .dashboard-cards {
   display: grid;
 
-  grid-template-columns: 420px minmax(650px, 1fr);
-
   /*
-   * Mantemos as três linhas com alturas definidas.
-   * Isso impede que o Turnover aumente o espaço
-   * entre os cards da lateral esquerda.
+   * Coluna 1:
+   * Cards principais da lateral esquerda.
+   *
+   * Coluna 2:
+   * Turnover.
+   *
+   * Coluna 3:
+   * Espaço reservado para futuros cards.
    */
+  grid-template-columns: 420px 820px minmax(280px, 1fr);
+
   grid-template-rows: 140px 250px 240px;
 
   gap: 20px;
