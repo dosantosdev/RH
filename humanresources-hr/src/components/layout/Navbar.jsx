@@ -112,6 +112,23 @@ export default function Navbar() {
           </div>
         </div>
 
+        {/* PONTO */}
+
+        <div className="dropdown">
+          <button className="dropbtn">Ponto</button>
+
+          <div className="dropdown-content">
+            <Link to="/ponto/bater">Bater Ponto</Link>
+            <Link to="/ponto/espelho">Meu Espelho</Link>
+            <Link to="/ponto/controle">Controle de Ponto</Link>
+            <Link to="/ponto/banco-horas">Banco de Horas</Link>
+            <Link to="/ponto/horas-extras">Horas Extras</Link>
+            <Link to="/ponto/faltas-atrasos">Faltas e Atrasos</Link>
+            <Link to="/ponto/fechamento">Fechamento Mensal</Link>
+            <Link to="/ponto/relatorios">Relatórios</Link>
+          </div>
+        </div>
+
         {/* FINANCEIRO */}
 
         <div className="dropdown">

@@ -13,6 +13,14 @@ import Roles from './pages/Roles/Roles'
 import Users from './pages/Users/Users'
 import Branches from './pages/branches/Branches'
 import Settings from './pages/Settings/Settings'
+import BaterPonto from './pages/Ponto/BaterPonto/BaterPonto'
+import MeuEspelho from './pages/Ponto/MeuEspelho/MeuEspelho'
+import ControlePonto from './pages/Ponto/ControlePonto/ControlePonto'
+import BancoHoras from './pages/Ponto/BancoHoras/BancoHoras'
+import HorasExtras from './pages/Ponto/HorasExtras/HorasExtras'
+import FaltasAtrasos from './pages/Ponto/FaltasAtrasos/FaltasAtrasos'
+import FechamentoMensal from './pages/Ponto/FechamentoMensal/FechamentoMensal'
+import Relatorios from './pages/Ponto/Relatorios/Relatorios'
 
 import Header from './components/layout/Header'
 
@@ -128,6 +136,96 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <ChangePassword />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* PONTO */}
+
+      <Route
+        path="/ponto/bater"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <BaterPonto />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/ponto/espelho"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <MeuEspelho />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/ponto/controle"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ControlePonto />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/ponto/banco-horas"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <BancoHoras />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/ponto/horas-extras"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <HorasExtras />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/ponto/faltas-atrasos"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <FaltasAtrasos />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/ponto/fechamento"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <FechamentoMensal />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/ponto/relatorios"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Relatorios />
             </Layout>
           </ProtectedRoute>
         }
