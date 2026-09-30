@@ -116,6 +116,10 @@ export function validateEmployee(
 ) {
   const errors = []
 
+  // ==============================
+  // DADOS PESSOAIS
+  // ==============================
+
   if (!normalizeText(formData.name)) {
     errors.push(createError('name', 'O nome completo é obrigatório.'))
   }
@@ -136,6 +140,10 @@ export function validateEmployee(
     )
   }
 
+  // ==============================
+  // DOCUMENTAÇÃO
+  // ==============================
+
   if (!formData.foreigner && !formData.rg) {
     errors.push(createError('rg', 'O RG é obrigatório.'))
   }
@@ -150,6 +158,10 @@ export function validateEmployee(
     )
   }
 
+  // ==============================
+  // VÍNCULO PROFISSIONAL
+  // ==============================
+
   if (!formData.roleId) {
     errors.push(createError('roleId', 'Selecione o cargo do funcionário.'))
   }
@@ -157,6 +169,10 @@ export function validateEmployee(
   if (!formData.branchId) {
     errors.push(createError('branchId', 'Selecione a filial do funcionário.'))
   }
+
+  // ==============================
+  // DATA DE ADMISSÃO
+  // ==============================
 
   if (!formData.admissionDate) {
     errors.push(
@@ -172,7 +188,36 @@ export function validateEmployee(
     )
   }
 
-  if (formData.dismissalDate) {
+  // ==============================
+  // DATA DE DESLIGAMENTO
+  // ==============================
+
+  if (!formData.active) {
+    if (!formData.dismissalDate) {
+      errors.push(
+        createError(
+          'dismissalDate',
+          'A data de desligamento é obrigatória para funcionários inativos.'
+        )
+      )
+    } else if (!isValidDate(formData.dismissalDate)) {
+      errors.push(
+        createError('dismissalDate', 'A data de desligamento é inválida.')
+      )
+    } else if (
+      formData.admissionDate &&
+      isBeforeDate(formData.dismissalDate, formData.admissionDate)
+    ) {
+      errors.push(
+        createError(
+          'dismissalDate',
+          'A data de desligamento não pode ser anterior à data de admissão.'
+        )
+      )
+    }
+  } else if (formData.dismissalDate) {
+    // Se o funcionário estiver ativo e, por algum motivo,
+    // existir uma data demissional preenchida, ainda validamos a data.
     if (!isValidDate(formData.dismissalDate)) {
       errors.push(
         createError('dismissalDate', 'A data de desligamento é inválida.')
@@ -190,6 +235,10 @@ export function validateEmployee(
     }
   }
 
+  // ==============================
+  // EXAME PERIÓDICO
+  // ==============================
+
   if (formData.periodicExamDate) {
     if (!isValidDate(formData.periodicExamDate)) {
       errors.push(
@@ -197,6 +246,10 @@ export function validateEmployee(
       )
     }
   }
+
+  // ==============================
+  // CNH
+  // ==============================
 
   const role = getSelectedRole(formData, roles)
 
@@ -243,6 +296,10 @@ export function validateEmployee(
     }
   }
 
+  // ==============================
+  // CERTIFICADOS
+  // ==============================
+
   const requiredCertificates = getRequiredCertificates(role)
 
   const missingCertificates = requiredCertificates.filter(
@@ -259,6 +316,10 @@ export function validateEmployee(
       )
     )
   }
+
+  // ==============================
+  // DUPLICIDADE
+  // ==============================
 
   const currentEmployeeId = formData.id
 

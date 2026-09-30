@@ -1,4 +1,5 @@
 import './personalSection.css'
+import FieldTooltip from '../../ui/FieldTooltip.jsx'
 
 export default function PersonalSection({
   form,
@@ -15,13 +16,20 @@ export default function PersonalSection({
 
           <div className="personal-grid">
             {/* NOME */}
-            <input
-              className={`field-full ${errors.name ? 'field-error' : ''}`}
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              placeholder="Nome completo"
-            />
+            <div className="field-tooltip-wrapper field-full">
+              <input
+                className={errors.name ? 'field-error' : ''}
+                name="name"
+                value={form.name}
+                onChange={handleChange}
+                placeholder="Nome completo"
+              />
+
+              <FieldTooltip
+                message={errors.name}
+                visible={Boolean(errors.name)}
+              />
+            </div>
 
             {/* SEXO */}
             <select
@@ -78,15 +86,20 @@ export default function PersonalSection({
 
             {/* DADOS DE NASCIMENTO */}
             <div className="birth-grid">
-              <input
-                className={`birth-date ${
-                  errors.birthDate ? 'field-error' : ''
-                }`}
-                name="birthDate"
-                value={form.birthDate}
-                onChange={handleChange}
-                placeholder="Nascimento"
-              />
+              <div className="field-tooltip-wrapper birth-date">
+                <input
+                  className={errors.birthDate ? 'field-error' : ''}
+                  name="birthDate"
+                  value={form.birthDate}
+                  onChange={handleChange}
+                  placeholder="Nascimento"
+                />
+
+                <FieldTooltip
+                  message={errors.birthDate}
+                  visible={Boolean(errors.birthDate)}
+                />
+              </div>
 
               <input
                 className="birth-city"

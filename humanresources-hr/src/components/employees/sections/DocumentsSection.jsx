@@ -1,6 +1,6 @@
 import './documentsSection.css'
 import CnhSection from './CnhSection'
-import FieldError from './FieldError'
+import FieldTooltip from '../../ui/FieldTooltip'
 
 export default function DocumentsSection({
   form,
@@ -25,27 +25,42 @@ export default function DocumentsSection({
       </div>
 
       <div className="rg-grid">
+        {/* CPF */}
+        <div className="field-tooltip-wrapper">
+          <input
+            className={errors.cpf ? 'field-error' : ''}
+            name="cpf"
+            value={form.cpf}
+            onChange={handleChange}
+            placeholder="CPF"
+          />
+
+          <FieldTooltip message={errors.cpf} visible={Boolean(errors.cpf)} />
+        </div>
+
+        {/* RG */}
+        <div className="field-tooltip-wrapper">
+          <input
+            className={errors.rg ? 'field-error' : ''}
+            name="rg"
+            value={form.rg}
+            onChange={handleChange}
+            placeholder="RG"
+          />
+
+          <FieldTooltip message={errors.rg} visible={Boolean(errors.rg)} />
+        </div>
+
+        {/* ÓRGÃO EMISSOR */}
         <input
-          className={errors.cpf ? 'field-error' : ''}
-          name="cpf"
-          value={form.cpf}
+          name="rgIssuer"
+          value={form.rgIssuer}
           onChange={handleChange}
-          placeholder="CPF"
+          placeholder="Órgão emissor"
         />
-        <FieldError message={errors.cpf} />
 
-        <input
-          className={errors.rg ? 'field-error' : ''}
-          name="rg"
-          value={form.rg}
-          onChange={handleChange}
-          placeholder="RG"
-        />
-        <FieldError message={errors.rg} />
-
-        <input name="rgIssuer" value={form.rgIssuer} onChange={handleChange} placeholder="Órgão emissor" />
-
-        <div>
+        {/* DATA RG */}
+        <div className="field-tooltip-wrapper">
           <input
             className={errors.rgDate ? 'field-error' : ''}
             name="rgDate"
@@ -53,25 +68,86 @@ export default function DocumentsSection({
             onChange={handleChange}
             placeholder="Data RG"
           />
-          <FieldError message={errors.rgDate} />
+
+          <FieldTooltip
+            message={errors.rgDate}
+            visible={Boolean(errors.rgDate)}
+          />
         </div>
 
-        <input name="rgCity" value={form.rgCity} onChange={handleChange} placeholder="Município RG" />
-        <input name="rgState" value={form.rgState} onChange={handleChange} placeholder="UF RG" />
+        <input
+          name="rgCity"
+          value={form.rgCity}
+          onChange={handleChange}
+          placeholder="Município RG"
+        />
+
+        <input
+          name="rgState"
+          value={form.rgState}
+          onChange={handleChange}
+          placeholder="UF RG"
+        />
       </div>
 
       <div className="documents-extra-grid">
-        <input name="ctpsNumber" value={form.ctpsNumber} onChange={handleChange} placeholder="CTPS" />
-        <input name="ctpsSeries" value={form.ctpsSeries} onChange={handleChange} placeholder="Série" />
-        <input name="ctpsCity" value={form.ctpsCity} onChange={handleChange} placeholder="Município CTPS" />
-        <input name="pis" value={form.pis} onChange={handleChange} placeholder="PIS" />
+        <input
+          name="ctpsNumber"
+          value={form.ctpsNumber}
+          onChange={handleChange}
+          placeholder="CTPS"
+        />
+
+        <input
+          name="ctpsSeries"
+          value={form.ctpsSeries}
+          onChange={handleChange}
+          placeholder="Série"
+        />
+
+        <input
+          name="ctpsCity"
+          value={form.ctpsCity}
+          onChange={handleChange}
+          placeholder="Município CTPS"
+        />
+
+        <input
+          name="pis"
+          value={form.pis}
+          onChange={handleChange}
+          placeholder="PIS"
+        />
       </div>
 
       <div className="voter-grid">
-        <input name="susCard" value={form.susCard} onChange={handleChange} placeholder="Cartão SUS" />
-        <input name="voterTitle" value={form.voterTitle} onChange={handleChange} placeholder="Título eleitoral" />
-        <input name="voterZone" value={form.voterZone} onChange={handleChange} placeholder="Zona" />
-        <input name="voterSection" value={form.voterSection} onChange={handleChange} placeholder="Seção" />
+        <input
+          name="susCard"
+          value={form.susCard}
+          onChange={handleChange}
+          placeholder="Cartão SUS"
+        />
+
+        <input
+          name="voterTitle"
+          value={form.voterTitle}
+          onChange={handleChange}
+          placeholder="Título eleitoral"
+        />
+
+        <input
+          name="voterZone"
+          value={form.voterZone}
+          onChange={handleChange}
+          placeholder="Zona"
+        />
+
+        <input
+          name="voterSection"
+          value={form.voterSection}
+          onChange={handleChange}
+          placeholder="Seção"
+        />
       </div>
 
       <CnhSection

@@ -1,5 +1,5 @@
 import './employmentSection.css'
-import FieldError from './FieldError'
+import FieldTooltip from '../../ui/FieldTooltip'
 
 export default function EmploymentSection({
   form,
@@ -20,6 +20,7 @@ export default function EmploymentSection({
             checked={form.active}
             onChange={handleChange}
           />
+
           <span>
             {form.active ? 'Funcionário ativo' : 'Funcionário inativo'}
           </span>
@@ -27,7 +28,7 @@ export default function EmploymentSection({
       </div>
 
       <div className="employment-grid">
-        <div>
+        <div className="field-tooltip-wrapper">
           <select
             className={errors.roleId ? 'field-error' : ''}
             name="roleId"
@@ -35,6 +36,7 @@ export default function EmploymentSection({
             onChange={handleChange}
           >
             <option value="">Cargo</option>
+
             {roles
               .filter((role) => role.active)
               .map((role) => (
@@ -43,10 +45,14 @@ export default function EmploymentSection({
                 </option>
               ))}
           </select>
-          <FieldError message={errors.roleId} />
+
+          <FieldTooltip
+            message={errors.roleId}
+            visible={Boolean(errors.roleId)}
+          />
         </div>
 
-        <div>
+        <div className="field-tooltip-wrapper">
           <select
             className={errors.branchId ? 'field-error' : ''}
             name="branchId"
@@ -54,6 +60,7 @@ export default function EmploymentSection({
             onChange={handleChange}
           >
             <option value="">Filial</option>
+
             {branches
               .filter((branch) => branch.active)
               .map((branch) => (
@@ -62,7 +69,11 @@ export default function EmploymentSection({
                 </option>
               ))}
           </select>
-          <FieldError message={errors.branchId} />
+
+          <FieldTooltip
+            message={errors.branchId}
+            visible={Boolean(errors.branchId)}
+          />
         </div>
 
         <input
@@ -74,7 +85,7 @@ export default function EmploymentSection({
       </div>
 
       <div className="employment-dates-grid">
-        <div>
+        <div className="field-tooltip-wrapper">
           <input
             className={errors.periodicExamDate ? 'field-error' : ''}
             name="periodicExamDate"
@@ -82,10 +93,14 @@ export default function EmploymentSection({
             onChange={handleChange}
             placeholder="Exame periódico"
           />
-          <FieldError message={errors.periodicExamDate} />
+
+          <FieldTooltip
+            message={errors.periodicExamDate}
+            visible={Boolean(errors.periodicExamDate)}
+          />
         </div>
 
-        <div>
+        <div className="field-tooltip-wrapper">
           <input
             className={errors.admissionDate ? 'field-error' : ''}
             name="admissionDate"
@@ -93,11 +108,15 @@ export default function EmploymentSection({
             onChange={handleChange}
             placeholder="Admissão"
           />
-          <FieldError message={errors.admissionDate} />
+
+          <FieldTooltip
+            message={errors.admissionDate}
+            visible={Boolean(errors.admissionDate)}
+          />
         </div>
 
         {!form.active && (
-          <div>
+          <div className="field-tooltip-wrapper">
             <input
               className={errors.dismissalDate ? 'field-error' : ''}
               name="dismissalDate"
@@ -105,7 +124,11 @@ export default function EmploymentSection({
               onChange={handleChange}
               placeholder="Data demissional"
             />
-            <FieldError message={errors.dismissalDate} />
+
+            <FieldTooltip
+              message={errors.dismissalDate}
+              visible={Boolean(errors.dismissalDate)}
+            />
           </div>
         )}
       </div>

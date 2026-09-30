@@ -162,3 +162,8 @@
 
   color: #3557b7;
 }
+
+.field-tooltip-wrapper {
+  position: relative;
+  width: 100%;
+}
