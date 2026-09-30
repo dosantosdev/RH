@@ -8,14 +8,9 @@ import {
   getPeriodicExamAlerts
 } from '../../services/dashboard'
 
-import sol from '../../assets/sol.png'
-import chuva from '../../assets/chuva.png'
-import nublado from '../../assets/nublado.png'
-
 import { hasPermission } from '../../services/permissions'
 
 export default function Dashboard() {
-  const [weather, setWeather] = useState(null)
   const [examAlerts, setExamAlerts] = useState([])
 
   const [birthdayEmployees, setBirthdayEmployees] = useState([])
@@ -23,32 +18,10 @@ export default function Dashboard() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    fetch(
-      'https://api.weatherapi.com/v1/current.json?key=0274017409e24f7b9da21350260305&q=Sao Lourenco do Sul&lang=pt'
-    )
-      .then((res) => res.json())
-      .then((data) => setWeather(data))
-      .catch((err) => console.error(err))
-  }, [])
-
-  useEffect(() => {
     setExamAlerts(getPeriodicExamAlerts())
+
     setBirthdayEmployees(getBirthdayEmployees())
   }, [])
-
-  function getWeatherBackground() {
-    const condition = weather?.current?.condition?.text?.toLowerCase() || ''
-
-    if (condition.includes('chuva')) {
-      return chuva
-    }
-
-    if (condition.includes('nublado') || condition.includes('nuvem')) {
-      return nublado
-    }
-
-    return sol
-  }
 
   return (
     <div className="container">
@@ -76,30 +49,6 @@ export default function Dashboard() {
 
         {/* TOPO DASHBOARD */}
         <div className="top-dashboard-cards">
-          {/* 🌤️ CARD CLIMA */}
-          {hasPermission('dashboard_weather') && (
-            <div
-              className="weather-card"
-              style={{
-                backgroundImage: `url(${getWeatherBackground()})`
-              }}
-            >
-              <h3>Previsão do tempo</h3>
-
-              {!weather && <p>Carregando...</p>}
-
-              {weather && (
-                <>
-                  <p className="temp">{weather.current.temp_c}°C</p>
-
-                  <p className="condition">{weather.current.condition.text}</p>
-
-                  <p className="location">📍 {weather.location.name}</p>
-                </>
-              )}
-            </div>
-          )}
-
           {/* ⚠️ CARD EXAMES */}
           <div className="exam-card">
             <div className="birthday-header">

@@ -24,6 +24,9 @@ function createInitialForm() {
 
 export default function EmployeeCreate() {
   const [formData, setFormData] = useState(createInitialForm)
+  const [fieldErrors, setFieldErrors] = useState({})
+  const [validationAttempt, setValidationAttempt] = useState(0)
+
   const { toast, showToast } = useToast()
 
   if (!hasPermission('employees_create')) {
@@ -36,19 +39,30 @@ export default function EmployeeCreate() {
         'Você não tem permissão para cadastrar funcionários.',
         'error'
       )
-
       return false
     }
 
     const roles = getStoredArray('roles')
     const employees = getEmployees()
-
     const errors = validateEmployee(formData, employees, roles)
 
     if (errors.length > 0) {
-      showToast(errors[0], 'warning')
+      const errorsByField = {}
+
+      errors.forEach((error) => {
+        if (error.field && !errorsByField[error.field]) {
+          errorsByField[error.field] = error.message
+        }
+      })
+
+      setFieldErrors(errorsByField)
+      setValidationAttempt((prev) => prev + 1)
+      showToast(errors[0].message, 'warning')
+
       return false
     }
+
+    setFieldErrors({})
 
     const newEmployee = {
       ...formData,
@@ -90,7 +104,6 @@ export default function EmployeeCreate() {
     <div className="employee-create-page">
       <div className="employee-create-header">
         <h2>Cadastro de Funcionário</h2>
-
         <p>Preencha as informações do novo funcionário</p>
       </div>
 
@@ -101,6 +114,9 @@ export default function EmployeeCreate() {
         setFormData={setFormData}
         handleSaveEmployee={handleSaveEmployee}
         handlePhotoUpload={handlePhotoUpload}
+        fieldErrors={fieldErrors}
+        setFieldErrors={setFieldErrors}
+        validationAttempt={validationAttempt}
       />
     </div>
   )

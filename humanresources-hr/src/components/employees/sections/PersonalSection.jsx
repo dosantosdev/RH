@@ -4,7 +4,8 @@ export default function PersonalSection({
   form,
   handleChange,
   handlePhotoUpload,
-  fileRef
+  fileRef,
+  errors = {}
 }) {
   return (
     <div className="form-section">
@@ -13,14 +14,16 @@ export default function PersonalSection({
           <h3 className="form-section-title">Dados pessoais</h3>
 
           <div className="personal-grid">
+            {/* NOME */}
             <input
-              className="field-full"
+              className={`field-full ${errors.name ? 'field-error' : ''}`}
               name="name"
               value={form.name}
               onChange={handleChange}
               placeholder="Nome completo"
             />
 
+            {/* SEXO */}
             <select
               className="field-small"
               name="gender"
@@ -28,12 +31,11 @@ export default function PersonalSection({
               onChange={handleChange}
             >
               <option value="">Sexo</option>
-
               <option value="Masculino">Masculino</option>
-
               <option value="Feminino">Feminino</option>
             </select>
 
+            {/* ESTADO CIVIL */}
             <select
               className="field-small"
               name="maritalStatus"
@@ -41,18 +43,14 @@ export default function PersonalSection({
               onChange={handleChange}
             >
               <option value="">Estado civil</option>
-
               <option value="Solteiro">Solteiro</option>
-
               <option value="Casado">Casado</option>
-
               <option value="União estável">União estável</option>
-
               <option value="Divorciado">Divorciado</option>
-
               <option value="Viúvo">Viúvo</option>
             </select>
 
+            {/* ESCOLARIDADE */}
             <select
               className="field-small"
               name="education"
@@ -60,33 +58,30 @@ export default function PersonalSection({
               onChange={handleChange}
             >
               <option value="">Escolaridade</option>
-
               <option value="Fundamental Incompleto">
                 Fundamental Incompleto
               </option>
-
               <option value="Fundamental Completo">Fundamental Completo</option>
-
               <option value="Ensino Médio Incompleto">
                 Ensino Médio Incompleto
               </option>
-
               <option value="Ensino Médio Completo">
                 Ensino Médio Completo
               </option>
-
               <option value="Ensino Superior Incompleto">
                 Ensino Superior Incompleto
               </option>
-
               <option value="Ensino Superior Completo">
                 Ensino Superior Completo
               </option>
             </select>
 
+            {/* DADOS DE NASCIMENTO */}
             <div className="birth-grid">
               <input
-                className="birth-date"
+                className={`birth-date ${
+                  errors.birthDate ? 'field-error' : ''
+                }`}
                 name="birthDate"
                 value={form.birthDate}
                 onChange={handleChange}
@@ -118,6 +113,7 @@ export default function PersonalSection({
               />
             </div>
 
+            {/* FILIAÇÃO */}
             <input
               className="field-medium"
               name="motherName"
@@ -136,11 +132,12 @@ export default function PersonalSection({
           </div>
         </div>
 
+        {/* FOTO */}
         <div className="photo-upload">
           <button
             type="button"
             className="photo-preview"
-            onClick={() => fileRef.current.click()}
+            onClick={() => fileRef.current?.click()}
           >
             {form.photo ? (
               <img

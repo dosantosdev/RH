@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useEffect, useRef } from 'react'
 
 import './employeeForm.css'
 
@@ -22,11 +22,13 @@ export default function EmployeeForm({
   formData,
   setFormData,
   handleSaveEmployee,
-  handlePhotoUpload
+  handlePhotoUpload,
+  fieldErrors = {},
+  setFieldErrors,
+  validationAttempt = 0
 }) {
   const fileRef = useRef()
 
-  // ✅ mantém compatibilidade com o código já existente
   const form = formData
 
   const {
@@ -38,11 +40,33 @@ export default function EmployeeForm({
     handleDependentFieldChange
   } = useEmployeeForm(formData, setFormData)
 
-  // ✅ SELECT RETORNA STRING
-  // ✅ role.id geralmente é NUMBER
-  // ✅ precisa converter
-
   const selectedRole = roles.find((role) => role.id === Number(form.roleId))
+
+  function handleFieldChange(e) {
+    const fieldName = e.target.name
+
+    handleChange(e)
+
+    if (fieldErrors[fieldName]) {
+      setFieldErrors((prev) => {
+        const updated = { ...prev }
+        delete updated[fieldName]
+        return updated
+      })
+    }
+  }
+
+  function handleFieldCheckboxChange(e, field) {
+    handleCheckboxChange(e, field)
+
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const updated = { ...prev }
+        delete updated[field]
+        return updated
+      })
+    }
+  }
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -54,43 +78,66 @@ export default function EmployeeForm({
     }
   }
 
+  // O foco/rolagem acontece somente quando uma nova tentativa de envio é feita.
+  // Assim, digitar em um campo inválido não faz a página pular para outro campo.
+  useEffect(() => {
+    if (!validationAttempt) return
+
+    const firstError = Object.keys(fieldErrors)[0]
+
+    if (!firstError) return
+
+    const field = document.querySelector(`[name="${firstError}"]`)
+
+    if (!field) return
+
+    field.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    })
+
+    setTimeout(() => {
+      field.focus({ preventScroll: true })
+    }, 350)
+  }, [validationAttempt])
+
   return (
     <form className="form-container" onSubmit={handleSubmit}>
       <EmploymentSection
         form={form}
-        handleChange={handleChange}
+        handleChange={handleFieldChange}
         roles={roles}
         branches={branches}
+        errors={fieldErrors}
       />
 
       <PersonalSection
         form={form}
-        handleChange={handleChange}
+        handleChange={handleFieldChange}
         handlePhotoUpload={handlePhotoUpload}
         fileRef={fileRef}
+        errors={fieldErrors}
       />
 
-      <PhysicalSection form={form} handleChange={handleChange} />
+      <PhysicalSection form={form} handleChange={handleFieldChange} />
 
-      <ContactSection form={form} handleChange={handleChange} />
+      <ContactSection form={form} handleChange={handleFieldChange} />
 
       <DocumentsSection
         form={form}
-        handleChange={handleChange}
-        handleCheckboxArray={handleCheckboxChange}
+        handleChange={handleFieldChange}
+        handleCheckboxArray={handleFieldCheckboxChange}
+        errors={fieldErrors}
       />
 
-      <AddressSection form={form} handleChange={handleChange} />
-
-      <BankingSection form={form} handleChange={handleChange} />
-
-      <TransportSection form={form} handleChange={handleChange} />
-
-      <SpouseSection form={form} handleChange={handleChange} />
+      <AddressSection form={form} handleChange={handleFieldChange} />
+      <BankingSection form={form} handleChange={handleFieldChange} />
+      <TransportSection form={form} handleChange={handleFieldChange} />
+      <SpouseSection form={form} handleChange={handleFieldChange} />
 
       <DependentsSection
         form={form}
-        handleChange={handleChange}
+        handleChange={handleFieldChange}
         handleDependents={handleDependentsChange}
         handleDependentChange={handleDependentFieldChange}
       />
@@ -98,7 +145,8 @@ export default function EmployeeForm({
       <CertificatesSection
         form={form}
         selectedRole={selectedRole}
-        handleCheckboxArray={handleCheckboxChange}
+        handleCheckboxArray={handleFieldCheckboxChange}
+        errors={fieldErrors}
       />
 
       {(hasPermission('employees_create') ||

@@ -169,3 +169,39 @@
 
   transform: translateY(-1px);
 }
+
+/* ==============================
+   VALIDAÇÃO DOS CAMPOS
+   ============================== */
+
+/* Mantém o tamanho original do campo */
+.form-container input,
+.form-container select,
+.form-container textarea {
+  box-sizing: border-box;
+}
+
+/* Campo com erro */
+.form-container input.field-error,
+.form-container select.field-error,
+.form-container textarea.field-error {
+  border: 1px solid #dc3545 !important;
+  background-color: #fff5f5;
+}
+
+/* Campo com erro quando recebe foco */
+.form-container input.field-error:focus,
+.form-container select.field-error:focus,
+.form-container textarea.field-error:focus {
+  border-color: #dc3545 !important;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+  outline: none;
+}
+
+/*
+ * As mensagens de erro não fazem mais parte do layout.
+ * O problema será informado pelo Toast e o campo ficará vermelho.
+ */
+.field-error-message {
+  display: none;
+}

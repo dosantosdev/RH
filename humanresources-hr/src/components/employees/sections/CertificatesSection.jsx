@@ -1,11 +1,12 @@
 import './certificatesSection.css'
-
 import { getStoredArray } from '../../../services/storage'
+import FieldError from './FieldError'
 
 export default function CertificatesSection({
   form,
   selectedRole,
-  handleCheckboxArray
+  handleCheckboxArray,
+  errors = {}
 }) {
   const certificates = getStoredArray('certificates')
 
@@ -14,10 +15,8 @@ export default function CertificatesSection({
   )
 
   const requiredCategories = selectedRole?.requiredCnhCategories || []
-
   const requiresCnh = selectedRole?.requiresCnh
 
-  // ✅ não renderiza se não houver exigências
   if (!requiresCnh && requiredCertificates.length === 0) {
     return null
   }
@@ -26,12 +25,9 @@ export default function CertificatesSection({
     <div className="form-section">
       <h3 className="form-section-title">Certificações obrigatórias</h3>
 
-      {/* CNH */}
-
       {requiresCnh && (
         <div className="required-cnh">
           <span className="required-label">CNH obrigatória:</span>
-
           <div className="required-categories">
             {requiredCategories.map((category) => (
               <span key={category} className="category-badge">
@@ -42,10 +38,8 @@ export default function CertificatesSection({
         </div>
       )}
 
-      {/* CERTIFICADOS */}
-
       {requiredCertificates.length > 0 && (
-        <div className="certificates-group">
+        <div className={errors.certificates ? 'certificates-group field-error-box' : 'certificates-group'}>
           {requiredCertificates.map((certificate) => (
             <label key={certificate.id}>
               <input
@@ -54,10 +48,10 @@ export default function CertificatesSection({
                 checked={form.certificates.includes(certificate.name)}
                 onChange={(e) => handleCheckboxArray(e, 'certificates')}
               />
-
               {certificate.name}
             </label>
           ))}
+          <FieldError message={errors.certificates} />
         </div>
       )}
     </div>
