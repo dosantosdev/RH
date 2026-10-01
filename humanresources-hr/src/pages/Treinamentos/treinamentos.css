@@ -1728,3 +1728,57 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ==============================
+   VISUALIZAÇÃO DO TREINAMENTO
+============================== */
+
+.training-view-value {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e2e2e2;
+  border-radius: 7px;
+  background: #f8f8f8;
+  color: #333;
+  font-size: 13px;
+}
+
+.training-view-text {
+  align-items: flex-start;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.training-view-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.training-view-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 15px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.training-view-summary strong {
+  font-size: 20px;
+}
+
+.training-view-summary span {
+  font-size: 12px;
+  color: #777;
+}
+
+@media (max-width: 700px) {
+  .training-view-summary {
+    grid-template-columns: 1fr;
+  }
+}

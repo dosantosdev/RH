@@ -4,6 +4,7 @@ import './treinamentos.css'
 
 import TrainingContent from '../../components/trainings/TrainingContent'
 import TrainingParticipants from '../../components/trainings/TrainingParticipants'
+import TrainingProgressList from '../../components/trainings/TrainingProgressList'
 import TrainingAssessment from '../../components/trainings/TrainingAssessment'
 
 import {
@@ -27,18 +28,52 @@ export default function Treinamentos() {
   }
 
   const [trainings, setTrainings] = useState([])
+
   const [training, setTraining] = useState(initialTraining)
 
   const [showForm, setShowForm] = useState(false)
+
   const [search, setSearch] = useState('')
 
+  const [editingTraining, setEditingTraining] = useState(null)
+
+  /*
+   * Modal de conteúdos
+   */
   const [selectedTraining, setSelectedTraining] = useState(null)
 
+  /*
+   * Modal de participantes
+   *
+   * Aqui ficam:
+   *
+   * - adicionar funcionário
+   * - remover funcionário
+   * - consultar participantes
+   * - avaliação individual
+   * - certificado
+   */
   const [selectedParticipantsTraining, setSelectedParticipantsTraining] =
     useState(null)
 
+  /*
+   * Modal de progresso geral.
+   *
+   * Mostra todos os participantes e o progresso
+   * de cada um.
+   */
+  const [selectedProgressTraining, setSelectedProgressTraining] = useState(null)
+
+  /*
+   * Modal para configuração da avaliação.
+   */
   const [selectedAssessmentTraining, setSelectedAssessmentTraining] =
     useState(null)
+
+  /*
+   * Modal de visualização.
+   */
+  const [selectedViewTraining, setSelectedViewTraining] = useState(null)
 
   useEffect(() => {
     setTrainings(getTrainings())
@@ -51,6 +86,36 @@ export default function Treinamentos() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }))
+  }
+
+  function handleOpenForm() {
+    setTraining({
+      ...initialTraining
+    })
+
+    setEditingTraining(null)
+
+    setShowForm(true)
+  }
+
+  function handleEditTraining(item) {
+    setTraining({
+      ...item
+    })
+
+    setEditingTraining(item)
+
+    setShowForm(true)
+  }
+
+  function handleCloseForm() {
+    setShowForm(false)
+
+    setEditingTraining(null)
+
+    setTraining({
+      ...initialTraining
+    })
   }
 
   function handleUpdateTraining(updatedTraining) {
@@ -78,6 +143,42 @@ export default function Treinamentos() {
       return
     }
 
+    /*
+     * EDIÇÃO
+     *
+     * Mantemos todos os dados já existentes no treinamento.
+     */
+    if (editingTraining) {
+      const updatedTraining = {
+        ...editingTraining,
+
+        ...training,
+
+        duration: Number(training.duration) || 0,
+
+        validity: Number(training.validity) || 0,
+
+        minimumScore: Number(training.minimumScore) || 0
+      }
+
+      const updatedTrainings = updateTraining(updatedTraining)
+
+      setTrainings(updatedTrainings)
+
+      setShowForm(false)
+
+      setEditingTraining(null)
+
+      setTraining({
+        ...initialTraining
+      })
+
+      return
+    }
+
+    /*
+     * NOVO TREINAMENTO
+     */
     const newTraining = {
       ...training,
 
@@ -104,15 +205,11 @@ export default function Treinamentos() {
 
     setTrainings(updatedTrainings)
 
-    setTraining(initialTraining)
+    setTraining({
+      ...initialTraining
+    })
 
     setShowForm(false)
-  }
-
-  function handleOpenForm() {
-    setTraining(initialTraining)
-
-    setShowForm(true)
   }
 
   const filteredTrainings = trainings.filter((item) =>
@@ -126,9 +223,9 @@ export default function Treinamentos() {
 
   return (
     <div className="trainings-page">
-      {/* ==============================
+      {/* ==================================================
           CABEÇALHO
-      ============================== */}
+      ================================================== */}
 
       <div className="trainings-header">
         <div>
@@ -146,9 +243,9 @@ export default function Treinamentos() {
         </button>
       </div>
 
-      {/* ==============================
+      {/* ==================================================
           RESUMO
-      ============================== */}
+      ================================================== */}
 
       <div className="training-summary">
         <div className="training-summary-card">
@@ -192,9 +289,9 @@ export default function Treinamentos() {
         </div>
       </div>
 
-      {/* ==============================
+      {/* ==================================================
           LISTAGEM
-      ============================== */}
+      ================================================== */}
 
       <div className="trainings-content">
         <div className="trainings-list-header">
@@ -260,6 +357,10 @@ export default function Treinamentos() {
                   {item.mandatory && <span>⚠️ Obrigatório</span>}
                 </div>
 
+                {/* ==================================================
+                    AÇÕES
+                ================================================== */}
+
                 <div className="training-card-actions">
                   <button
                     type="button"
@@ -277,14 +378,31 @@ export default function Treinamentos() {
 
                   <button
                     type="button"
+                    onClick={() => setSelectedProgressTraining(item)}
+                  >
+                    Progresso
+                  </button>
+
+                  <button
+                    type="button"
                     onClick={() => setSelectedAssessmentTraining(item)}
                   >
                     Avaliação
                   </button>
 
-                  <button type="button">Visualizar</button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedViewTraining(item)}
+                  >
+                    Visualizar
+                  </button>
 
-                  <button type="button">Editar</button>
+                  <button
+                    type="button"
+                    onClick={() => handleEditTraining(item)}
+                  >
+                    Editar
+                  </button>
                 </div>
               </div>
             ))}
@@ -292,24 +410,30 @@ export default function Treinamentos() {
         )}
       </div>
 
-      {/* ==============================
-          MODAL - NOVO TREINAMENTO
-      ============================== */}
+      {/* ==================================================
+          MODAL - NOVO / EDITAR TREINAMENTO
+      ================================================== */}
 
       {showForm && (
         <div className="training-modal-overlay">
           <div className="training-modal">
             <div className="training-modal-header">
               <div>
-                <h2>Novo treinamento</h2>
+                <h2>
+                  {editingTraining ? 'Editar treinamento' : 'Novo treinamento'}
+                </h2>
 
-                <p>Preencha as informações básicas do treinamento.</p>
+                <p>
+                  {editingTraining
+                    ? 'Altere as informações do treinamento.'
+                    : 'Preencha as informações básicas do treinamento.'}
+                </p>
               </div>
 
               <button
                 type="button"
                 className="training-modal-close"
-                onClick={() => setShowForm(false)}
+                onClick={handleCloseForm}
               >
                 ×
               </button>
@@ -470,13 +594,13 @@ export default function Treinamentos() {
                 <button
                   type="button"
                   className="training-secondary-button"
-                  onClick={() => setShowForm(false)}
+                  onClick={handleCloseForm}
                 >
                   Cancelar
                 </button>
 
                 <button type="submit" className="training-primary-button">
-                  Salvar treinamento
+                  {editingTraining ? 'Salvar alterações' : 'Salvar treinamento'}
                 </button>
               </div>
             </form>
@@ -484,9 +608,9 @@ export default function Treinamentos() {
         </div>
       )}
 
-      {/* ==============================
+      {/* ==================================================
           MODAL - CONTEÚDOS
-      ============================== */}
+      ================================================== */}
 
       {selectedTraining && (
         <TrainingContent
@@ -496,9 +620,9 @@ export default function Treinamentos() {
         />
       )}
 
-      {/* ==============================
+      {/* ==================================================
           MODAL - PARTICIPANTES
-      ============================== */}
+      ================================================== */}
 
       {selectedParticipantsTraining && (
         <TrainingParticipants
@@ -507,15 +631,206 @@ export default function Treinamentos() {
         />
       )}
 
-      {/* ==============================
+      {/* ==================================================
+          MODAL - PROGRESSO GERAL
+      ================================================== */}
+
+      {selectedProgressTraining && (
+        <TrainingProgressList
+          training={selectedProgressTraining}
+          onClose={() => setSelectedProgressTraining(null)}
+        />
+      )}
+
+      {/* ==================================================
           MODAL - AVALIAÇÃO
-      ============================== */}
+      ================================================== */}
 
       {selectedAssessmentTraining && (
         <TrainingAssessment
           training={selectedAssessmentTraining}
           onClose={() => setSelectedAssessmentTraining(null)}
         />
+      )}
+
+      {/* ==================================================
+          MODAL - VISUALIZAR
+      ================================================== */}
+
+      {selectedViewTraining && (
+        <div
+          className="training-modal-overlay"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSelectedViewTraining(null)
+            }
+          }}
+        >
+          <div
+            className="training-content-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* CABEÇALHO */}
+
+            <div className="training-modal-header">
+              <div>
+                <h2>Visualizar treinamento</h2>
+
+                <p>{selectedViewTraining.name}</p>
+              </div>
+
+              <button
+                type="button"
+                className="training-modal-close"
+                onClick={() => setSelectedViewTraining(null)}
+              >
+                ×
+              </button>
+            </div>
+
+            {/* CONTEÚDO */}
+
+            <div className="training-content-body">
+              <div className="training-view-summary">
+                <div className="training-view-item">
+                  <span>Nome</span>
+
+                  <strong>{selectedViewTraining.name || '-'}</strong>
+                </div>
+
+                <div className="training-view-item">
+                  <span>Categoria</span>
+
+                  <strong>
+                    {selectedViewTraining.category || 'Sem categoria'}
+                  </strong>
+                </div>
+
+                <div className="training-view-item">
+                  <span>Status</span>
+
+                  <strong>
+                    {selectedViewTraining.active ? 'Ativo' : 'Inativo'}
+                  </strong>
+                </div>
+
+                <div className="training-view-item">
+                  <span>Carga horária</span>
+
+                  <strong>{selectedViewTraining.duration || 0} hora(s)</strong>
+                </div>
+
+                <div className="training-view-item">
+                  <span>Validade</span>
+
+                  <strong>
+                    {selectedViewTraining.validity
+                      ? `${selectedViewTraining.validity} mês(es)`
+                      : 'Não informada'}
+                  </strong>
+                </div>
+
+                <div className="training-view-item">
+                  <span>Nota mínima</span>
+
+                  <strong>{selectedViewTraining.minimumScore || 0}%</strong>
+                </div>
+
+                <div className="training-view-item">
+                  <span>Participantes</span>
+
+                  <strong>{selectedViewTraining.participants || 0}</strong>
+                </div>
+
+                <div className="training-view-item">
+                  <span>Obrigatório</span>
+
+                  <strong>
+                    {selectedViewTraining.mandatory ? 'Sim' : 'Não'}
+                  </strong>
+                </div>
+              </div>
+
+              {/* DESCRIÇÃO */}
+
+              <div className="training-view-section">
+                <h3>Descrição</h3>
+
+                <p className="training-view-text">
+                  {selectedViewTraining.description ||
+                    'Nenhuma descrição cadastrada.'}
+                </p>
+              </div>
+
+              {/* OBJETIVO */}
+
+              <div className="training-view-section">
+                <h3>Objetivo</h3>
+
+                <p className="training-view-text">
+                  {selectedViewTraining.objective ||
+                    'Nenhum objetivo informado.'}
+                </p>
+              </div>
+
+              {/* ESTRUTURA */}
+
+              <div className="training-view-section">
+                <h3>Estrutura do treinamento</h3>
+
+                <div className="training-view-summary">
+                  <div className="training-view-item">
+                    <span>Conteúdos</span>
+
+                    <strong>
+                      {selectedViewTraining.contents?.length || 0}
+                    </strong>
+                  </div>
+
+                  <div className="training-view-item">
+                    <span>Perguntas</span>
+
+                    <strong>
+                      {selectedViewTraining.questions?.length || 0}
+                    </strong>
+                  </div>
+
+                  <div className="training-view-item">
+                    <span>Participantes</span>
+
+                    <strong>
+                      {selectedViewTraining.participantIds?.length ||
+                        selectedViewTraining.participants ||
+                        0}
+                    </strong>
+                  </div>
+
+                  <div className="training-view-item">
+                    <span>Refazer avaliação</span>
+
+                    <strong>
+                      {selectedViewTraining.allowRetake
+                        ? 'Permitido'
+                        : 'Não permitido'}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* RODAPÉ */}
+
+            <div className="training-modal-footer">
+              <button
+                type="button"
+                className="training-secondary-button"
+                onClick={() => setSelectedViewTraining(null)}
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

@@ -1,7 +1,9 @@
 import { getStoredArray, setStored } from './storage'
 
+const STORAGE_KEY = 'trainingParticipants'
+
 export function getTrainingParticipants() {
-  return getStoredArray('trainingParticipants')
+  return getStoredArray(STORAGE_KEY)
 }
 
 export function addTrainingParticipant(participant) {
@@ -9,7 +11,7 @@ export function addTrainingParticipant(participant) {
 
   const updatedParticipants = [...participants, participant]
 
-  setStored('trainingParticipants', updatedParticipants)
+  setStored(STORAGE_KEY, updatedParticipants)
 
   return updatedParticipants
 }
@@ -21,45 +23,19 @@ export function updateTrainingParticipant(updatedParticipant) {
     participant.id === updatedParticipant.id ? updatedParticipant : participant
   )
 
-  setStored('trainingParticipants', updatedParticipants)
+  setStored(STORAGE_KEY, updatedParticipants)
 
   return updatedParticipants
 }
 
-export function deleteTrainingParticipant(id) {
+export function deleteTrainingParticipant(participantId) {
   const participants = getTrainingParticipants()
 
   const updatedParticipants = participants.filter(
-    (participant) => participant.id !== id
+    (participant) => participant.id !== participantId
   )
 
-  setStored('trainingParticipants', updatedParticipants)
-
-  return updatedParticipants
-}
-
-export function addAssessmentAttempt(participantId, attempt) {
-  const participants = getTrainingParticipants()
-
-  const updatedParticipants = participants.map((participant) => {
-    if (participant.id !== participantId) {
-      return participant
-    }
-
-    const updatedParticipant = {
-      ...participant,
-
-      attempts: [...(participant.attempts || []), attempt],
-
-      score: attempt.score,
-
-      assessmentStatus: attempt.approved ? 'approved' : 'failed'
-    }
-
-    return updateParticipantCompletion(updatedParticipant)
-  })
-
-  setStored('trainingParticipants', updatedParticipants)
+  setStored(STORAGE_KEY, updatedParticipants)
 
   return updatedParticipants
 }
@@ -76,54 +52,87 @@ export function updateParticipantProgress(
       return participant
     }
 
-    const updatedParticipant = {
-      ...participant,
+    const updatedProgress = Number(progress) || 0
 
-      progress,
+    let status = 'pending'
 
-      completedContents:
-        completedContents || participant.completedContents || []
+    if (participant.assessmentStatus === 'failed') {
+      status = 'failed'
+    } else if (
+      updatedProgress >= 100 &&
+      participant.assessmentStatus === 'approved'
+    ) {
+      status = 'completed'
+    } else if (updatedProgress > 0) {
+      status = 'in_progress'
     }
 
-    return updateParticipantCompletion(updatedParticipant)
+    return {
+      ...participant,
+
+      completedContents,
+
+      progress: updatedProgress,
+
+      status,
+
+      completedAt:
+        status === 'completed'
+          ? participant.completedAt || new Date().toISOString()
+          : null
+    }
   })
 
-  setStored('trainingParticipants', updatedParticipants)
+  setStored(STORAGE_KEY, updatedParticipants)
 
   return updatedParticipants
 }
 
-function updateParticipantCompletion(participant) {
-  const contentsCompleted = Number(participant.progress) >= 100
+export function addAssessmentAttempt(participantId, attempt) {
+  const participants = getTrainingParticipants()
 
-  const assessmentApproved = participant.assessmentStatus === 'approved'
+  const updatedParticipants = participants.map((participant) => {
+    if (participant.id !== participantId) {
+      return participant
+    }
 
-  if (contentsCompleted && assessmentApproved) {
+    const attempts = Array.isArray(participant.attempts)
+      ? participant.attempts
+      : []
+
+    const updatedAttempts = [...attempts, attempt]
+
+    const assessmentStatus = attempt.approved ? 'approved' : 'failed'
+
+    let status = 'pending'
+
+    if (assessmentStatus === 'failed') {
+      status = 'failed'
+    } else if (participant.progress >= 100) {
+      status = 'completed'
+    } else if (participant.progress > 0) {
+      status = 'in_progress'
+    }
+
     return {
       ...participant,
 
-      status: 'completed',
+      attempts: updatedAttempts,
 
-      completedAt: participant.completedAt || new Date().toISOString()
+      score: attempt.score,
+
+      assessmentStatus,
+
+      status,
+
+      completedAt:
+        status === 'completed'
+          ? participant.completedAt || new Date().toISOString()
+          : null
     }
-  }
+  })
 
-  if (participant.assessmentStatus === 'failed') {
-    return {
-      ...participant,
-      status: 'failed'
-    }
-  }
+  setStored(STORAGE_KEY, updatedParticipants)
 
-  if (Number(participant.progress) > 0) {
-    return {
-      ...participant,
-      status: 'in_progress'
-    }
-  }
-
-  return {
-    ...participant,
-    status: 'pending'
-  }
+  return updatedParticipants
 }

@@ -22,7 +22,11 @@ export default function TrainingProgress({ training, participant, onClose }) {
   }
 
   function calculateStatus(progress) {
-    if (progress >= 100) {
+    if (currentParticipant.assessmentStatus === 'failed') {
+      return 'failed'
+    }
+
+    if (progress >= 100 && currentParticipant.assessmentStatus === 'approved') {
       return 'completed'
     }
 
@@ -44,26 +48,25 @@ export default function TrainingProgress({ training, participant, onClose }) {
 
     const progress = calculateProgress(updatedCompleted)
 
-    const status = calculateStatus(progress)
-
     const updatedParticipant = {
       ...currentParticipant,
 
       completedContents: updatedCompleted,
 
-      progress,
-
-      status,
-
-      completedAt:
-        status === 'completed'
-          ? currentParticipant.completedAt || new Date().toISOString()
-          : null
+      progress
     }
 
     updateParticipantProgress(currentParticipant.id, progress, updatedCompleted)
 
-    setCurrentParticipant(updatedParticipant)
+    const storedParticipants = JSON.parse(
+      localStorage.getItem('trainingParticipants') || '[]'
+    )
+
+    const savedParticipant = storedParticipants.find(
+      (item) => item.id === currentParticipant.id
+    )
+
+    setCurrentParticipant(savedParticipant || updatedParticipant)
   }
 
   function renderContent(content) {
@@ -78,11 +81,15 @@ export default function TrainingProgress({ training, participant, onClose }) {
       case 'video':
         return (
           <div className="training-progress-content-video">
-            {content.url ? (
-              <video controls width="100%">
-                <source src={content.url} />
-                Seu navegador não suporta reprodução de vídeo.
-              </video>
+            {content.content ? (
+              <iframe
+                src={content.content}
+                title={content.title || 'Vídeo'}
+                width="100%"
+                height="450"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
             ) : (
               <p>Vídeo não disponível.</p>
             )}
@@ -92,13 +99,24 @@ export default function TrainingProgress({ training, participant, onClose }) {
       case 'pdf':
         return (
           <div className="training-progress-content-pdf">
-            {content.url ? (
-              <iframe
-                src={content.url}
-                title={content.title || 'Documento PDF'}
-                width="100%"
-                height="500"
-              />
+            {content.content ? (
+              <>
+                <iframe
+                  src={content.content}
+                  title={content.title || 'Documento PDF'}
+                  width="100%"
+                  height="500"
+                />
+
+                <a
+                  href={content.content}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="training-pdf-link"
+                >
+                  Abrir PDF em nova aba
+                </a>
+              </>
             ) : (
               <p>PDF não disponível.</p>
             )}
@@ -119,6 +137,13 @@ export default function TrainingProgress({ training, participant, onClose }) {
   const progress = calculateProgress(completedContents)
 
   const status = calculateStatus(progress)
+
+  const statusLabels = {
+    pending: 'Pendente',
+    in_progress: 'Em andamento',
+    completed: 'Concluído',
+    failed: 'Reprovado'
+  }
 
   return (
     <div className="training-modal-overlay">
@@ -154,12 +179,18 @@ export default function TrainingProgress({ training, participant, onClose }) {
             <div>
               <span>Status</span>
 
+              <strong>{statusLabels[status]}</strong>
+            </div>
+
+            <div>
+              <span>Avaliação</span>
+
               <strong>
-                {status === 'completed'
-                  ? 'Concluído'
-                  : status === 'in_progress'
-                    ? 'Em andamento'
-                    : 'Pendente'}
+                {currentParticipant.assessmentStatus === 'approved'
+                  ? 'Aprovada'
+                  : currentParticipant.assessmentStatus === 'failed'
+                    ? 'Reprovada'
+                    : 'Não realizada'}
               </strong>
             </div>
           </div>

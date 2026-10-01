@@ -9,7 +9,9 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
   }
 
   const [content, setContent] = useState(initialContent)
+
   const [selectedContent, setSelectedContent] = useState(null)
+
   const [editingContent, setEditingContent] = useState(null)
 
   function handleChange(e) {
@@ -36,12 +38,15 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
 
     const newContent = {
       ...content,
+
       id: Date.now(),
+
       order: training.contents?.length + 1 || 1
     }
 
     const updatedTraining = {
       ...training,
+
       contents: [...(training.contents || []), newContent]
     }
 
@@ -49,6 +54,7 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
 
     setContent({
       ...initialContent,
+
       order: updatedTraining.contents.length + 1
     })
   }
@@ -83,8 +89,11 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
       item.id === editingContent.id
         ? {
             ...item,
+
             title: content.title,
+
             type: content.type,
+
             content: content.content
           }
         : item
@@ -92,6 +101,7 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
 
     onUpdate({
       ...training,
+
       contents: updatedContents
     })
 
@@ -99,6 +109,7 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
 
     setContent({
       ...initialContent,
+
       order: updatedContents.length + 1
     })
   }
@@ -108,6 +119,7 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
 
     setContent({
       ...initialContent,
+
       order: training.contents?.length + 1 || 1
     })
   }
@@ -117,11 +129,13 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
       .filter((item) => item.id !== contentId)
       .map((item, index) => ({
         ...item,
+
         order: index + 1
       }))
 
     onUpdate({
       ...training,
+
       contents: updatedContents
     })
 
@@ -131,8 +145,10 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
 
     if (editingContent?.id === contentId) {
       setEditingContent(null)
+
       setContent({
         ...initialContent,
+
         order: updatedContents.length + 1
       })
     }
@@ -159,11 +175,13 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
 
     const updatedContents = contents.map((item, index) => ({
       ...item,
+
       order: index + 1
     }))
 
     onUpdate({
       ...training,
+
       contents: updatedContents
     })
   }
@@ -251,7 +269,7 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
         {/* CONTEÚDO */}
 
         <div className="training-content-body">
-          {/* LISTA DE CONTEÚDOS */}
+          {/* LISTA */}
 
           <div className="training-content-list">
             <div className="training-content-section-header">
@@ -264,17 +282,13 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
 
             {training.contents?.length > 0 ? (
               <div className="training-content-items">
-                {[...training.contents]
-                  .sort((a, b) => a.order - b.order)
-                  .map((item, index) => (
+                {[...(training.contents || [])]
+                  .sort((a, b) => (a.order || 0) - (b.order || 0))
+                  .map((item, index, sortedContents) => (
                     <div key={item.id} className="training-content-item">
-                      {/* ORDEM */}
-
                       <div className="training-content-number">
                         {item.order}
                       </div>
-
-                      {/* INFORMAÇÕES */}
 
                       <div
                         className="training-content-info"
@@ -284,8 +298,6 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
 
                         <span>{getTypeLabel(item.type)}</span>
                       </div>
-
-                      {/* MOVER */}
 
                       <div className="training-content-move">
                         <button
@@ -299,15 +311,13 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
 
                         <button
                           type="button"
-                          disabled={index === training.contents.length - 1}
+                          disabled={index === sortedContents.length - 1}
                           onClick={() => moveContent(item.id, 'down')}
                           title="Mover para baixo"
                         >
                           ↓
                         </button>
                       </div>
-
-                      {/* AÇÕES */}
 
                       <div className="training-content-actions">
                         <button
@@ -368,7 +378,7 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
             </div>
           )}
 
-          {/* FORMULÁRIO DE CONTEÚDO */}
+          {/* FORMULÁRIO */}
 
           <form
             className="training-new-content"
@@ -377,8 +387,6 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
             <h3>{editingContent ? 'Editar conteúdo' : 'Adicionar conteúdo'}</h3>
 
             <div className="training-content-form-grid">
-              {/* TÍTULO */}
-
               <div className="training-field full">
                 <label>Título *</label>
 
@@ -390,8 +398,6 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
                   placeholder="Ex.: Introdução à segurança"
                 />
               </div>
-
-              {/* TIPO */}
 
               <div className="training-field">
                 <label>Tipo de conteúdo</label>
@@ -409,15 +415,11 @@ export default function TrainingContent({ training, onClose, onUpdate }) {
                 </select>
               </div>
 
-              {/* ORDEM */}
-
               <div className="training-field">
                 <label>Ordem</label>
 
                 <input type="number" value={content.order} disabled />
               </div>
-
-              {/* CONTEÚDO */}
 
               <div className="training-field full">
                 <label>

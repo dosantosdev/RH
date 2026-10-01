@@ -29,6 +29,7 @@ export default function TrainingTakeAssessment({
   function handleAnswerChange(questionId, answer) {
     setAnswers((prev) => ({
       ...prev,
+
       [questionId]: Number(answer)
     }))
   }
@@ -103,9 +104,13 @@ export default function TrainingTakeAssessment({
 
     setResult({
       score,
+
       minimumScore,
+
       approved,
+
       earnedPoints,
+
       totalPoints
     })
 
@@ -141,6 +146,16 @@ export default function TrainingTakeAssessment({
 
             <p>Este treinamento ainda não possui uma avaliação cadastrada.</p>
           </div>
+
+          <div className="training-modal-footer">
+            <button
+              type="button"
+              className="training-secondary-button"
+              onClick={onClose}
+            >
+              Fechar
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -172,6 +187,16 @@ export default function TrainingTakeAssessment({
             <h3>Nenhuma pergunta cadastrada</h3>
 
             <p>A avaliação ainda não está pronta para ser realizada.</p>
+          </div>
+
+          <div className="training-modal-footer">
+            <button
+              type="button"
+              className="training-secondary-button"
+              onClick={onClose}
+            >
+              Fechar
+            </button>
           </div>
         </div>
       </div>

@@ -5,14 +5,11 @@ import { getStoredArray } from '../../services/storage'
 import {
   addTrainingParticipant,
   deleteTrainingParticipant,
-  getTrainingParticipants
+  getTrainingParticipants,
+  updateTrainingParticipant
 } from '../../services/trainingParticipant'
 
-import TrainingProgress from './TrainingProgress'
-
-import TrainingTakeAssessment from './TrainingTakeAssessment'
-
-import TrainingCertificate from './TrainingCertificate'
+import TrainingParticipantDetails from './TrainingParticipantDetails'
 
 export default function TrainingParticipants({ training, onClose }) {
   const [employees, setEmployees] = useState([])
@@ -23,11 +20,7 @@ export default function TrainingParticipants({ training, onClose }) {
 
   const [selectedParticipant, setSelectedParticipant] = useState(null)
 
-  const [selectedAssessmentParticipant, setSelectedAssessmentParticipant] =
-    useState(null)
-
-  const [selectedCertificateParticipant, setSelectedCertificateParticipant] =
-    useState(null)
+  const [detailsMode, setDetailsMode] = useState('view')
 
   useEffect(() => {
     setEmployees(getStoredArray('employees'))
@@ -57,7 +50,7 @@ export default function TrainingParticipants({ training, onClose }) {
     const employeeId = Number(selectedEmployee)
 
     const alreadyParticipant = participants.some(
-      (participant) => participant.employeeId === employeeId
+      (participant) => Number(participant.employeeId) === employeeId
     )
 
     if (alreadyParticipant) {
@@ -66,7 +59,7 @@ export default function TrainingParticipants({ training, onClose }) {
       return
     }
 
-    const employee = employees.find((item) => item.id === employeeId)
+    const employee = employees.find((item) => Number(item.id) === employeeId)
 
     if (!employee) {
       alert('Funcionário não encontrado.')
@@ -129,53 +122,31 @@ export default function TrainingParticipants({ training, onClose }) {
     if (selectedParticipant?.id === id) {
       setSelectedParticipant(null)
     }
-
-    if (selectedAssessmentParticipant?.id === id) {
-      setSelectedAssessmentParticipant(null)
-    }
-
-    if (selectedCertificateParticipant?.id === id) {
-      setSelectedCertificateParticipant(null)
-    }
   }
 
-  function getStatusLabel(status) {
-    const labels = {
-      pending: 'Pendente',
-
-      in_progress: 'Em andamento',
-
-      completed: 'Concluído',
-
-      failed: 'Reprovado'
-    }
-
-    return labels[status] || status
+  function handleViewParticipant(participant) {
+    setDetailsMode('view')
+    setSelectedParticipant(participant)
   }
 
-  function getAssessmentStatusLabel(status) {
-    const labels = {
-      approved: 'Aprovado',
-
-      failed: 'Reprovado'
-    }
-
-    return labels[status] || 'Não realizada'
+  function handleEditParticipant(participant) {
+    setDetailsMode('edit')
+    setSelectedParticipant(participant)
   }
 
-  function canGenerateCertificate(participant) {
-    return (
-      participant.status === 'completed' &&
-      participant.progress >= 100 &&
-      participant.assessmentStatus === 'approved'
-    )
+  function handleUpdateParticipant(updatedParticipant) {
+    updateTrainingParticipant(updatedParticipant)
+
+    reloadParticipants()
+
+    setSelectedParticipant(updatedParticipant)
   }
 
   const availableEmployees = employees.filter(
     (employee) =>
       employee.active !== false &&
       !participants.some(
-        (participant) => participant.employeeId === employee.id
+        (participant) => Number(participant.employeeId) === Number(employee.id)
       )
   )
 
@@ -203,7 +174,7 @@ export default function TrainingParticipants({ training, onClose }) {
         {/* CONTEÚDO */}
 
         <div className="training-content-body">
-          {/* ADICIONAR PARTICIPANTE */}
+          {/* ADICIONAR */}
 
           <div className="training-new-content">
             <h3>Adicionar funcionário</h3>
@@ -236,7 +207,7 @@ export default function TrainingParticipants({ training, onClose }) {
             </form>
           </div>
 
-          {/* LISTA */}
+          {/* PARTICIPANTES */}
 
           <div className="training-content-list">
             <div className="training-content-section-header">
@@ -259,111 +230,53 @@ export default function TrainingParticipants({ training, onClose }) {
                   <div
                     key={participant.id}
                     className="training-participant-item"
+                    style={{
+                      gridTemplateColumns: '1fr auto'
+                    }}
                   >
-                    {/* INFORMAÇÕES */}
-
                     <div className="training-participant-info">
                       <strong>{participant.employeeName}</strong>
 
                       <span>
                         Inscrito em:{' '}
-                        {new Date(participant.enrolledAt).toLocaleDateString(
-                          'pt-BR'
-                        )}
-                      </span>
-
-                      <span>
-                        Avaliação:{' '}
-                        {getAssessmentStatusLabel(participant.assessmentStatus)}
+                        {participant.enrolledAt
+                          ? new Date(participant.enrolledAt).toLocaleDateString(
+                              'pt-BR'
+                            )
+                          : '-'}
                       </span>
                     </div>
-
-                    {/* PROGRESSO */}
-
-                    <div className="training-participant-progress">
-                      <div className="training-progress-info">
-                        <span>{getStatusLabel(participant.status)}</span>
-
-                        <strong>{participant.progress}%</strong>
-                      </div>
-
-                      <div className="training-progress-bar">
-                        <div
-                          style={{
-                            width: `${participant.progress}%`
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* NOTA */}
-
-                    <div className="training-participant-score">
-                      <span>Nota</span>
-
-                      <strong>
-                        {participant.score !== null &&
-                        participant.score !== undefined
-                          ? `${participant.score}%`
-                          : '--'}
-                      </strong>
-                    </div>
-
-                    {/* AÇÕES */}
 
                     <div className="training-content-actions">
-                      <button
-                        type="button"
-                        className="training-content-view"
-                        onClick={() => setSelectedParticipant(participant)}
-                        title="Acompanhar treinamento"
-                      >
-                        📊
-                      </button>
+                      {/* VISUALIZAR */}
 
                       <button
                         type="button"
                         className="training-content-view"
-                        onClick={() =>
-                          setSelectedAssessmentParticipant(participant)
-                        }
-                        title="Fazer avaliação"
+                        onClick={() => handleViewParticipant(participant)}
+                        title="Visualizar dados"
                       >
-                        📝
+                        👁️
                       </button>
+
+                      {/* EDITAR */}
 
                       <button
                         type="button"
-                        className={
-                          canGenerateCertificate(participant)
-                            ? 'training-content-certificate'
-                            : 'training-content-certificate disabled'
-                        }
-                        onClick={() => {
-                          if (!canGenerateCertificate(participant)) {
-                            alert(
-                              'O certificado estará disponível após a conclusão dos conteúdos e aprovação na avaliação.'
-                            )
-
-                            return
-                          }
-
-                          setSelectedCertificateParticipant(participant)
-                        }}
-                        title={
-                          canGenerateCertificate(participant)
-                            ? 'Ver certificado'
-                            : 'Certificado indisponível'
-                        }
+                        className="training-content-view"
+                        onClick={() => handleEditParticipant(participant)}
+                        title="Editar participante"
                       >
-                        🎓
+                        ✏️
                       </button>
+
+                      {/* EXCLUIR */}
 
                       <button
                         type="button"
                         className="training-content-delete"
                         onClick={() => handleRemoveParticipant(participant.id)}
-                        title="Remover participante"
+                        title="Excluir participante"
                       >
                         🗑️
                       </button>
@@ -388,42 +301,14 @@ export default function TrainingParticipants({ training, onClose }) {
         </div>
       </div>
 
-      {/* ACOMPANHAMENTO */}
+      {/* DADOS / EDIÇÃO DO PARTICIPANTE */}
 
       {selectedParticipant && (
-        <TrainingProgress
-          training={training}
+        <TrainingParticipantDetails
           participant={selectedParticipant}
-          onClose={() => {
-            setSelectedParticipant(null)
-
-            reloadParticipants()
-          }}
-        />
-      )}
-
-      {/* AVALIAÇÃO */}
-
-      {selectedAssessmentParticipant && (
-        <TrainingTakeAssessment
-          training={training}
-          participant={selectedAssessmentParticipant}
-          onClose={() => setSelectedAssessmentParticipant(null)}
-          onComplete={() => {
-            reloadParticipants()
-
-            setSelectedAssessmentParticipant(null)
-          }}
-        />
-      )}
-
-      {/* CERTIFICADO */}
-
-      {selectedCertificateParticipant && (
-        <TrainingCertificate
-          training={training}
-          participant={selectedCertificateParticipant}
-          onClose={() => setSelectedCertificateParticipant(null)}
+          mode={detailsMode}
+          onClose={() => setSelectedParticipant(null)}
+          onSave={handleUpdateParticipant}
         />
       )}
     </div>
