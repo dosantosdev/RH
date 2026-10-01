@@ -94,6 +94,29 @@ export const permissions = [
   },
 
   {
+    category: 'Departamentos',
+
+    items: [
+      {
+        key: 'departments_view',
+        label: 'Visualizar departamentos'
+      },
+      {
+        key: 'departments_create',
+        label: 'Criar departamentos'
+      },
+      {
+        key: 'departments_edit',
+        label: 'Editar departamentos'
+      },
+      {
+        key: 'departments_delete',
+        label: 'Excluir departamentos'
+      }
+    ]
+  },
+
+  {
     category: 'Dashboard',
 
     items: [

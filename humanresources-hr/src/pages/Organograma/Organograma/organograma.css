@@ -1,0 +1,191 @@
+.organograma-page {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 20px 30px 50px;
+  box-sizing: border-box;
+}
+
+.organograma-header {
+  margin-bottom: 25px;
+}
+
+.organograma-header h1 {
+  margin: 0 0 6px;
+}
+
+.organograma-header p {
+  margin: 0;
+  color: #666;
+}
+
+.organograma-form-card,
+.organograma-section {
+  background: #fff;
+  border-radius: 14px;
+  padding: 25px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+  margin-bottom: 25px;
+}
+
+.organograma-form-card h2,
+.organograma-section h2 {
+  margin-top: 0;
+}
+
+.organograma-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(250px, 1fr));
+  gap: 16px;
+}
+
+.organograma-form-grid select {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #d8d8d8;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.organograma-form-grid select:disabled {
+  background: #f3f3f3;
+  cursor: not-allowed;
+}
+
+.organograma-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.organograma-form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.cancel-btn {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.organograma-section-header {
+  margin-bottom: 20px;
+}
+
+.organograma-section-header p {
+  margin: 5px 0 0;
+  color: #666;
+}
+
+.organograma-tree {
+  overflow-x: auto;
+  padding: 25px 10px 40px;
+}
+
+.organograma-empty {
+  color: #777;
+  text-align: center;
+  padding: 40px;
+}
+
+.tree-node-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.tree-node {
+  min-width: 220px;
+  max-width: 280px;
+  background: #fff;
+  border: 1px solid #dcdcdc;
+  border-radius: 12px;
+  padding: 15px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+  position: relative;
+  z-index: 2;
+}
+
+.tree-node-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tree-node-content strong {
+  font-size: 16px;
+}
+
+.tree-node-content span {
+  font-size: 14px;
+  color: #555;
+}
+
+.tree-node-content small {
+  font-size: 12px;
+  color: #888;
+}
+
+.tree-node-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.tree-node-actions button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 3px;
+}
+
+.tree-children {
+  display: flex;
+  gap: 35px;
+  margin-top: 35px;
+  position: relative;
+}
+
+.tree-children::before {
+  content: '';
+  position: absolute;
+  top: -18px;
+  left: 10%;
+  right: 10%;
+  border-top: 1px solid #ccc;
+}
+
+.tree-children > .tree-node-wrapper::before {
+  content: '';
+  position: absolute;
+  top: -35px;
+  height: 18px;
+  border-left: 1px solid #ccc;
+}
+
+@media (max-width: 800px) {
+  .organograma-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .organograma-page {
+    padding: 15px;
+  }
+
+  .organograma-section,
+  .organograma-form-card {
+    padding: 18px;
+  }
+
+  .tree-children {
+    gap: 20px;
+  }
+}

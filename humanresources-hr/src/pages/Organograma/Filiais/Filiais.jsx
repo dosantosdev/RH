@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react'
-import './branches.css'
+import './filiais.css'
 
-import BranchForm from '../../components/branches/BranchForm'
-import BranchList from '../../components/branches/BranchList'
+import BranchForm from '../../../components/branches/BranchForm'
+import BranchList from '../../../components/branches/BranchList'
 
-import ConfirmModal from '../../components/ui/ConfirmModal'
-import Toast from '../../components/ui/Toast'
+import ConfirmModal from '../../../components/ui/ConfirmModal'
+import Toast from '../../../components/ui/Toast'
 
-import useToast from '../../hooks/useToast'
+import useToast from '../../../hooks/useToast'
 
-import { hasPermission } from '../../services/permissions'
+import { hasPermission } from '../../../services/permissions'
 
 export default function Branches() {
   const initialBranch = {
@@ -32,7 +32,6 @@ export default function Branches() {
   const [deleteId, setDeleteId] = useState(null)
 
   const { toast, showToast } = useToast()
-
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('branches')) || []

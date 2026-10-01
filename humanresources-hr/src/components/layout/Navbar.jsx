@@ -98,19 +98,35 @@ export default function Navbar() {
               <Link to="/cadastrar">Cadastrar Funcionários</Link>
             )}
 
-            {hasPermission('roles_view') && (
-              <Link to="/cargos">Cadastrar Cargos</Link>
-            )}
-
-            {hasPermission('branches_view') && (
-              <Link to="/filiais">Cadastrar Filiais</Link>
-            )}
-
             {hasPermission('users_view') && (
               <Link to="/usuarios">Cadastrar Usuários</Link>
             )}
           </div>
         </div>
+
+        {/* ORGANOGRAMA */}
+
+        <div className="dropdown">
+          <button className="dropbtn">Organograma</button>
+
+          <div className="dropdown-content">
+            <Link to="/organograma">Organograma</Link>
+
+            {hasPermission('branches_view') && (
+              <Link to="/filiais">Filiais</Link>
+            )}
+
+            <Link to="/departamentos">Departamentos</Link>
+
+            {hasPermission('roles_view') && <Link to="/cargos">Cargos</Link>}
+          </div>
+        </div>
+
+        {/* TREINAMENTOS */}
+
+        <Link to="/treinamentos" className="nav-link">
+          Treinamentos
+        </Link>
 
         {/* PONTO */}
 

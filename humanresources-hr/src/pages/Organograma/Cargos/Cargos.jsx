@@ -1,15 +1,16 @@
 import { useState, useEffect } from 'react'
-import './roles.css'
 
-import RoleForm from '../../components/roles/RoleForm'
-import RoleList from '../../components/roles/RoleList'
-import ConfirmModal from '../../components/ui/ConfirmModal'
-import Toast from '../../components/ui/Toast'
-import useToast from '../../hooks/useToast'
+import './cargos.css'
 
-import { hasPermission } from '../../services/permissions'
+import RoleForm from '../../../components/roles/RoleForm'
+import RoleList from '../../../components/roles/RoleList'
+import ConfirmModal from '../../../components/ui/ConfirmModal'
+import Toast from '../../../components/ui/Toast'
+import useToast from '../../../hooks/useToast'
 
-export default function Roles() {
+import { hasPermission } from '../../../services/permissions'
+
+export default function Cargos() {
   const initialRole = {
     name: '',
     description: '',
@@ -21,17 +22,12 @@ export default function Roles() {
   }
 
   const [role, setRole] = useState(initialRole)
-
   const [roles, setRoles] = useState([])
-
   const [search, setSearch] = useState('')
-
   const [editingId, setEditingId] = useState(null)
-
   const [deleteId, setDeleteId] = useState(null)
 
   const { toast, showToast } = useToast()
-
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem('roles')) || []
@@ -39,7 +35,6 @@ export default function Roles() {
     setRoles(stored)
   }, [])
 
-  // 🔒 BLOQUEIA ACESSO À PÁGINA
   if (!hasPermission('roles_view')) {
     return <h2>Acesso negado</h2>
   }
@@ -53,7 +48,6 @@ export default function Roles() {
 
     setRole({
       ...role,
-
       [name]: type === 'checkbox' ? checked : value
     })
   }
@@ -61,17 +55,13 @@ export default function Roles() {
   function handleSubmit(e) {
     e.preventDefault()
 
-    // 🔒 BLOQUEIA CRIAÇÃO
     if (!editingId && !hasPermission('roles_create')) {
       showToast('Você não tem permissão para criar cargos', 'warning')
-
       return
     }
 
-    // 🔒 BLOQUEIA EDIÇÃO
     if (editingId && !hasPermission('roles_edit')) {
       showToast('Você não tem permissão para editar cargos', 'warning')
-
       return
     }
 
@@ -102,19 +92,22 @@ export default function Roles() {
     showToast(editingId ? 'Cargo atualizado!' : 'Cargo cadastrado!', 'success')
 
     setRole(initialRole)
-
     setEditingId(null)
   }
 
   function handleEdit(r) {
-    // 🔒 BLOQUEIA EDIÇÃO
     if (!hasPermission('roles_edit')) {
       showToast('Você não tem permissão para editar cargos', 'warning')
-
       return
     }
 
-    setRole(r)
+    setRole({
+      ...initialRole,
+      ...r,
+      requiredCnhCategories: r.requiredCnhCategories || [],
+      requiredCertificates: r.requiredCertificates || [],
+      permissions: r.permissions || []
+    })
 
     setEditingId(r.id)
   }
@@ -122,7 +115,6 @@ export default function Roles() {
   function handleDelete(id) {
     if (!hasPermission('roles_delete')) {
       showToast('Você não tem permissão para excluir cargos', 'warning')
-
       return
     }
 
@@ -135,7 +127,6 @@ export default function Roles() {
     localStorage.setItem('roles', JSON.stringify(updated))
 
     setRoles(updated)
-
     setDeleteId(null)
   }
 

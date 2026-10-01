@@ -9,9 +9,11 @@ import Login from './pages/Login/Login'
 import Dashboard from './pages/Dashboard/Dashboard'
 import EmployeeSearch from './pages/EmployeeSearch/EmployeeSearch'
 import EmployeeCreate from './pages/EmployeeCreate/EmployeeCreate'
-import Roles from './pages/Roles/Roles'
+import Cargos from './pages/Organograma/Cargos/Cargos'
+import Organograma from './pages/Organograma/Organograma/Organograma'
+import Departamentos from './pages/Organograma/Departamentos/Departamentos'
 import Users from './pages/Users/Users'
-import Branches from './pages/branches/Branches'
+import Filiais from './pages/Organograma/Filiais/Filiais'
 import Settings from './pages/Settings/Settings'
 import BaterPonto from './pages/Ponto/BaterPonto/BaterPonto'
 import MeuEspelho from './pages/Ponto/MeuEspelho/MeuEspelho'
@@ -21,6 +23,7 @@ import HorasExtras from './pages/Ponto/HorasExtras/HorasExtras'
 import FaltasAtrasos from './pages/Ponto/FaltasAtrasos/FaltasAtrasos'
 import FechamentoMensal from './pages/Ponto/FechamentoMensal/FechamentoMensal'
 import Relatorios from './pages/Ponto/Relatorios/Relatorios'
+import Treinamentos from './pages/Treinamentos/Treinamentos'
 
 import Header from './components/layout/Header'
 
@@ -92,7 +95,29 @@ function App() {
         element={
           <ProtectedRoute>
             <Layout>
-              <Roles />
+              <Cargos />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/organograma"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Organograma />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/departamentos"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Departamentos />
             </Layout>
           </ProtectedRoute>
         }
@@ -114,7 +139,7 @@ function App() {
         element={
           <ProtectedRoute>
             <Layout>
-              <Branches />
+              <Filiais />
             </Layout>
           </ProtectedRoute>
         }
@@ -136,6 +161,17 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <ChangePassword />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/treinamentos"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Treinamentos />
             </Layout>
           </ProtectedRoute>
         }
