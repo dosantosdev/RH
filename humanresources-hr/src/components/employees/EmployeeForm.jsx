@@ -32,19 +32,83 @@ export default function EmployeeForm({
 
   const {
     roles,
-    branches,
+    positions,
     handleChange,
     handleCheckboxChange,
     handleDependentsChange,
     handleDependentFieldChange
   } = useEmployeeForm(formData, setFormData)
 
-  const selectedRole = roles.find(
-    (role) => role.id === Number(form.roleId)
+  /*
+   * Localiza a posição selecionada.
+   */
+  const selectedPosition = positions.find(
+    (position) => Number(position.id) === Number(form.positionId)
   )
 
+  /*
+   * O cargo continua sendo buscado em "roles".
+   *
+   * A diferença é que agora usamos o cargoId
+   * pertencente à posição.
+   *
+   * Isso mantém funcionando toda a lógica existente
+   * de CNH e certificados obrigatórios.
+   */
+  const selectedRole = selectedPosition
+    ? roles.find((role) => Number(role.id) === Number(selectedPosition.cargoId))
+    : roles.find((role) => Number(role.id) === Number(form.roleId))
+
+  function handlePositionChange(e) {
+    const positionId = e.target.value
+
+    const selected = positions.find(
+      (position) => Number(position.id) === Number(positionId)
+    )
+
+    if (!selected) {
+      setFormData((prev) => ({
+        ...prev,
+        positionId: '',
+        positionName: '',
+        roleId: '',
+        roleName: '',
+        branchId: '',
+        branchName: '',
+        departmentId: '',
+        departmentName: ''
+      }))
+
+      clearFieldError('positionId')
+
+      return
+    }
+
+    const selectedRoleForPosition = roles.find(
+      (role) => Number(role.id) === Number(selected.cargoId)
+    )
+
+    setFormData((prev) => ({
+      ...prev,
+
+      positionId: selected.id,
+      positionName: selected.cargoName || '',
+
+      roleId: selected.cargoId || '',
+      roleName: selectedRoleForPosition?.name || selected.cargoName || '',
+
+      branchId: selected.branchId || '',
+      branchName: selected.branchName || '',
+
+      departmentId: selected.departmentId || '',
+      departmentName: selected.departmentName || ''
+    }))
+
+    clearFieldError('positionId')
+  }
+
   function clearFieldError(fieldName) {
-    if (!fieldName) return
+    if (!fieldName || !setFieldErrors) return
 
     setFieldErrors((prev) => {
       const updated = { ...prev }
@@ -78,6 +142,7 @@ export default function EmployeeForm({
 
   function handleFieldDependentChange(index, field, value) {
     handleDependentFieldChange(index, field, value)
+
     clearFieldError(`dependents[${index}].${field}`)
   }
 
@@ -103,9 +168,7 @@ export default function EmployeeForm({
 
     if (!firstError) return
 
-    const field = document.querySelector(
-      `[data-error-field="${firstError}"]`
-    )
+    const field = document.querySelector(`[data-error-field="${firstError}"]`)
 
     if (!field) return
 
@@ -115,11 +178,11 @@ export default function EmployeeForm({
     })
 
     setTimeout(() => {
-      const focusable = field.querySelector(
-        'input, select, textarea, button'
-      )
+      const focusable = field.querySelector('input, select, textarea, button')
 
-      focusable?.focus({ preventScroll: true })
+      focusable?.focus({
+        preventScroll: true
+      })
     }, 350)
   }, [validationAttempt, fieldErrors])
 
@@ -128,8 +191,8 @@ export default function EmployeeForm({
       <EmploymentSection
         form={form}
         handleChange={handleFieldChange}
-        roles={roles}
-        branches={branches}
+        positions={positions}
+        handlePositionChange={handlePositionChange}
         errors={fieldErrors}
       />
 
@@ -141,10 +204,7 @@ export default function EmployeeForm({
         errors={fieldErrors}
       />
 
-      <PhysicalSection
-        form={form}
-        handleChange={handleFieldChange}
-      />
+      <PhysicalSection form={form} handleChange={handleFieldChange} />
 
       <ContactSection
         form={form}

@@ -179,13 +179,47 @@ export default function Organograma() {
       return
     }
 
-    const hasChildren = positions.some((item) => item.parentPositionId === id)
+    // ==========================================
+    // VERIFICA SE A POSIÇÃO POSSUI SUBORDINADOS
+    // ==========================================
+
+    const hasChildren = positions.some(
+      (item) => Number(item.parentPositionId) === Number(id)
+    )
 
     if (hasChildren) {
       showToast(
         'Esta posição possui subordinados. Remova ou mova os subordinados antes de excluí-la.',
         'warning'
       )
+      return
+    }
+
+    // ==========================================
+    // VERIFICA SE A POSIÇÃO ESTÁ VINCULADA
+    // A ALGUM FUNCIONÁRIO
+    // ==========================================
+
+    const employees = getStoredArray('employees')
+
+    const linkedEmployees = employees.filter(
+      (employee) =>
+        employee.positionId && Number(employee.positionId) === Number(id)
+    )
+
+    if (linkedEmployees.length > 0) {
+      if (linkedEmployees.length === 1) {
+        showToast(
+          `Não é possível excluir esta posição porque ela está vinculada ao funcionário ${linkedEmployees[0].name}.`,
+          'warning'
+        )
+      } else {
+        showToast(
+          `Não é possível excluir esta posição porque ela está vinculada a ${linkedEmployees.length} funcionários.`,
+          'warning'
+        )
+      }
+
       return
     }
 

@@ -45,6 +45,15 @@
   margin-bottom: 30px;
 }
 
+.profile-info-section-title {
+  margin-top: 12px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #eef1fb;
+  color: #4f67c6;
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .info-row {
   display: flex;
   justify-content: space-between;
@@ -60,6 +69,7 @@
 .info-row strong {
   color: #222;
   text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .profile-actions {

@@ -60,8 +60,19 @@ export const initialEmployeeForm = {
   hasDependents: false,
   dependentsCount: 0,
   dependents: [],
+
+  // Nova referência organizacional
+  positionId: '',
+  positionName: '',
+
+  // Mantidos para compatibilidade com funcionários antigos
   roleId: '',
+  roleName: '',
   branchId: '',
+  branchName: '',
+  departmentId: '',
+  departmentName: '',
+
   birthState: '',
   birthCountry: '',
   admissionDate: '',

@@ -241,8 +241,6 @@ export function validateEmployee(
   // ==============================
 
   const employmentFields = [
-    ['roleId', formData.roleId, 'Selecione o cargo do funcionário.'],
-    ['branchId', formData.branchId, 'Selecione a filial do funcionário.'],
     ['registration', formData.registration, 'A matrícula é obrigatória.'],
     [
       'admissionDate',
@@ -259,6 +257,92 @@ export function validateEmployee(
   employmentFields.forEach(([field, value, message]) => {
     validateRequiredField(errors, 'employment', field, value, message)
   })
+
+  /*
+   * Novos funcionários devem ser vinculados
+   * a uma posição do organograma.
+   *
+   * Funcionários antigos podem ainda não possuir
+   * positionId, pois esse vínculo foi adicionado
+   * posteriormente ao sistema.
+   *
+   * Nesse caso, mantemos a compatibilidade com
+   * roleId e branchId.
+   */
+  if (formData.id === undefined || formData.id === null) {
+    validateRequiredField(
+      errors,
+      'employment',
+      'positionId',
+      formData.positionId,
+      'Selecione a posição do funcionário.'
+    )
+  } else {
+    if (isEmpty(formData.roleId)) {
+      errors.push(
+        createError('positionId', 'O cargo do funcionário não foi definido.')
+      )
+    }
+
+    if (isEmpty(formData.branchId)) {
+      errors.push(
+        createError('positionId', 'A filial do funcionário não foi definida.')
+      )
+    }
+  }
+
+  // ==============================
+  // OCUPAÇÃO DA POSIÇÃO
+  // ==============================
+
+  /*
+   * Uma posição pode ser ocupada por apenas
+   * um funcionário ativo.
+   *
+   * Funcionários inativos não bloqueiam a posição.
+   *
+   * Durante a edição, o próprio funcionário
+   * é ignorado na verificação.
+   */
+  if (formData.positionId && formData.active) {
+    const positionAlreadyOccupied = employees.find((employee) => {
+      /*
+       * Ignora o próprio funcionário durante a edição.
+       */
+      if (
+        formData.id !== undefined &&
+        formData.id !== null &&
+        Number(employee.id) === Number(formData.id)
+      ) {
+        return false
+      }
+
+      /*
+       * Funcionário inativo não ocupa a posição.
+       */
+      if (employee.active !== true) {
+        return false
+      }
+
+      /*
+       * Verifica se outro funcionário já ocupa
+       * a posição selecionada.
+       */
+      return (
+        employee.positionId &&
+        Number(employee.positionId) === Number(formData.positionId)
+      )
+    })
+
+    if (positionAlreadyOccupied) {
+      errors.push(
+        createError(
+          'positionId',
+          `Esta posição já está ocupada por ${positionAlreadyOccupied.name}.`
+        )
+      )
+    }
+  }
 
   if (formData.admissionDate && !isValidDate(formData.admissionDate)) {
     errors.push(createError('admissionDate', 'A data de admissão é inválida.'))
@@ -393,9 +477,6 @@ export function validateEmployee(
 
   // ==============================
   // CÔNJUGE — CONDICIONAL
-  // Casado ou união estável ativa esta seção.
-  // Os campos marcados como obrigatórios na configuração
-  // passam a ser validados somente quando a seção estiver ativa.
   // ==============================
 
   const hasSpouse =
@@ -405,7 +486,11 @@ export function validateEmployee(
   if (hasSpouse) {
     const spouseFields = [
       ['spouseName', formData.spouseName, 'O nome do cônjuge é obrigatório.'],
-      ['spouseGender', formData.spouseGender, 'O sexo do cônjuge é obrigatório.'],
+      [
+        'spouseGender',
+        formData.spouseGender,
+        'O sexo do cônjuge é obrigatório.'
+      ],
       [
         'spousePhone',
         formData.spousePhone,
@@ -437,23 +522,16 @@ export function validateEmployee(
     ]
 
     spouseFields.forEach(([field, value, message]) => {
-      validateConditionalRequiredField(
-        errors,
-        'spouse',
-        field,
-        value,
-        message
-      )
+      validateConditionalRequiredField(errors, 'spouse', field, value, message)
     })
 
     if (formData.spouseCpf && !isValidCPF(formData.spouseCpf)) {
-      errors.push(createError('spouseCpf', 'Informe um CPF válido para o cônjuge.'))
+      errors.push(
+        createError('spouseCpf', 'Informe um CPF válido para o cônjuge.')
+      )
     }
 
-    if (
-      formData.spouseBirthDate &&
-      !isValidDate(formData.spouseBirthDate)
-    ) {
+    if (formData.spouseBirthDate && !isValidDate(formData.spouseBirthDate)) {
       errors.push(
         createError(
           'spouseBirthDate',
@@ -464,10 +542,7 @@ export function validateEmployee(
 
     if (formData.marriageDate && !isValidDate(formData.marriageDate)) {
       errors.push(
-        createError(
-          'marriageDate',
-          'A data do casamento/união é inválida.'
-        )
+        createError('marriageDate', 'A data do casamento/união é inválida.')
       )
     }
   }
@@ -481,10 +556,7 @@ export function validateEmployee(
 
     if (!count || count < 1) {
       errors.push(
-        createError(
-          'dependentsCount',
-          'Informe a quantidade de dependentes.'
-        )
+        createError('dependentsCount', 'Informe a quantidade de dependentes.')
       )
     }
 
@@ -546,19 +618,18 @@ export function validateEmployee(
   const currentEmployeeId = formData.id
 
   const duplicate = employees.find((employee) => {
-    if (
-      currentEmployeeId !== undefined &&
-      employee.id === currentEmployeeId
-    ) {
+    if (currentEmployeeId !== undefined && employee.id === currentEmployeeId) {
       return false
     }
 
     const formCpf = digitsOnly(formData.cpf)
+
     const employeeCpf = digitsOnly(employee.cpf)
 
     const sameCpf = formCpf && employeeCpf && formCpf === employeeCpf
 
     const formRg = digitsOnly(formData.rg)
+
     const employeeRg = digitsOnly(employee.rg)
 
     const sameRg = formRg && employeeRg && formRg === employeeRg

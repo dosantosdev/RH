@@ -4,8 +4,8 @@ import ValidatedField from '../../ui/ValidatedField'
 export default function EmploymentSection({
   form,
   handleChange,
-  roles,
-  branches,
+  positions,
+  handlePositionChange,
   errors = {}
 }) {
   return (
@@ -20,6 +20,7 @@ export default function EmploymentSection({
             checked={form.active}
             onChange={handleChange}
           />
+
           <span>
             {form.active ? 'Funcionário ativo' : 'Funcionário inativo'}
           </span>
@@ -27,27 +28,19 @@ export default function EmploymentSection({
       </div>
 
       <div className="employment-grid">
-        <ValidatedField name="roleId" error={errors.roleId}>
-          <select value={form.roleId} onChange={handleChange}>
-            <option value="">Cargo</option>
-            {roles
-              .filter((role) => role.active)
-              .map((role) => (
-                <option key={role.id} value={role.id}>
-                  {role.name}
-                </option>
-              ))}
-          </select>
-        </ValidatedField>
+        <ValidatedField name="positionId" error={errors.positionId}>
+          <select value={form.positionId || ''} onChange={handlePositionChange}>
+            <option value="">Selecione a posição</option>
 
-        <ValidatedField name="branchId" error={errors.branchId}>
-          <select value={form.branchId} onChange={handleChange}>
-            <option value="">Filial</option>
-            {branches
-              .filter((branch) => branch.active)
-              .map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name}
+            {positions
+              .filter((position) => position.active !== false)
+              .map((position) => (
+                <option key={position.id} value={position.id}>
+                  {position.cargoName}
+                  {' — '}
+                  {position.departmentName}
+                  {' / '}
+                  {position.branchName}
                 </option>
               ))}
           </select>
@@ -62,11 +55,27 @@ export default function EmploymentSection({
         </ValidatedField>
       </div>
 
+      {form.positionId && (
+        <div className="employment-position-info">
+          <div>
+            <span>Cargo</span>
+            <strong>{form.roleName || '-'}</strong>
+          </div>
+
+          <div>
+            <span>Departamento</span>
+            <strong>{form.departmentName || '-'}</strong>
+          </div>
+
+          <div>
+            <span>Filial</span>
+            <strong>{form.branchName || '-'}</strong>
+          </div>
+        </div>
+      )}
+
       <div className="employment-dates-grid">
-        <ValidatedField
-          name="periodicExamDate"
-          error={errors.periodicExamDate}
-        >
+        <ValidatedField name="periodicExamDate" error={errors.periodicExamDate}>
           <input
             value={form.periodicExamDate}
             onChange={handleChange}
@@ -83,10 +92,7 @@ export default function EmploymentSection({
         </ValidatedField>
 
         {!form.active && (
-          <ValidatedField
-            name="dismissalDate"
-            error={errors.dismissalDate}
-          >
+          <ValidatedField name="dismissalDate" error={errors.dismissalDate}>
             <input
               value={form.dismissalDate}
               onChange={handleChange}
