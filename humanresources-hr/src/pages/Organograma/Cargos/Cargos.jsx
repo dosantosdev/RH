@@ -9,39 +9,137 @@ import Toast from '../../../components/ui/Toast'
 import useToast from '../../../hooks/useToast'
 
 import { hasPermission } from '../../../services/permissions'
+import { getStoredArray } from '../../../services/storage'
+import { getAccessRoles } from '../../../services/accessRoles'
 
 export default function Cargos() {
   const initialRole = {
     name: '',
     description: '',
+    responsibilities: '',
+    salaryMin: '',
+    salaryMax: '',
+    education: '',
+    experience: '',
+    skills: '',
+    workRegime: '',
+    workload: '',
     active: true,
     requiresCnh: false,
     requiredCnhCategories: [],
-    requiredCertificates: [],
-    permissions: []
+    requiredCertificates: []
   }
 
   const [role, setRole] = useState(initialRole)
+
   const [roles, setRoles] = useState([])
+
+  const [accessRoles, setAccessRoles] = useState([])
+
   const [search, setSearch] = useState('')
+
   const [editingId, setEditingId] = useState(null)
+
   const [deleteId, setDeleteId] = useState(null)
 
   const { toast, showToast } = useToast()
 
-  useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('roles')) || []
+  /*
+   * ============================================================
+   * CARREGAMENTO
+   * ============================================================
+   */
 
-    setRoles(stored)
+  useEffect(() => {
+    const storedRoles = getStoredArray('roles')
+
+    const storedAccessRoles = getAccessRoles()
+
+    setRoles(storedRoles)
+
+    setAccessRoles(storedAccessRoles)
   }, [])
+
+  /*
+   * ============================================================
+   * PERMISSÃO
+   * ============================================================
+   */
 
   if (!hasPermission('roles_view')) {
     return <h2>Acesso negado</h2>
   }
 
-  const filteredRoles = roles.filter((role) =>
-    role.name?.toLowerCase().includes(search.toLowerCase())
+  /*
+   * ============================================================
+   * IDENTIFICA OS ANTIGOS REGISTROS DE ACESSO
+   * ============================================================
+   *
+   * Antes da separação entre Cargo e Perfil de Acesso,
+   * admin, gestao_rh e funcionario ficavam dentro de "roles".
+   *
+   * Agora eles existem em "accessRoles".
+   *
+   * Não vamos apagar os registros antigos ainda.
+   * Apenas não os trataremos como cargos profissionais.
+   */
+
+  const legacyAccessRoleIds = accessRoles
+    .filter((accessRole) =>
+      ['admin', 'gestao_rh', 'funcionario'].includes(accessRole.name)
+    )
+    .map((accessRole) => Number(accessRole.id))
+
+  const professionalRoles = roles.filter((roleItem) => {
+    const roleId = Number(roleItem.id)
+
+    const isLegacyAccessRole = legacyAccessRoleIds.includes(roleId)
+
+    /*
+     * Se o ID corresponde a um dos antigos perfis
+     * migrados, ele não aparece como cargo.
+     */
+    if (isLegacyAccessRole) {
+      return false
+    }
+
+    /*
+     * Também verificamos pelo nome para proteger
+     * instalações antigas onde os IDs podem ter sido
+     * alterados.
+     */
+    const normalizedName = String(roleItem.name || '')
+      .trim()
+      .toLowerCase()
+
+    const matchingAccessRole = accessRoles.find(
+      (accessRole) =>
+        accessRole.name === normalizedName &&
+        ['admin', 'gestao_rh', 'funcionario'].includes(accessRole.name)
+    )
+
+    if (matchingAccessRole) {
+      return false
+    }
+
+    return true
+  })
+
+  /*
+   * ============================================================
+   * BUSCA
+   * ============================================================
+   */
+
+  const filteredRoles = professionalRoles.filter((roleItem) =>
+    roleItem.name?.toLowerCase().includes(search.toLowerCase())
   )
+
+  /*
+   * ============================================================
+   * ALTERAÇÃO DO FORMULÁRIO
+   * ============================================================
+   */
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target
@@ -52,31 +150,59 @@ export default function Cargos() {
     })
   }
 
+  /*
+   * ============================================================
+   * SALVAR CARGO
+   * ============================================================
+   */
+
   function handleSubmit(e) {
     e.preventDefault()
 
+    /*
+     * CRIAÇÃO
+     */
+
     if (!editingId && !hasPermission('roles_create')) {
       showToast('Você não tem permissão para criar cargos', 'warning')
+
       return
     }
 
+    /*
+     * EDIÇÃO
+     */
+
     if (editingId && !hasPermission('roles_edit')) {
       showToast('Você não tem permissão para editar cargos', 'warning')
+
       return
     }
 
     let updated
 
+    /*
+     * ========================================================
+     * EDIÇÃO
+     * ========================================================
+     */
+
     if (editingId) {
-      updated = roles.map((r) =>
-        r.id === editingId
+      updated = roles.map((existingRole) =>
+        existingRole.id === editingId
           ? {
               ...role,
               id: editingId
             }
-          : r
+          : existingRole
       )
     } else {
+      /*
+       * ======================================================
+       * NOVO CARGO
+       * ======================================================
+       */
+
       const newRole = {
         ...role,
         id: Date.now()
@@ -92,43 +218,118 @@ export default function Cargos() {
     showToast(editingId ? 'Cargo atualizado!' : 'Cargo cadastrado!', 'success')
 
     setRole(initialRole)
+
     setEditingId(null)
   }
 
-  function handleEdit(r) {
+  /*
+   * ============================================================
+   * EDITAR
+   * ============================================================
+   */
+
+  function handleEdit(selectedRole) {
     if (!hasPermission('roles_edit')) {
       showToast('Você não tem permissão para editar cargos', 'warning')
+
+      return
+    }
+
+    /*
+     * Segurança adicional:
+     *
+     * Caso algum registro antigo de perfil de acesso
+     * ainda consiga chegar aqui, não permitimos sua edição
+     * como cargo.
+     */
+
+    const isLegacyAccessRole = accessRoles.some(
+      (accessRole) =>
+        Number(accessRole.id) === Number(selectedRole.id) &&
+        ['admin', 'gestao_rh', 'funcionario'].includes(accessRole.name)
+    )
+
+    if (isLegacyAccessRole) {
+      showToast(
+        'Este registro pertence aos perfis de acesso e não pode ser editado como cargo.',
+        'warning'
+      )
+
       return
     }
 
     setRole({
       ...initialRole,
-      ...r,
-      requiredCnhCategories: r.requiredCnhCategories || [],
-      requiredCertificates: r.requiredCertificates || [],
-      permissions: r.permissions || []
+
+      ...selectedRole,
+
+      requiredCnhCategories: selectedRole.requiredCnhCategories || [],
+
+      requiredCertificates: selectedRole.requiredCertificates || []
     })
 
-    setEditingId(r.id)
+    setEditingId(selectedRole.id)
   }
+
+  /*
+   * ============================================================
+   * EXCLUIR
+   * ============================================================
+   */
 
   function handleDelete(id) {
     if (!hasPermission('roles_delete')) {
       showToast('Você não tem permissão para excluir cargos', 'warning')
+
+      return
+    }
+
+    /*
+     * Nunca permitimos excluir um antigo perfil de acesso
+     * através da tela de cargos.
+     */
+
+    const isLegacyAccessRole = accessRoles.some(
+      (accessRole) =>
+        Number(accessRole.id) === Number(id) &&
+        ['admin', 'gestao_rh', 'funcionario'].includes(accessRole.name)
+    )
+
+    if (isLegacyAccessRole) {
+      showToast(
+        'Este registro pertence aos perfis de acesso e não pode ser excluído como cargo.',
+        'warning'
+      )
+
       return
     }
 
     setDeleteId(id)
   }
 
+  /*
+   * ============================================================
+   * CONFIRMAR EXCLUSÃO
+   * ============================================================
+   */
+
   function confirmDeleteRole() {
-    const updated = roles.filter((r) => r.id !== deleteId)
+    const updated = roles.filter((existingRole) => existingRole.id !== deleteId)
 
     localStorage.setItem('roles', JSON.stringify(updated))
 
     setRoles(updated)
+
     setDeleteId(null)
+
+    showToast('Cargo excluído!', 'success')
   }
+
+  /*
+   * ============================================================
+   * RENDER
+   * ============================================================
+   */
 
   return (
     <div className="roles-page">

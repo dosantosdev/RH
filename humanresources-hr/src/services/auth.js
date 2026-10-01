@@ -1,99 +1,167 @@
+import {
+  getAccessRoles,
+  initializeAccessRoles,
+  getAccessRoleById,
+  getAccessRoleByName
+} from './accessRoles'
+
+import { getStoredArray, setStored } from './storage'
+
 // 🔐 Inicializa o sistema com os dados mínimos necessários para o login.
 export function initializeSystem() {
-  let roles = JSON.parse(localStorage.getItem('roles')) || []
-  let users = JSON.parse(localStorage.getItem('users')) || []
+  let roles = getStoredArray('roles')
+  let users = getStoredArray('users')
 
-  // Cargos padrão do sistema.
-  // Os IDs são fixos para que usuários possam manter uma referência estável.
-  const defaultRoles = [
-    {
-      id: 1,
-      name: 'admin',
-      description: 'Administrador do sistema',
-      active: true,
-      requiresCnh: false,
-      requiredCnhCategories: [],
-      requiredCertificates: [],
-      permissions: ['all']
-    },
-    {
-      id: 2,
-      name: 'gestao_rh',
-      description: 'Gestão de Recursos Humanos',
-      active: true,
-      requiresCnh: false,
-      requiredCnhCategories: [],
-      requiredCertificates: [],
-      permissions: ['employees_view', 'employees_create', 'employees_edit']
-    },
-    {
-      id: 3,
-      name: 'funcionario',
-      description: 'Funcionário',
-      active: true,
-      requiresCnh: false,
-      requiredCnhCategories: [],
-      requiredCertificates: [],
-      permissions: ['employees_view']
-    }
-  ]
+  /*
+   * ============================================================
+   * PERFIS DE ACESSO
+   * ============================================================
+   *
+   * Os perfis de acesso agora são independentes dos cargos.
+   *
+   * Cargo:
+   *   Vendedor
+   *   Motorista
+   *   Gerente
+   *
+   * Perfil de acesso:
+   *   Administrador
+   *   Gestão de RH
+   *   Funcionário
+   */
+  initializeAccessRoles()
 
-  // Se não existem cargos, cria os cargos padrão.
-  if (roles.length === 0) {
-    roles = defaultRoles
-  } else {
-    // Garante que o cargo admin exista mesmo em uma instalação antiga.
-    const adminRole = roles.find(
-      (role) => role.id === 1 || role.name === 'admin'
-    )
+  const accessRoles = getAccessRoles()
 
-    if (!adminRole) {
-      roles.unshift(defaultRoles[0])
-    } else {
-      // Corrige instalações antigas que tinham admin sem ID/permissões adequadas.
-      adminRole.id = 1
-      adminRole.name = 'admin'
-      adminRole.active = true
-      adminRole.permissions = ['all']
-    }
+  /*
+   * ============================================================
+   * CARGOS
+   * ============================================================
+   *
+   * O sistema não cria mais admin, gestao_rh ou funcionario
+   * como cargos novos.
+   *
+   * Os registros antigos são preservados para não quebrar
+   * funcionários que ainda possam possuir roleId/roleName.
+   *
+   * A partir de agora, novos cargos são cadastrados pela tela
+   * de Cargos.
+   */
+
+  if (roles.length > 0) {
+    setStored('roles', roles)
   }
 
-  localStorage.setItem('roles', JSON.stringify(roles))
+  /*
+   * ============================================================
+   * USUÁRIO ADMINISTRADOR
+   * ============================================================
+   */
 
-  // Cria o administrador padrão quando não existe nenhum usuário.
   if (users.length === 0) {
+    const adminAccessRole = getAccessRoleByName('admin')
+
     users = [
       {
         id: 1,
         name: 'Administrador do sistema',
         username: 'admin',
         password: '123',
-        roleId: 1,
-        roleName: 'admin',
+
+        accessRoleId: adminAccessRole?.id || 1,
+        accessRoleName: adminAccessRole?.name || 'admin',
+
+        // Mantidos por compatibilidade com dados antigos.
+        roleId: '',
+        roleName: '',
+
         active: true
       }
     ]
   }
 
-  // Migra usuários antigos que usavam role: 'admin' ou que ainda não tinham roleId.
+  /*
+   * ============================================================
+   * MIGRAÇÃO DE USUÁRIOS ANTIGOS
+   * ============================================================
+   *
+   * Usuários antigos utilizavam:
+   *
+   * roleId
+   * roleName
+   * role
+   *
+   * Agora o sistema utiliza:
+   *
+   * accessRoleId
+   * accessRoleName
+   *
+   * Os campos antigos não são removidos para evitar quebrar
+   * registros existentes.
+   */
+
   users = users.map((user) => {
-    if (user.roleId) return user
+    /*
+     * Se o usuário já possui perfil de acesso, não precisamos
+     * descobrir novamente.
+     */
+    if (user.accessRoleId || user.accessRoleName) {
+      return user
+    }
 
-    const roleName = user.role || user.roleName
-    const role = roles.find((item) => item.name === roleName)
+    /*
+     * Tenta descobrir o perfil antigo através do nome utilizado
+     * anteriormente.
+     */
+    const legacyRoleName = user.roleName || user.role || ''
 
-    if (role) {
+    let accessRole = null
+
+    /*
+     * Primeiro tenta pelo nome.
+     */
+    if (legacyRoleName) {
+      accessRole = getAccessRoleByName(legacyRoleName)
+    }
+
+    /*
+     * Caso não encontre pelo nome, tenta pelo roleId antigo.
+     */
+    if (!accessRole && user.roleId) {
+      const legacyRole = roles.find(
+        (role) => Number(role.id) === Number(user.roleId)
+      )
+
+      if (legacyRole) {
+        accessRole = getAccessRoleByName(legacyRole.name)
+      }
+    }
+
+    /*
+     * Se encontrou um perfil correspondente, adiciona os novos
+     * campos ao usuário.
+     */
+    if (accessRole) {
       return {
         ...user,
-        roleId: role.id,
-        roleName: role.name
+        accessRoleId: accessRole.id,
+        accessRoleName: accessRole.name
       }
     }
 
     return user
   })
 
-  // Garante que exista um usuário admin funcional.
+  /*
+   * ============================================================
+   * GARANTE QUE O ADMIN EXISTA
+   * ============================================================
+   */
+
+  const adminAccessRole =
+    getAccessRoleByName('admin') ||
+    accessRoles.find((role) => Number(role.id) === 1)
+
   const adminUser = users.find((user) => user.username === 'admin')
 
   if (!adminUser) {
@@ -102,41 +170,81 @@ export function initializeSystem() {
       name: 'Administrador do sistema',
       username: 'admin',
       password: '123',
-      roleId: 1,
-      roleName: 'admin',
+
+      accessRoleId: adminAccessRole?.id || 1,
+      accessRoleName: adminAccessRole?.name || 'admin',
+
+      roleId: '',
+      roleName: '',
+
       active: true
     })
   } else {
-    adminUser.roleId = 1
-    adminUser.roleName = 'admin'
-    adminUser.role = 'admin'
+    /*
+     * O usuário admin sempre deve utilizar o perfil admin.
+     */
+    adminUser.accessRoleId = adminAccessRole?.id || 1
 
+    adminUser.accessRoleName = adminAccessRole?.name || 'admin'
+
+    /*
+     * Mantemos os campos antigos apenas para compatibilidade.
+     */
     if (adminUser.active === undefined) {
       adminUser.active = true
     }
   }
 
-  localStorage.setItem('users', JSON.stringify(users))
+  setStored('users', users)
 }
 
+/*
+ * ============================================================
+ * CARGOS
+ * ============================================================
+ *
+ * Estas funções continuam existindo porque "roles" agora
+ * representa CARGOS profissionais.
+ */
+
 export function getRoles() {
-  return JSON.parse(localStorage.getItem('roles')) || []
+  return getStoredArray('roles')
 }
 
 export function addRole(role) {
   const roles = getRoles()
-  roles.push(role)
-  localStorage.setItem('roles', JSON.stringify(roles))
+
+  const updatedRoles = [...roles, role]
+
+  setStored('roles', updatedRoles)
+
+  return updatedRoles
 }
+
+/*
+ * ============================================================
+ * USUÁRIOS
+ * ============================================================
+ */
 
 export function register(user) {
-  const users = JSON.parse(localStorage.getItem('users')) || []
-  users.push(user)
-  localStorage.setItem('users', JSON.stringify(users))
+  const users = getStoredArray('users')
+
+  const updatedUsers = [...users, user]
+
+  setStored('users', updatedUsers)
+
+  return updatedUsers
 }
 
+/*
+ * ============================================================
+ * LOGIN
+ * ============================================================
+ */
+
 export function login(username, password) {
-  const users = JSON.parse(localStorage.getItem('users')) || []
+  const users = getStoredArray('users')
 
   const user = users.find(
     (item) =>
@@ -145,17 +253,32 @@ export function login(username, password) {
       item.active !== false
   )
 
-  if (!user) return null
+  if (!user) {
+    return null
+  }
 
   localStorage.setItem('loggedUser', JSON.stringify(user))
+
   localStorage.setItem('currentUser', JSON.stringify(user))
 
   return user
 }
 
+/*
+ * ============================================================
+ * USUÁRIO ATUAL
+ * ============================================================
+ */
+
 export function getCurrentUser() {
   return JSON.parse(localStorage.getItem('loggedUser'))
 }
+
+/*
+ * ============================================================
+ * LOGOUT
+ * ============================================================
+ */
 
 export function logout() {
   localStorage.removeItem('loggedUser')

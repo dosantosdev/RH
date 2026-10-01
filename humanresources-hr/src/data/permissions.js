@@ -67,6 +67,30 @@ export const permissions = [
       }
     ]
   },
+
+  {
+    category: 'Perfis de acesso',
+
+    items: [
+      {
+        key: 'access_roles_view',
+        label: 'Visualizar perfis de acesso'
+      },
+      {
+        key: 'access_roles_create',
+        label: 'Cadastrar perfis de acesso'
+      },
+      {
+        key: 'access_roles_edit',
+        label: 'Editar perfis de acesso'
+      },
+      {
+        key: 'access_roles_delete',
+        label: 'Excluir perfis de acesso'
+      }
+    ]
+  },
+
   {
     category: 'Filiais',
 
@@ -75,17 +99,14 @@ export const permissions = [
         key: 'branches_view',
         label: 'Visualizar filiais'
       },
-
       {
         key: 'branches_create',
         label: 'Criar filiais'
       },
-
       {
         key: 'branches_edit',
         label: 'Editar filiais'
       },
-
       {
         key: 'branches_delete',
         label: 'Excluir filiais'
@@ -124,7 +145,6 @@ export const permissions = [
         key: 'dashboard_weather',
         label: 'Visualizar clima'
       },
-
       {
         key: 'dashboard_birthdays',
         label: 'Visualizar aniversariantes'
@@ -140,12 +160,10 @@ export const permissions = [
         key: 'profile_view',
         label: 'Visualizar próprio perfil'
       },
-
       {
         key: 'profile_edit',
         label: 'Editar próprio perfil'
       },
-
       {
         key: 'password_change',
         label: 'Alterar própria senha'

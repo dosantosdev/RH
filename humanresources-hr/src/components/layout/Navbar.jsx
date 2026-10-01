@@ -128,6 +128,12 @@ export default function Navbar() {
           Treinamentos
         </Link>
 
+        {/* AVALIAÇÕES */}
+
+        <Link to="/avaliacoes" className="nav-link">
+          Avaliações
+        </Link>
+
         {/* PONTO */}
 
         <div className="dropdown">

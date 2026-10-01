@@ -47,18 +47,20 @@ export default function EmployeeForm({
   )
 
   /*
-   * O cargo continua sendo buscado em "roles".
+   * O cargo continua sendo obtido através da posição.
    *
-   * A diferença é que agora usamos o cargoId
-   * pertencente à posição.
+   * Isso mantém a estrutura atual funcionando:
    *
-   * Isso mantém funcionando toda a lógica existente
-   * de CNH e certificados obrigatórios.
+   * posição → cargo → regras de CNH/certificados
    */
   const selectedRole = selectedPosition
     ? roles.find((role) => Number(role.id) === Number(selectedPosition.cargoId))
     : roles.find((role) => Number(role.id) === Number(form.roleId))
 
+  /*
+   * Quando uma posição é selecionada,
+   * seus dados relacionados são preenchidos automaticamente.
+   */
   function handlePositionChange(e) {
     const positionId = e.target.value
 
@@ -69,12 +71,16 @@ export default function EmployeeForm({
     if (!selected) {
       setFormData((prev) => ({
         ...prev,
+
         positionId: '',
         positionName: '',
+
         roleId: '',
         roleName: '',
+
         branchId: '',
         branchName: '',
+
         departmentId: '',
         departmentName: ''
       }))
@@ -91,16 +97,35 @@ export default function EmployeeForm({
     setFormData((prev) => ({
       ...prev,
 
+      /*
+       * POSIÇÃO
+       */
       positionId: selected.id,
+
       positionName: selected.cargoName || '',
 
+      /*
+       * CARGO
+       *
+       * Mantemos roleId/roleName porque outras partes
+       * do sistema ainda utilizam esses dados.
+       */
       roleId: selected.cargoId || '',
+
       roleName: selectedRoleForPosition?.name || selected.cargoName || '',
 
+      /*
+       * FILIAL
+       */
       branchId: selected.branchId || '',
+
       branchName: selected.branchName || '',
 
+      /*
+       * DEPARTAMENTO
+       */
       departmentId: selected.departmentId || '',
+
       departmentName: selected.departmentName || ''
     }))
 
@@ -108,10 +133,14 @@ export default function EmployeeForm({
   }
 
   function clearFieldError(fieldName) {
-    if (!fieldName || !setFieldErrors) return
+    if (!fieldName || !setFieldErrors) {
+      return
+    }
 
     setFieldErrors((prev) => {
-      const updated = { ...prev }
+      const updated = {
+        ...prev
+      }
 
       Object.keys(updated).forEach((key) => {
         if (
@@ -132,11 +161,13 @@ export default function EmployeeForm({
     const fieldName = e.target.name
 
     handleChange(e)
+
     clearFieldError(fieldName)
   }
 
   function handleFieldCheckboxChange(e, field) {
     handleCheckboxChange(e, field)
+
     clearFieldError(field)
   }
 
@@ -148,6 +179,7 @@ export default function EmployeeForm({
 
   function handleFieldDependentsChange(value) {
     handleDependentsChange(value)
+
     clearFieldError('dependentsCount')
   }
 
@@ -161,16 +193,26 @@ export default function EmployeeForm({
     }
   }
 
+  /*
+   * Após uma tentativa de validação,
+   * leva o usuário até o primeiro erro.
+   */
   useEffect(() => {
-    if (!validationAttempt) return
+    if (!validationAttempt) {
+      return
+    }
 
     const firstError = Object.keys(fieldErrors)[0]
 
-    if (!firstError) return
+    if (!firstError) {
+      return
+    }
 
     const field = document.querySelector(`[data-error-field="${firstError}"]`)
 
-    if (!field) return
+    if (!field) {
+      return
+    }
 
     field.scrollIntoView({
       behavior: 'smooth',

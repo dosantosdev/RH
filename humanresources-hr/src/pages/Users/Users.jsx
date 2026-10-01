@@ -9,14 +9,35 @@ import Toast from '../../components/ui/Toast'
 import useToast from '../../hooks/useToast'
 
 import { hasPermission } from '../../services/permissions'
+import { getAccessRoles } from '../../services/accessRoles'
 
 export default function Users() {
   const initialUser = {
     name: '',
     username: '',
     password: '',
+
+    /*
+     * ============================================================
+     * PERFIL DE ACESSO
+     * ============================================================
+     *
+     * O usuário agora recebe um PERFIL DE ACESSO.
+     *
+     * O perfil define o que ele pode fazer dentro do sistema.
+     */
+    accessRoleId: '',
+    accessRoleName: '',
+
+    /*
+     * Mantemos roleId e roleName por compatibilidade com usuários
+     * antigos que ainda possam possuir esses campos.
+     *
+     * Eles não serão mais utilizados para definir permissões.
+     */
     roleId: '',
     roleName: '',
+
     employeeId: '',
     active: true
   }
@@ -25,7 +46,10 @@ export default function Users() {
 
   const [users, setUsers] = useState([])
 
-  const [roles, setRoles] = useState([])
+  /*
+   * Perfis de acesso disponíveis para associação ao usuário.
+   */
+  const [accessRoles, setAccessRoles] = useState([])
 
   const [employees, setEmployees] = useState([])
 
@@ -40,12 +64,18 @@ export default function Users() {
   useEffect(() => {
     const storedUsers = JSON.parse(localStorage.getItem('users')) || []
 
-    const storedRoles = JSON.parse(localStorage.getItem('roles')) || []
-
     const storedEmployees = JSON.parse(localStorage.getItem('employees')) || []
 
+    /*
+     * Carrega os perfis de acesso através do serviço responsável
+     * por eles.
+     */
+    const storedAccessRoles = getAccessRoles()
+
     setUsers(storedUsers)
-    setRoles(storedRoles)
+
+    setAccessRoles(storedAccessRoles)
+
     setEmployees(storedEmployees)
   }, [])
 
@@ -54,9 +84,21 @@ export default function Users() {
     return <h2>Acesso negado</h2>
   }
 
+  /*
+   * ============================================================
+   * BUSCA DE USUÁRIOS
+   * ============================================================
+   */
+
   const filteredUsers = users.filter((u) =>
     u.name?.toLowerCase().includes(search.toLowerCase())
   )
+
+  /*
+   * ============================================================
+   * ALTERAÇÃO DOS CAMPOS
+   * ============================================================
+   */
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target
@@ -66,6 +108,12 @@ export default function Users() {
       [name]: type === 'checkbox' ? checked : value
     })
   }
+
+  /*
+   * ============================================================
+   * SALVAR / ATUALIZAR USUÁRIO
+   * ============================================================
+   */
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -80,6 +128,17 @@ export default function Users() {
     // 🔒 BLOQUEIA EDIÇÃO
     if (editingId && !hasPermission('users_edit')) {
       showToast('Você não tem permissão para editar usuários', 'warning')
+
+      return
+    }
+
+    /*
+     * Não permitimos salvar um usuário sem perfil de acesso.
+     *
+     * O administrador do sistema também deve possuir um perfil.
+     */
+    if (!user.accessRoleId) {
+      showToast('Selecione um perfil de acesso para o usuário', 'warning')
 
       return
     }
@@ -118,6 +177,12 @@ export default function Users() {
     setEditingId(null)
   }
 
+  /*
+   * ============================================================
+   * EDITAR USUÁRIO
+   * ============================================================
+   */
+
   function handleEdit(u) {
     // 🔒 BLOQUEIA EDIÇÃO
     if (!hasPermission('users_edit')) {
@@ -126,14 +191,33 @@ export default function Users() {
       return
     }
 
+    /*
+     * Copiamos os dados do usuário para o formulário.
+     *
+     * Os campos antigos roleId/roleName continuam sendo
+     * preservados para compatibilidade.
+     */
     setUser({
       ...initialUser,
       ...u,
-      employeeId: u.employeeId || ''
+
+      employeeId: u.employeeId || '',
+
+      accessRoleId: u.accessRoleId || '',
+      accessRoleName: u.accessRoleName || '',
+
+      roleId: u.roleId || '',
+      roleName: u.roleName || ''
     })
 
     setEditingId(u.id)
   }
+
+  /*
+   * ============================================================
+   * SOLICITAR EXCLUSÃO
+   * ============================================================
+   */
 
   function handleDelete(id) {
     // 🔒 BLOQUEIA EXCLUSÃO
@@ -146,6 +230,12 @@ export default function Users() {
     setDeleteId(id)
   }
 
+  /*
+   * ============================================================
+   * CONFIRMAR EXCLUSÃO
+   * ============================================================
+   */
+
   function confirmDeleteUser() {
     const updated = users.filter((u) => u.id !== deleteId)
 
@@ -154,6 +244,8 @@ export default function Users() {
     setUsers(updated)
 
     setDeleteId(null)
+
+    showToast('Usuário excluído!', 'success')
   }
 
   return (
@@ -162,7 +254,7 @@ export default function Users() {
         user={user}
         search={search}
         setSearch={setSearch}
-        roles={roles}
+        accessRoles={accessRoles}
         employees={employees}
         editingId={editingId}
         handleChange={handleChange}

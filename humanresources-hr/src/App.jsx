@@ -9,12 +9,16 @@ import Login from './pages/Login/Login'
 import Dashboard from './pages/Dashboard/Dashboard'
 import EmployeeSearch from './pages/EmployeeSearch/EmployeeSearch'
 import EmployeeCreate from './pages/EmployeeCreate/EmployeeCreate'
+
 import Cargos from './pages/Organograma/Cargos/Cargos'
 import Organograma from './pages/Organograma/Organograma/Organograma'
 import Departamentos from './pages/Organograma/Departamentos/Departamentos'
 import Users from './pages/Users/Users'
+import AccessRoles from './pages/AccessRoles/AccessRoles'
 import Filiais from './pages/Organograma/Filiais/Filiais'
+
 import Settings from './pages/Settings/Settings'
+
 import BaterPonto from './pages/Ponto/BaterPonto/BaterPonto'
 import MeuEspelho from './pages/Ponto/MeuEspelho/MeuEspelho'
 import ControlePonto from './pages/Ponto/ControlePonto/ControlePonto'
@@ -23,6 +27,7 @@ import HorasExtras from './pages/Ponto/HorasExtras/HorasExtras'
 import FaltasAtrasos from './pages/Ponto/FaltasAtrasos/FaltasAtrasos'
 import FechamentoMensal from './pages/Ponto/FechamentoMensal/FechamentoMensal'
 import Relatorios from './pages/Ponto/Relatorios/Relatorios'
+
 import Treinamentos from './pages/Treinamentos/Treinamentos'
 
 import Header from './components/layout/Header'
@@ -44,7 +49,7 @@ function App() {
 
       <Route path="/" element={<Login />} />
 
-      {/* ROTAS PROTEGIDAS */}
+      {/* DASHBOARD */}
 
       <Route
         path="/dashboard"
@@ -56,6 +61,8 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      {/* FUNCIONÁRIOS */}
 
       <Route
         path="/buscar"
@@ -89,6 +96,8 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      {/* ORGANOGRAMA */}
 
       <Route
         path="/cargos"
@@ -124,6 +133,19 @@ function App() {
       />
 
       <Route
+        path="/filiais"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Filiais />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* USUÁRIOS */}
+
+      <Route
         path="/usuarios"
         element={
           <ProtectedRoute>
@@ -134,16 +156,21 @@ function App() {
         }
       />
 
+      {/* PERFIS DE ACESSO */}
+
       <Route
-        path="/filiais"
+        path="/perfis-acesso"
         element={
           <ProtectedRoute>
             <Layout>
-              <Filiais />
+              <AccessRoles />
             </Layout>
           </ProtectedRoute>
         }
       />
+
+      {/* PERFIL */}
+
       <Route
         path="/perfil"
         element={
@@ -165,6 +192,8 @@ function App() {
           </ProtectedRoute>
         }
       />
+
+      {/* TREINAMENTOS */}
 
       <Route
         path="/treinamentos"

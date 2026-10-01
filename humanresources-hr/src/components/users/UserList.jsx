@@ -15,7 +15,16 @@ export default function UserList({ users, handleEdit, handleDelete }) {
 
               <p>{u.username}</p>
 
-              <span>{u.roleName || '-'}</span>
+              {/* ==================================================
+                  PERFIL DE ACESSO
+              ================================================== */}
+
+              <span>
+                {u.accessRoleName ||
+                  u.accessRole?.displayName ||
+                  u.accessRole?.name ||
+                  '-'}
+              </span>
 
               <strong>{u.active ? '🟢 Ativo' : '🔴 Inativo'}</strong>
             </div>

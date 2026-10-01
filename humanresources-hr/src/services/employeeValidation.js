@@ -57,7 +57,9 @@ function isFutureDate(value) {
   if (!date) return false
 
   const today = new Date()
+
   today.setHours(0, 0, 0, 0)
+
   date.setHours(0, 0, 0, 0)
 
   return date > today
@@ -65,11 +67,15 @@ function isFutureDate(value) {
 
 function isBeforeDate(firstValue, secondValue) {
   const firstDate = parseBrazilianDate(firstValue)
+
   const secondDate = parseBrazilianDate(secondValue)
 
-  if (!firstDate || !secondDate) return false
+  if (!firstDate || !secondDate) {
+    return false
+  }
 
   firstDate.setHours(0, 0, 0, 0)
+
   secondDate.setHours(0, 0, 0, 0)
 
   return firstDate < secondDate
@@ -290,6 +296,26 @@ export function validateEmployee(
       )
     }
   }
+
+  /*
+   * IMPORTANTE:
+   *
+   * Não existe mais validação de ocupação da posição.
+   *
+   * Uma mesma posição pode ser vinculada a vários
+   * funcionários ativos.
+   *
+   * Exemplo:
+   *
+   * Vendedor - Loja Centro
+   * ├── João
+   * ├── Maria
+   * ├── Carlos
+   * └── Ana
+   *
+   * A posição representa uma função dentro da estrutura
+   * organizacional, e não uma vaga exclusiva.
+   */
 
   if (formData.admissionDate && !isValidDate(formData.admissionDate)) {
     errors.push(createError('admissionDate', 'A data de admissão é inválida.'))

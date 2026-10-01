@@ -4,7 +4,7 @@ import { hasPermission } from '../../services/permissions'
 
 export default function UserForm({
   user,
-  roles,
+  accessRoles,
   employees,
   editingId,
   handleChange,
@@ -13,12 +13,48 @@ export default function UserForm({
   search,
   setSearch
 }) {
+  /*
+   * ============================================================
+   * PERFIL DE ACESSO
+   * ============================================================
+   *
+   * Aqui não trabalhamos mais com Cargo.
+   *
+   * Cargo profissional:
+   *   Vendedor
+   *   Motorista
+   *   Gerente
+   *
+   * Perfil de acesso:
+   *   Administrador
+   *   Gestão de RH
+   *   Funcionário
+   */
+
+  function handleAccessRoleChange(e) {
+    const selectedAccessRole = accessRoles.find(
+      (role) => Number(role.id) === Number(e.target.value)
+    )
+
+    setUser({
+      ...user,
+
+      accessRoleId: selectedAccessRole?.id || '',
+
+      accessRoleName: selectedAccessRole?.name || ''
+    })
+  }
+
   return (
     <div className="user-form-container">
       <div className="form-card">
         <h2>Cadastro de Usuários</h2>
 
         <form onSubmit={handleSubmit}>
+          {/* ====================================================
+              INFORMAÇÕES DO USUÁRIO
+          ==================================================== */}
+
           <div className="form-section">
             <div className="user-form-header">
               <h3>Informações do Usuário</h3>
@@ -34,6 +70,7 @@ export default function UserForm({
             </div>
 
             <div className="form-grid">
+              {/* NOME */}
               <input
                 className="field-full"
                 name="name"
@@ -42,6 +79,7 @@ export default function UserForm({
                 onChange={handleChange}
               />
 
+              {/* CREDENCIAIS */}
               <div className="user-credentials-grid field-full">
                 <input
                   name="username"
@@ -59,32 +97,31 @@ export default function UserForm({
                 />
               </div>
 
+              {/* ==================================================
+                  PERFIL DE ACESSO
+              ================================================== */}
+
               <select
                 className="field-full"
-                name="roleId"
-                value={user.roleId}
-                onChange={(e) => {
-                  const selectedRole = roles.find(
-                    (r) => r.id === Number(e.target.value)
-                  )
-
-                  setUser({
-                    ...user,
-                    roleId: selectedRole?.id || '',
-                    roleName: selectedRole?.name || ''
-                  })
-                }}
+                name="accessRoleId"
+                value={user.accessRoleId || ''}
+                onChange={handleAccessRoleChange}
               >
-                <option value="">Selecione o cargo</option>
+                <option value="">Selecione o perfil de acesso</option>
 
-                {roles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
+                {accessRoles
+                  .filter((role) => role.active !== false)
+                  .map((role) => (
+                    <option key={role.id} value={role.id}>
+                      {role.displayName || role.name}
+                    </option>
+                  ))}
               </select>
 
-              {/* FUNCIONÁRIO VINCULADO */}
+              {/* ==================================================
+                  FUNCIONÁRIO VINCULADO
+              ================================================== */}
+
               <select
                 className="field-full"
                 name="employeeId"
@@ -102,6 +139,10 @@ export default function UserForm({
             </div>
           </div>
 
+          {/* ====================================================
+              STATUS
+          ==================================================== */}
+
           <div className="form-section">
             <h3>Status</h3>
 
@@ -115,6 +156,10 @@ export default function UserForm({
               Usuário ativo
             </label>
           </div>
+
+          {/* ====================================================
+              SALVAR
+          ==================================================== */}
 
           {(hasPermission('users_create') || hasPermission('users_edit')) && (
             <button className="save-btn" type="submit">

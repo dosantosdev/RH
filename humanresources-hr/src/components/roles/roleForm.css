@@ -1,94 +1,459 @@
 .role-form-container {
-  max-width: 700px;
-  margin: 0 auto 30px;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto 35px;
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 16px;
+.form-card {
+  width: 100%;
+  box-sizing: border-box;
+
+  padding: 34px 42px 42px;
+
+  background: #ffffff;
+
+  border-radius: 18px;
+
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.08);
 }
 
-.form-grid input {
-  padding: 12px;
-  border-radius: 10px;
-  border: 1px solid #dcdcdc;
-  font-size: 15px;
-}
+/* ============================================================
+   CABEÇALHO
+============================================================ */
 
-.permissions-container {
+.role-form-header {
   display: flex;
-  flex-direction: column;
-  gap: 25px;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 30px;
+
+  padding-bottom: 26px;
+  margin-bottom: 30px;
+
+  border-bottom: 1px solid #eeeeee;
 }
 
-.permission-group h4 {
-  margin-bottom: 15px;
+.role-form-header h2 {
+  margin: 0;
+
+  color: #1f2937;
+
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.role-status {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  padding: 10px 16px;
+
+  border: 1px solid #d8dce5;
+  border-radius: 10px;
+
+  background: #f8f9fc;
+
   color: #333;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  cursor: pointer;
 }
 
-.permissions-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 12px;
-}
-
-.permission-item input[type='checkbox'] {
-  width: auto !important;
-
-  min-width: 16px;
-
-  max-width: 16px;
-
-  height: 16px;
+.role-status input {
+  width: 17px;
+  height: 17px;
 
   margin: 0;
 
-  flex-shrink: 0;
+  cursor: pointer;
 }
 
-.permission-item {
+/* ============================================================
+   SEÇÕES
+============================================================ */
+
+.form-section {
+  margin-bottom: 30px;
+
+  padding: 25px 26px 28px;
+
+  border: 1px solid #e5e8ee;
+  border-radius: 14px;
+
+  background: #fcfcfd;
+}
+
+.form-section h3 {
+  margin: 0 0 24px;
+
+  color: #263238;
+
+  font-size: 18px;
+  font-weight: 700;
+}
+
+/* ============================================================
+   GRID
+============================================================ */
+
+.form-grid {
   display: flex;
+  flex-wrap: wrap;
 
-  align-items: center;
+  align-items: flex-start;
 
-  gap: 10px;
+  gap: 22px;
 
-  padding: 18px;
+  width: 100%;
+}
 
-  border-radius: 12px;
+/* ============================================================
+   CAMPOS
+============================================================ */
 
-  background: #f7f7f9;
+.field-group {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  min-width: 0;
+}
+
+.field-group label {
+  display: block;
+
+  color: #3f4652;
+
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   TAMANHOS DOS CAMPOS
+============================================================ */
+
+.field-name {
+  width: 450px;
+}
+
+.field-regime {
+  width: 300px;
+}
+
+.field-salary {
+  width: 320px;
+}
+
+.field-education {
+  width: 360px;
+}
+
+.field-experience {
+  width: 320px;
+}
+
+.field-workload {
+  width: 320px;
+}
+
+.field-full {
+  width: 100%;
+}
+
+/* ============================================================
+   INPUTS
+============================================================ */
+
+.field-group input,
+.field-group select,
+.field-group textarea {
+  display: block;
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  border: 1px solid #d1d6df;
+
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  color: #252a32;
+
+  font-family: inherit;
 
   font-size: 15px;
+
+  outline: none;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.permission-item:hover {
-  background: #eef2ff;
+.field-group input,
+.field-group select {
+  height: 48px;
+
+  padding: 0 14px;
 }
 
-.permissions-header {
+.field-group textarea {
+  min-height: 135px;
+
+  padding: 14px;
+
+  line-height: 1.55;
+
+  resize: vertical;
+}
+
+.field-group input::placeholder,
+.field-group textarea::placeholder {
+  color: #8a919d;
+}
+
+.field-group input:focus,
+.field-group select:focus,
+.field-group textarea:focus {
+  border-color: #536ac7;
+
+  box-shadow: 0 0 0 3px rgba(83, 106, 199, 0.12);
+}
+
+/* ============================================================
+   TEXTAREAS GRANDES
+============================================================ */
+
+#description {
+  min-height: 160px;
+}
+
+#responsibilities {
+  min-height: 190px;
+}
+
+#skills {
+  min-height: 150px;
+}
+
+/* ============================================================
+   REQUISITOS
+============================================================ */
+
+.requirements-grid {
   display: flex;
-
-  justify-content: space-between;
-
   align-items: center;
-
-  gap: 20px;
-
-  flex-wrap: wrap;
 
   margin-bottom: 20px;
 }
 
-.select-all {
+.checkbox-field {
   display: flex;
-
   align-items: center;
 
-  gap: 8px;
+  gap: 10px;
 
-  white-space: nowrap;
+  color: #353b45;
 
   font-size: 14px;
+  font-weight: 500;
+
+  cursor: pointer;
+}
+
+.checkbox-field input {
+  width: 17px;
+  height: 17px;
+
+  margin: 0;
+
+  cursor: pointer;
+}
+
+.cnh-categories-role {
+  margin-bottom: 25px;
+  padding: 18px;
+
+  border: 1px solid #e5e7ee;
+  border-radius: 10px;
+
+  background: #f6f7fb;
+}
+
+.cnh-categories-role h4 {
+  margin: 0 0 14px;
+
+  color: #454b56;
+
+  font-size: 15px;
+}
+
+/* ============================================================
+   CERTIFICADOS
+============================================================ */
+
+.required-certificates {
+  margin-top: 26px;
+  padding-top: 25px;
+
+  border-top: 1px solid #e4e6eb;
+}
+
+.required-certificates h4 {
+  margin: 0 0 15px;
+
+  color: #454b56;
+
+  font-size: 15px;
+}
+
+.permissions-grid {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+
+  gap: 12px;
+}
+
+.permission-item {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  min-height: 50px;
+
+  box-sizing: border-box;
+
+  padding: 12px 15px;
+
+  border: 1px solid #e2e4e9;
+  border-radius: 9px;
+
+  background: #ffffff;
+
+  color: #343a43;
+
+  font-size: 14px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.permission-item:hover {
+  background: #f5f7fc;
+
+  border-color: #cfd5e3;
+}
+
+.permission-item input[type='checkbox'] {
+  width: 17px !important;
+  min-width: 17px;
+  max-width: 17px;
+
+  height: 17px;
+
+  margin: 0;
+
+  flex-shrink: 0;
+
+  cursor: pointer;
+}
+
+/* ============================================================
+   BOTÃO
+============================================================ */
+
+.save-btn {
+  display: block;
+
+  margin-top: 25px;
+
+  padding: 13px 25px;
+
+  border: none;
+  border-radius: 9px;
+
+  background: #536ac7;
+
+  color: #ffffff;
+
+  font-family: inherit;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.save-btn:hover {
+  background: #455bb4;
+
+  box-shadow: 0 4px 10px rgba(83, 106, 199, 0.25);
+}
+
+/* ============================================================
+   RESPONSIVIDADE
+============================================================ */
+
+@media (max-width: 1000px) {
+  .field-name,
+  .field-regime,
+  .field-salary,
+  .field-education,
+  .field-experience,
+  .field-workload {
+    width: calc(50% - 11px);
+  }
+}
+
+@media (max-width: 700px) {
+  .form-card {
+    padding: 24px 18px 30px;
+  }
+
+  .form-section {
+    padding: 20px 17px 22px;
+  }
+
+  .role-form-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .role-status {
+    align-self: flex-start;
+  }
+
+  .field-name,
+  .field-regime,
+  .field-salary,
+  .field-education,
+  .field-experience,
+  .field-workload {
+    width: 100%;
+  }
+
+  .permissions-grid {
+    grid-template-columns: 1fr;
+  }
 }
