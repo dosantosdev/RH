@@ -30,6 +30,7 @@ export default function Organograma() {
   const [roles, setRoles] = useState([])
   const [branches, setBranches] = useState([])
   const [departments, setDepartments] = useState([])
+  const [employees, setEmployees] = useState([])
 
   const [editingId, setEditingId] = useState(null)
   const [deleteId, setDeleteId] = useState(null)
@@ -41,6 +42,7 @@ export default function Organograma() {
     setRoles(getStoredArray('roles'))
     setBranches(getStoredArray('branches'))
     setDepartments(getStoredArray('departments'))
+    setEmployees(getStoredArray('employees'))
   }, [])
 
   if (!hasPermission('roles_view')) {
@@ -84,7 +86,9 @@ export default function Organograma() {
       return
     }
 
-    // Uma posição não pode ser superior a ela mesma.
+    /*
+     * Uma posição não pode ser superior a ela mesma.
+     */
     if (
       editingId &&
       position.parentPositionId &&
@@ -179,10 +183,10 @@ export default function Organograma() {
       return
     }
 
-    // ==========================================
-    // VERIFICA SE A POSIÇÃO POSSUI SUBORDINADOS
-    // ==========================================
-
+    /*
+     * Não permite excluir uma posição que possui
+     * outras posições subordinadas.
+     */
     const hasChildren = positions.some(
       (item) => Number(item.parentPositionId) === Number(id)
     )
@@ -195,13 +199,12 @@ export default function Organograma() {
       return
     }
 
-    // ==========================================
-    // VERIFICA SE A POSIÇÃO ESTÁ VINCULADA
-    // A ALGUM FUNCIONÁRIO
-    // ==========================================
-
-    const employees = getStoredArray('employees')
-
+    /*
+     * Uma posição pode ter vários funcionários.
+     *
+     * Mesmo assim, não permitimos sua exclusão enquanto
+     * existir algum funcionário vinculado a ela.
+     */
     const linkedEmployees = employees.filter(
       (employee) =>
         employee.positionId && Number(employee.positionId) === Number(id)
@@ -402,6 +405,7 @@ export default function Organograma() {
                   key={root.id}
                   node={root}
                   positions={positions}
+                  employees={employees}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                 />
@@ -423,9 +427,21 @@ export default function Organograma() {
   )
 }
 
-function TreeNode({ node, positions, onEdit, onDelete }) {
+function TreeNode({ node, positions, employees, onEdit, onDelete }) {
   const children = positions.filter(
     (position) => Number(position.parentPositionId) === Number(node.id)
+  )
+
+  /*
+   * Uma posição pode ser ocupada por vários funcionários.
+   *
+   * Por isso usamos filter() em vez de find().
+   */
+  const positionEmployees = employees.filter(
+    (employee) =>
+      employee.active === true &&
+      employee.positionId &&
+      Number(employee.positionId) === Number(node.id)
   )
 
   return (
@@ -437,6 +453,18 @@ function TreeNode({ node, positions, onEdit, onDelete }) {
           <span>{node.departmentName}</span>
 
           <small>{node.branchName}</small>
+
+          {/* FUNCIONÁRIOS DA POSIÇÃO */}
+
+          {positionEmployees.length === 0 ? (
+            <span>Vaga disponível</span>
+          ) : (
+            <div>
+              {positionEmployees.map((employee) => (
+                <span key={employee.id}>👤 {employee.name}</span>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="tree-node-actions">
@@ -465,6 +493,7 @@ function TreeNode({ node, positions, onEdit, onDelete }) {
               key={child.id}
               node={child}
               positions={positions}
+              employees={employees}
               onEdit={onEdit}
               onDelete={onDelete}
             />

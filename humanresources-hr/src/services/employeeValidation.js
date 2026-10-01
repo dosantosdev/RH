@@ -291,59 +291,6 @@ export function validateEmployee(
     }
   }
 
-  // ==============================
-  // OCUPAÇÃO DA POSIÇÃO
-  // ==============================
-
-  /*
-   * Uma posição pode ser ocupada por apenas
-   * um funcionário ativo.
-   *
-   * Funcionários inativos não bloqueiam a posição.
-   *
-   * Durante a edição, o próprio funcionário
-   * é ignorado na verificação.
-   */
-  if (formData.positionId && formData.active) {
-    const positionAlreadyOccupied = employees.find((employee) => {
-      /*
-       * Ignora o próprio funcionário durante a edição.
-       */
-      if (
-        formData.id !== undefined &&
-        formData.id !== null &&
-        Number(employee.id) === Number(formData.id)
-      ) {
-        return false
-      }
-
-      /*
-       * Funcionário inativo não ocupa a posição.
-       */
-      if (employee.active !== true) {
-        return false
-      }
-
-      /*
-       * Verifica se outro funcionário já ocupa
-       * a posição selecionada.
-       */
-      return (
-        employee.positionId &&
-        Number(employee.positionId) === Number(formData.positionId)
-      )
-    })
-
-    if (positionAlreadyOccupied) {
-      errors.push(
-        createError(
-          'positionId',
-          `Esta posição já está ocupada por ${positionAlreadyOccupied.name}.`
-        )
-      )
-    }
-  }
-
   if (formData.admissionDate && !isValidDate(formData.admissionDate)) {
     errors.push(createError('admissionDate', 'A data de admissão é inválida.'))
   }

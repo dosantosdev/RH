@@ -30,6 +30,18 @@ export default function EmployeeProfileCard({ employee, onDelete, onUpdate }) {
   )
 
   /*
+   * Localiza a posição superior dentro da estrutura
+   * do Organograma.
+   *
+   * A posição atual possui um parentPositionId,
+   * que identifica quem é o seu superior.
+   */
+  const parentPosition = positions.find(
+    (position) =>
+      Number(position.id) === Number(selectedPosition?.parentPositionId)
+  )
+
+  /*
    * Localiza o cargo.
    *
    * Para funcionários novos:
@@ -71,6 +83,14 @@ export default function EmployeeProfileCard({ employee, onDelete, onUpdate }) {
     selectedPosition?.branchName ||
     edited.branchName ||
     ''
+
+  /*
+   * Nome do superior.
+   *
+   * Quando a posição não possui parentPositionId,
+   * significa que ela é uma posição raiz.
+   */
+  const parentPositionName = parentPosition?.cargoName || ''
 
   function handlePhotoChange(e) {
     const file = e.target.files?.[0]
@@ -155,6 +175,12 @@ export default function EmployeeProfileCard({ employee, onDelete, onUpdate }) {
           <span>Filial</span>
 
           <strong>{branchName || '-'}</strong>
+        </div>
+
+        <div className="info-row">
+          <span>Superior</span>
+
+          <strong>{parentPositionName || 'Posição raiz'}</strong>
         </div>
 
         <div className="info-row">
