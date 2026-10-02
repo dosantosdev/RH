@@ -6,6 +6,12 @@ export function getTrainingParticipants() {
   return getStoredArray(STORAGE_KEY)
 }
 
+export function getTrainingParticipantsByTrainingId(trainingId) {
+  return getTrainingParticipants().filter(
+    (participant) => Number(participant.trainingId) === Number(trainingId)
+  )
+}
+
 export function addTrainingParticipant(participant) {
   const participants = getTrainingParticipants()
 
@@ -40,6 +46,12 @@ export function deleteTrainingParticipant(participantId) {
   return updatedParticipants
 }
 
+/*
+ * Atualiza somente o progresso dos conteúdos.
+ *
+ * A avaliação não conclui automaticamente
+ * o treinamento.
+ */
 export function updateParticipantProgress(
   participantId,
   progress,
@@ -54,15 +66,14 @@ export function updateParticipantProgress(
 
     const updatedProgress = Number(progress) || 0
 
+    const bestScore = participant.bestScore ?? participant.score ?? null
+
+    const assessmentStatus = participant.assessmentStatus || null
+
     let status = 'pending'
 
-    if (participant.assessmentStatus === 'failed') {
+    if (assessmentStatus === 'failed') {
       status = 'failed'
-    } else if (
-      updatedProgress >= 100 &&
-      participant.assessmentStatus === 'approved'
-    ) {
-      status = 'completed'
     } else if (updatedProgress > 0) {
       status = 'in_progress'
     }
@@ -73,6 +84,10 @@ export function updateParticipantProgress(
       completedContents,
 
       progress: updatedProgress,
+
+      score: bestScore,
+
+      bestScore,
 
       status,
 
@@ -88,7 +103,18 @@ export function updateParticipantProgress(
   return updatedParticipants
 }
 
-export function addAssessmentAttempt(participantId, attempt) {
+/*
+ * Registra uma tentativa da avaliação.
+ *
+ * A aprovação da avaliação é registrada,
+ * mas o treinamento continua em andamento
+ * até o usuário clicar em "Concluir treinamento".
+ */
+export function addAssessmentAttempt(
+  participantId,
+  attempt,
+  assessmentSettings = {}
+) {
   const participants = getTrainingParticipants()
 
   const updatedParticipants = participants.map((participant) => {
@@ -102,15 +128,31 @@ export function addAssessmentAttempt(participantId, attempt) {
 
     const updatedAttempts = [...attempts, attempt]
 
-    const assessmentStatus = attempt.approved ? 'approved' : 'failed'
+    const previousBestScore = Number.isFinite(Number(participant.bestScore))
+      ? Number(participant.bestScore)
+      : Number.isFinite(Number(participant.score))
+        ? Number(participant.score)
+        : null
+
+    const currentScore = Number(attempt.score) || 0
+
+    const bestScore =
+      previousBestScore === null
+        ? currentScore
+        : Math.max(previousBestScore, currentScore)
+
+    const minimumScore =
+      Number(attempt.minimumScore ?? assessmentSettings.minimumScore) || 0
+
+    const approved = bestScore >= minimumScore
+
+    const assessmentStatus = approved ? 'approved' : 'failed'
 
     let status = 'pending'
 
     if (assessmentStatus === 'failed') {
       status = 'failed'
-    } else if (participant.progress >= 100) {
-      status = 'completed'
-    } else if (participant.progress > 0) {
+    } else if (Number(participant.progress) > 0) {
       status = 'in_progress'
     }
 
@@ -119,16 +161,48 @@ export function addAssessmentAttempt(participantId, attempt) {
 
       attempts: updatedAttempts,
 
-      score: attempt.score,
+      score: bestScore,
+
+      bestScore,
 
       assessmentStatus,
 
       status,
 
-      completedAt:
-        status === 'completed'
-          ? participant.completedAt || new Date().toISOString()
-          : null
+      completedAt: null
+    }
+  })
+
+  setStored(STORAGE_KEY, updatedParticipants)
+
+  return updatedParticipants
+}
+
+/*
+ * Conclusão definitiva do treinamento.
+ *
+ * É chamada somente depois que:
+ *
+ * - todos os conteúdos foram concluídos;
+ * - a avaliação foi aprovada, quando existir;
+ * - o usuário clicou em "Concluir treinamento".
+ */
+export function completeParticipantTraining(participantId) {
+  const participants = getTrainingParticipants()
+
+  const updatedParticipants = participants.map((participant) => {
+    if (participant.id !== participantId) {
+      return participant
+    }
+
+    return {
+      ...participant,
+
+      progress: 100,
+
+      status: 'completed',
+
+      completedAt: participant.completedAt || new Date().toISOString()
     }
   })
 

@@ -5,10 +5,6 @@
   box-sizing: border-box;
 }
 
-/* ==============================
-   CABEÇALHO
-============================== */
-
 .trainings-header {
   display: flex;
   justify-content: space-between;
@@ -52,6 +48,10 @@
   border-radius: 8px;
   padding: 10px 18px;
   cursor: pointer;
+}
+
+.training-secondary-button:hover {
+  background: #f7f7f7;
 }
 
 /* ==============================
@@ -295,10 +295,13 @@
   gap: 20px;
   padding: 22px 25px;
   border-bottom: 1px solid #eee;
+  flex: 0 0 auto;
 }
 
 .training-modal-header h2 {
   margin: 0 0 5px;
+  font-size: 24px;
+  line-height: 1.2;
 }
 
 .training-modal-header p {
@@ -308,11 +311,22 @@
 }
 
 .training-modal-close {
+  width: 36px;
+  height: 36px;
   border: none;
   background: transparent;
+  border-radius: 8px;
   font-size: 28px;
   cursor: pointer;
   color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.training-modal-close:hover {
+  background: #f3f4f8;
+  color: #222;
 }
 
 .training-modal-body {
@@ -340,9 +354,12 @@
 .training-modal-footer {
   display: flex;
   justify-content: flex-end;
+  align-items: center;
   gap: 10px;
-  padding: 18px 25px;
+  padding: 14px 25px;
   border-top: 1px solid #eee;
+  background: white;
+  flex: 0 0 auto;
 }
 
 /* ==============================
@@ -438,12 +455,12 @@
 ============================== */
 
 .training-content-modal {
-  width: 100%;
-  max-width: 950px;
+  width: min(950px, 100%);
+  height: min(90vh, 900px);
   max-height: 90vh;
   background: white;
   border-radius: 14px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -638,8 +655,6 @@
   padding: 25px;
 }
 
-/* TEXTO */
-
 .training-content-text-preview {
   background: white;
   border: 1px solid #e2e2e2;
@@ -650,8 +665,6 @@
   line-height: 1.7;
   color: #333;
 }
-
-/* VÍDEO */
 
 .training-content-video-preview {
   width: 100%;
@@ -664,8 +677,6 @@
   display: block;
   border: none;
 }
-
-/* PDF */
 
 .training-content-pdf-preview {
   display: flex;
@@ -794,8 +805,6 @@
   transition: width 0.3s ease;
 }
 
-/* NOTA DO PARTICIPANTE */
-
 .training-participant-score {
   display: flex;
   flex-direction: column;
@@ -819,144 +828,240 @@
 ============================== */
 
 .training-progress-summary {
+  flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  padding: 20px 25px;
-  border-bottom: 1px solid #eee;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 30px;
+  padding: 20px 26px;
+  background: #fafbff;
+  border-bottom: 1px solid #e8e8ee;
 }
 
-.training-progress-summary > div {
+.training-progress-summary-info {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.training-progress-summary-info > div {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-width: 0;
 }
 
-.training-progress-summary span {
+.training-progress-summary-info span {
   font-size: 12px;
   color: #777;
 }
 
-.training-progress-summary strong {
-  font-size: 15px;
+.training-progress-summary-info strong {
+  font-size: 14px;
+  color: #222;
 }
 
-.training-progress-overview {
-  padding: 20px 25px;
-  border-bottom: 1px solid #eee;
-}
-
-.training-progress-overview-header {
+.training-progress-percentage {
   display: flex;
-  justify-content: space-between;
-  gap: 15px;
-  margin-bottom: 10px;
-  font-size: 13px;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 90px;
 }
 
-.training-progress-large-bar {
+.training-progress-percentage strong {
+  font-size: 30px;
+  line-height: 1;
+  color: #4f67c6;
+}
+
+.training-progress-percentage span {
+  margin-top: 5px;
+  font-size: 12px;
+  color: #777;
+}
+
+.training-progress-summary > .training-progress-bar {
+  grid-column: 1 / -1;
   width: 100%;
-  height: 10px;
-  background: #e8e8e8;
-  border-radius: 10px;
+  height: 9px;
+  background: #e5e8f0;
+  border-radius: 999px;
   overflow: hidden;
 }
 
-.training-progress-large-bar div {
+.training-progress-summary > .training-progress-bar div {
   height: 100%;
   background: #4f67c6;
-  border-radius: 10px;
+  border-radius: 999px;
   transition: width 0.3s ease;
 }
 
-.training-progress-content {
-  padding: 25px;
-  border-bottom: 1px solid #eee;
+.training-progress-count {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  color: #777;
 }
 
-.training-progress-content h3,
-.training-progress-content-preview h3 {
-  margin-top: 0;
-  margin-bottom: 18px;
+.training-progress-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px 26px;
+  background: white;
+  scrollbar-width: thin;
 }
 
-.training-progress-items {
+.training-progress-body::-webkit-scrollbar,
+.training-assessment-take-form::-webkit-scrollbar {
+  width: 9px;
+}
+
+.training-progress-body::-webkit-scrollbar-thumb,
+.training-assessment-take-form::-webkit-scrollbar-thumb {
+  background: #c8cbd3;
+  border-radius: 20px;
+  border: 2px solid white;
+}
+
+.training-progress-body::-webkit-scrollbar-track,
+.training-assessment-take-form::-webkit-scrollbar-track {
+  background: #f7f7f8;
+}
+
+.training-progress-content-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.training-progress-content-item {
+  border: 1px solid #e1e3e8;
+  border-radius: 12px;
+  background: white;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.training-progress-content-item.completed {
+  border-color: #c8e3d0;
+  background: #fbfefc;
+}
+
+.training-progress-content-header {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 16px 18px;
+}
+
+.training-progress-content-number {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 34px;
+  border-radius: 50%;
+  background: #4f67c6;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.training-progress-content-item.completed .training-progress-content-number {
+  background: #39834c;
+}
+
+.training-progress-content-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.training-progress-content-info strong {
+  font-size: 14px;
+  color: #222;
+  line-height: 1.4;
+}
+
+.training-progress-content-info span {
+  font-size: 12px;
+  color: #777;
+}
+
+.training-progress-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  color: #4f67c6;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.training-progress-check input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: #4f67c6;
+}
+
+.training-progress-content-item.completed .training-progress-check {
+  color: #39834c;
+}
+
+.training-progress-content-preview {
+  padding: 0 18px 18px;
+}
+
+.training-progress-content-text,
+.training-progress-content-other {
+  padding: 16px;
+  background: #f7f8fa;
+  border-radius: 9px;
+  color: #333;
+  line-height: 1.6;
+}
+
+.training-progress-content-text p,
+.training-progress-content-other p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.training-progress-content-video {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 9px;
+  background: #eee;
+}
+
+.training-progress-content-video iframe {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: 450px;
+  border: 0;
+}
+
+.training-progress-content-pdf {
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
-.training-progress-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 13px;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-  background: white;
-}
-
-.training-progress-item.completed {
-  background: #f5faf6;
-  border-color: #cfe5d4;
-}
-
-.training-progress-item-number {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: #4f67c6;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  font-size: 13px;
-}
-
-.training-progress-item.completed .training-progress-item-number {
-  background: #39834c;
-}
-
-.training-progress-item-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.training-progress-item-info strong {
-  font-size: 14px;
-}
-
-.training-progress-item-info span {
-  font-size: 12px;
-  color: #777;
-}
-
-.training-progress-complete {
-  border: 1px solid #4f67c6;
-  background: white;
-  color: #4f67c6;
-  border-radius: 7px;
-  padding: 8px 12px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.training-progress-complete:hover {
-  background: #4f67c6;
-  color: white;
-}
-
-.training-progress-complete.completed {
-  border-color: #39834c;
-  background: #39834c;
-  color: white;
-}
-
-.training-progress-content-preview {
-  padding: 25px;
+.training-progress-content-pdf iframe {
+  display: block;
+  width: 100%;
+  height: 500px;
+  border: 1px solid #ddd;
+  border-radius: 9px;
+  background: #f5f5f5;
 }
 
 .training-progress-details {
@@ -1019,10 +1124,13 @@
 }
 
 /* ==============================
-   AVALIAÇÃO
+   AVALIAÇÃO - CADASTRO
 ============================== */
 
 .training-assessment-empty {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1075,9 +1183,10 @@
 }
 
 .training-assessment-question {
-  border: 1px solid #e1e1e1;
+  border: 1px solid #e1e3e8;
   border-radius: 10px;
   padding: 18px;
+  background: white;
 }
 
 .training-assessment-question-header {
@@ -1164,26 +1273,25 @@
   padding: 5px;
 }
 
-.training-assessment-question-actions button:hover {
-  transform: translateY(-1px);
-}
-
 /* ==============================
    REALIZAÇÃO DA AVALIAÇÃO
 ============================== */
 
 .training-assessment-take-info {
+  flex: 0 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  padding: 20px 25px;
-  border-bottom: 1px solid #eee;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 18px;
+  padding: 18px 26px;
+  background: white;
+  border-bottom: 1px solid #ededed;
 }
 
 .training-assessment-take-info > div {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-width: 0;
 }
 
 .training-assessment-take-info span {
@@ -1193,28 +1301,38 @@
 
 .training-assessment-take-info strong {
   font-size: 14px;
+  color: #222;
 }
 
 .training-assessment-take-form {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   display: flex;
   flex-direction: column;
+  background: white;
+  scrollbar-width: thin;
 }
 
 .training-take-question {
-  padding: 25px;
-  border-bottom: 1px solid #eee;
+  padding: 22px 26px;
+  border-bottom: 1px solid #ededed;
+  background: white;
 }
 
 .training-take-question-title {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 20px;
-  margin-bottom: 18px;
+  margin-bottom: 14px;
 }
 
 .training-take-question-title strong {
   font-size: 15px;
   line-height: 1.5;
+  color: #222;
 }
 
 .training-take-question-title span {
@@ -1226,48 +1344,73 @@
 .training-take-alternatives {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 9px;
 }
 
 .training-take-alternative {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px;
+  gap: 11px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
   border: 1px solid #ddd;
-  border-radius: 8px;
+  border-radius: 9px;
+  background: white;
   cursor: pointer;
-  transition: 0.2s;
+  transition: 0.15s;
 }
 
 .training-take-alternative:hover {
   border-color: #4f67c6;
+  background: #fafbff;
 }
 
 .training-take-alternative.selected {
   border-color: #4f67c6;
-  background: #f5f7ff;
+  background: #f3f5ff;
+  box-shadow: 0 0 0 1px rgba(79, 103, 198, 0.08);
 }
 
 .training-take-alternative input {
+  width: 16px;
+  height: 16px;
   margin: 0;
+  accent-color: #4f67c6;
+  flex: 0 0 auto;
 }
 
 .training-take-alternative > span {
-  width: 27px;
-  height: 27px;
-  border-radius: 50%;
-  background: #eee;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 28px;
+  border-radius: 50%;
+  background: #f0f1f3;
+  color: #444;
   font-size: 12px;
-  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.training-take-alternative.selected > span {
+  background: #4f67c6;
+  color: white;
 }
 
 .training-take-alternative p {
   margin: 0;
   font-size: 13px;
+  line-height: 1.45;
+  color: #333;
+}
+
+.training-assessment-take-form > .training-modal-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: auto;
 }
 
 /* ==============================
@@ -1275,8 +1418,11 @@
 ============================== */
 
 .training-assessment-result {
+  overflow-y: auto;
+  min-height: 0;
+  flex: 1;
+  padding: 40px 26px;
   text-align: center;
-  padding: 45px 25px;
 }
 
 .assessment-result-icon {
@@ -1300,12 +1446,14 @@
 }
 
 .training-assessment-result h2 {
-  margin: 0 0 5px;
+  margin: 0 0 6px;
+  color: #222;
 }
 
 .training-assessment-result > p {
   margin: 0;
   color: #777;
+  line-height: 1.5;
 }
 
 .assessment-result-score {
@@ -1328,6 +1476,7 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  margin-top: 18px;
 }
 
 .assessment-result-points span {
@@ -1340,7 +1489,7 @@
 }
 
 /* ==============================
-   CERTIFICADO - BOTÃO
+   CERTIFICADO
 ============================== */
 
 .training-content-certificate {
@@ -1362,10 +1511,6 @@
 .training-content-certificate.disabled {
   opacity: 0.45;
 }
-
-/* ==============================
-   CERTIFICADO - BLOQUEADO
-============================== */
 
 .training-certificate-locked {
   text-align: center;
@@ -1414,10 +1559,6 @@
   font-size: 14px;
 }
 
-/* ==============================
-   CERTIFICADO - GERAÇÃO
-============================== */
-
 .training-certificate-generate {
   text-align: center;
   padding: 55px 30px;
@@ -1436,10 +1577,6 @@
   color: #777;
   margin-bottom: 25px;
 }
-
-/* ==============================
-   CERTIFICADO
-============================== */
 
 .training-certificate-area {
   padding: 25px;
@@ -1525,6 +1662,54 @@
 }
 
 /* ==============================
+   VISUALIZAÇÃO DO TREINAMENTO
+============================== */
+
+.training-view-value {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid #e2e2e2;
+  border-radius: 7px;
+  background: #f8f8f8;
+  color: #333;
+  font-size: 13px;
+}
+
+.training-view-text {
+  align-items: flex-start;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.training-view-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.training-view-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 15px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.training-view-summary strong {
+  font-size: 20px;
+}
+
+.training-view-summary span {
+  font-size: 12px;
+  color: #777;
+}
+
+/* ==============================
    IMPRESSÃO
 ============================== */
 
@@ -1586,6 +1771,30 @@
 
   .certificate-footer {
     flex-direction: column;
+  }
+
+  .training-content-modal {
+    height: calc(100vh - 30px);
+    max-height: calc(100vh - 30px);
+    border-radius: 12px;
+  }
+
+  .training-progress-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .training-progress-summary-info {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .training-progress-percentage {
+    position: absolute;
+    right: 45px;
+    margin-top: -5px;
+  }
+
+  .training-assessment-take-info {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
@@ -1670,24 +1879,6 @@
     height: 450px;
   }
 
-  .training-progress-summary {
-    grid-template-columns: 1fr;
-  }
-
-  .training-progress-item {
-    flex-wrap: wrap;
-  }
-
-  .training-progress-complete {
-    width: 100%;
-  }
-
-  .training-progress-overview,
-  .training-progress-content,
-  .training-progress-content-preview {
-    padding: 18px;
-  }
-
   .training-assessment-summary {
     grid-template-columns: 1fr;
   }
@@ -1708,6 +1899,10 @@
   .training-card-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .training-view-summary {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 600px) {
@@ -1727,58 +1922,80 @@
   .training-card-actions {
     grid-template-columns: 1fr;
   }
-}
 
-/* ==============================
-   VISUALIZAÇÃO DO TREINAMENTO
-============================== */
+  .training-modal-overlay {
+    padding: 10px;
+  }
 
-.training-view-value {
-  min-height: 42px;
-  display: flex;
-  align-items: center;
-  padding: 10px 12px;
-  border: 1px solid #e2e2e2;
-  border-radius: 7px;
-  background: #f8f8f8;
-  color: #333;
-  font-size: 13px;
-}
+  .training-modal-header {
+    padding: 18px;
+  }
 
-.training-view-text {
-  align-items: flex-start;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
+  .training-progress-body {
+    padding: 18px;
+  }
 
-.training-view-summary {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-  margin-top: 20px;
-}
+  .training-progress-summary {
+    padding: 18px;
+  }
 
-.training-view-summary > div {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  padding: 15px;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  background: #fafafa;
-}
+  .training-progress-summary-info {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
 
-.training-view-summary strong {
-  font-size: 20px;
-}
+  .training-progress-percentage {
+    position: static;
+    align-items: flex-start;
+  }
 
-.training-view-summary span {
-  font-size: 12px;
-  color: #777;
-}
+  .training-progress-summary > .training-progress-bar,
+  .training-progress-count {
+    grid-column: 1 / -1;
+  }
 
-@media (max-width: 700px) {
-  .training-view-summary {
+  .training-progress-content-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .training-progress-check {
+    width: 100%;
+    padding-left: 47px;
+  }
+
+  .training-progress-content-preview {
+    padding: 0 12px 12px;
+  }
+
+  .training-progress-content-video iframe {
+    height: 250px;
+  }
+
+  .training-progress-content-pdf iframe {
+    height: 400px;
+  }
+
+  .training-assessment-take-info {
     grid-template-columns: 1fr;
+    padding: 16px 18px;
+  }
+
+  .training-take-question {
+    padding: 18px;
+  }
+
+  .training-take-question-title {
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .training-modal-footer {
+    padding: 12px 18px;
+  }
+
+  .training-assessment-summary {
+    grid-template-columns: 1fr;
+    padding: 16px 18px;
   }
 }

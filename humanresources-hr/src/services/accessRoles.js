@@ -33,7 +33,15 @@ export const defaultAccessRoles = [
     displayName: 'Gestão de RH',
     description: 'Gestão de Recursos Humanos',
     active: true,
-    permissions: ['employees_view', 'employees_create', 'employees_edit']
+    permissions: [
+      'employees_view',
+      'employees_create',
+      'employees_edit',
+      'trainings_view',
+      'trainings_create',
+      'trainings_edit',
+      'trainings_delete'
+    ]
   },
 
   {
@@ -42,7 +50,7 @@ export const defaultAccessRoles = [
     displayName: 'Funcionário',
     description: 'Usuário funcionário',
     active: true,
-    permissions: ['employees_view']
+    permissions: ['employees_view', 'my_trainings_view']
   }
 ]
 

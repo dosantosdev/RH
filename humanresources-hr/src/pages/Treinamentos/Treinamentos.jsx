@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import './treinamentos.css'
 
@@ -6,12 +6,16 @@ import TrainingContent from '../../components/trainings/TrainingContent'
 import TrainingParticipants from '../../components/trainings/TrainingParticipants'
 import TrainingProgressList from '../../components/trainings/TrainingProgressList'
 import TrainingAssessment from '../../components/trainings/TrainingAssessment'
+import ConfirmModal from '../../components/ui/ConfirmModal'
 
 import {
   getTrainings,
   addTraining,
-  updateTraining
+  updateTraining,
+  deleteTraining
 } from '../../services/training'
+
+import { getTrainingParticipants } from '../../services/trainingParticipant'
 
 export default function Treinamentos() {
   const initialTraining = {
@@ -24,10 +28,12 @@ export default function Treinamentos() {
     active: true,
     validity: '',
     minimumScore: '',
-    allowRetake: true
+    allowRetake: true,
+    unlimitedAttempts: false,
+    maxAttempts: 1
   }
 
-  const [trainings, setTrainings] = useState([])
+  const [trainings, setTrainings] = useState(() => getTrainings())
 
   const [training, setTraining] = useState(initialTraining)
 
@@ -75,9 +81,7 @@ export default function Treinamentos() {
    */
   const [selectedViewTraining, setSelectedViewTraining] = useState(null)
 
-  useEffect(() => {
-    setTrainings(getTrainings())
-  }, [])
+  const [trainingToDelete, setTrainingToDelete] = useState(null)
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target
@@ -116,6 +120,47 @@ export default function Treinamentos() {
     setTraining({
       ...initialTraining
     })
+  }
+
+  function handleRequestDeleteTraining(item) {
+    setTrainingToDelete(item)
+  }
+
+  function handleCancelDeleteTraining() {
+    setTrainingToDelete(null)
+  }
+
+  function handleConfirmDeleteTraining() {
+    if (!trainingToDelete) {
+      return
+    }
+
+    const trainingId = trainingToDelete.id
+    const updatedTrainings = deleteTraining(trainingId)
+
+    setTrainings(updatedTrainings)
+
+    if (selectedTraining?.id === trainingId) {
+      setSelectedTraining(null)
+    }
+
+    if (selectedParticipantsTraining?.id === trainingId) {
+      setSelectedParticipantsTraining(null)
+    }
+
+    if (selectedProgressTraining?.id === trainingId) {
+      setSelectedProgressTraining(null)
+    }
+
+    if (selectedAssessmentTraining?.id === trainingId) {
+      setSelectedAssessmentTraining(null)
+    }
+
+    if (selectedViewTraining?.id === trainingId) {
+      setSelectedViewTraining(null)
+    }
+
+    setTrainingToDelete(null)
   }
 
   function handleUpdateTraining(updatedTraining) {
@@ -158,7 +203,18 @@ export default function Treinamentos() {
 
         validity: Number(training.validity) || 0,
 
-        minimumScore: Number(training.minimumScore) || 0
+        minimumScore: Number(training.minimumScore) || 0,
+
+        unlimitedAttempts: training.allowRetake
+          ? training.unlimitedAttempts === true
+          : false,
+
+        maxAttempts:
+          training.allowRetake && training.unlimitedAttempts
+            ? null
+            : training.allowRetake
+              ? Math.max(Number(training.maxAttempts) || 2, 2)
+              : 1
       }
 
       const updatedTrainings = updateTraining(updatedTraining)
@@ -192,6 +248,16 @@ export default function Treinamentos() {
 
       minimumScore: Number(training.minimumScore) || 0,
 
+      unlimitedAttempts:
+        training.allowRetake && training.unlimitedAttempts === true,
+
+      maxAttempts:
+        training.allowRetake && training.unlimitedAttempts
+          ? null
+          : training.allowRetake
+            ? Math.max(Number(training.maxAttempts) || 2, 2)
+            : 1,
+
       participants: 0,
 
       contents: [],
@@ -216,10 +282,24 @@ export default function Treinamentos() {
     item.name?.toLowerCase().includes(search.toLowerCase())
   )
 
-  const totalParticipants = trainings.reduce(
-    (total, item) => total + (item.participants || 0),
-    0
-  )
+  const trainingParticipants = getTrainingParticipants()
+
+  const totalParticipants = trainingParticipants.length
+
+  const totalCompleted = trainingParticipants.filter(
+    (participant) => participant.status === 'completed'
+  ).length
+
+  const totalPending = trainingParticipants.filter(
+    (participant) =>
+      participant.status === 'pending' || participant.status === 'in_progress'
+  ).length
+
+  function getTrainingParticipantCount(trainingId) {
+    return trainingParticipants.filter(
+      (participant) => Number(participant.trainingId) === Number(trainingId)
+    ).length
+  }
 
   return (
     <div className="trainings-page">
@@ -272,7 +352,7 @@ export default function Treinamentos() {
           <span className="summary-icon">✅</span>
 
           <div>
-            <strong>0</strong>
+            <strong>{totalCompleted}</strong>
 
             <span>Concluídos</span>
           </div>
@@ -282,7 +362,7 @@ export default function Treinamentos() {
           <span className="summary-icon">⏳</span>
 
           <div>
-            <strong>0</strong>
+            <strong>{totalPending}</strong>
 
             <span>Pendentes</span>
           </div>
@@ -352,7 +432,9 @@ export default function Treinamentos() {
 
                   <span>🕒 {item.duration || 0} hora(s)</span>
 
-                  <span>👥 {item.participants || 0} participantes</span>
+                  <span>
+                    👥 {getTrainingParticipantCount(item.id)} participantes
+                  </span>
 
                   {item.mandatory && <span>⚠️ Obrigatório</span>}
                 </div>
@@ -403,6 +485,14 @@ export default function Treinamentos() {
                   >
                     Editar
                   </button>
+
+                  <button
+                    type="button"
+                    className="training-delete-button"
+                    onClick={() => handleRequestDeleteTraining(item)}
+                  >
+                    Excluir
+                  </button>
                 </div>
               </div>
             ))}
@@ -439,7 +529,11 @@ export default function Treinamentos() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="training-form">
+            <form
+              id="training-form"
+              onSubmit={handleSubmit}
+              className="training-form"
+            >
               {/* INFORMAÇÕES BÁSICAS */}
 
               <div className="training-form-section">
@@ -576,6 +670,34 @@ export default function Treinamentos() {
                     Permitir refazer a avaliação
                   </label>
 
+                  {training.allowRetake && (
+                    <>
+                      <label>
+                        <input
+                          type="checkbox"
+                          name="unlimitedAttempts"
+                          checked={training.unlimitedAttempts}
+                          onChange={handleChange}
+                        />
+                        Tentativas ilimitadas
+                      </label>
+
+                      {!training.unlimitedAttempts && (
+                        <div className="training-field">
+                          <label>Máximo de tentativas</label>
+
+                          <input
+                            type="number"
+                            name="maxAttempts"
+                            min="2"
+                            value={training.maxAttempts}
+                            onChange={handleChange}
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+
                   <label>
                     <input
                       type="checkbox"
@@ -587,23 +709,27 @@ export default function Treinamentos() {
                   </label>
                 </div>
               </div>
-
-              {/* RODAPÉ */}
-
-              <div className="training-modal-footer">
-                <button
-                  type="button"
-                  className="training-secondary-button"
-                  onClick={handleCloseForm}
-                >
-                  Cancelar
-                </button>
-
-                <button type="submit" className="training-primary-button">
-                  {editingTraining ? 'Salvar alterações' : 'Salvar treinamento'}
-                </button>
-              </div>
             </form>
+
+            {/* RODAPÉ */}
+
+            <div className="training-modal-footer">
+              <button
+                type="button"
+                className="training-secondary-button"
+                onClick={handleCloseForm}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="submit"
+                form="training-form"
+                className="training-primary-button"
+              >
+                {editingTraining ? 'Salvar alterações' : 'Salvar treinamento'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -656,6 +782,22 @@ export default function Treinamentos() {
       {/* ==================================================
           MODAL - VISUALIZAR
       ================================================== */}
+
+      {/* ==================================================
+          MODAL - CONFIRMAR EXCLUSÃO
+      ================================================== */}
+
+      <ConfirmModal
+        isOpen={Boolean(trainingToDelete)}
+        title="Excluir treinamento"
+        message={
+          trainingToDelete
+            ? `Tem certeza que deseja excluir o treinamento "${trainingToDelete.name}"? Os participantes, avaliação e certificados vinculados também serão removidos.`
+            : ''
+        }
+        onCancel={handleCancelDeleteTraining}
+        onConfirm={handleConfirmDeleteTraining}
+      />
 
       {selectedViewTraining && (
         <div
@@ -739,7 +881,9 @@ export default function Treinamentos() {
                 <div className="training-view-item">
                   <span>Participantes</span>
 
-                  <strong>{selectedViewTraining.participants || 0}</strong>
+                  <strong>
+                    {getTrainingParticipantCount(selectedViewTraining.id)}
+                  </strong>
                 </div>
 
                 <div className="training-view-item">
@@ -799,9 +943,7 @@ export default function Treinamentos() {
                     <span>Participantes</span>
 
                     <strong>
-                      {selectedViewTraining.participantIds?.length ||
-                        selectedViewTraining.participants ||
-                        0}
+                      {getTrainingParticipantCount(selectedViewTraining.id)}
                     </strong>
                   </div>
 
@@ -810,7 +952,9 @@ export default function Treinamentos() {
 
                     <strong>
                       {selectedViewTraining.allowRetake
-                        ? 'Permitido'
+                        ? selectedViewTraining.unlimitedAttempts
+                          ? 'Ilimitadas'
+                          : `${selectedViewTraining.maxAttempts || 1} tentativa(s)`
                         : 'Não permitido'}
                     </strong>
                   </div>

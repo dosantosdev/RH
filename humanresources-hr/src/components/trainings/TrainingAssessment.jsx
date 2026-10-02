@@ -25,11 +25,22 @@ export default function TrainingAssessment({ training, onClose }) {
     const assessments = getTrainingAssessments()
 
     const existingAssessment = assessments.find(
-      (item) => item.trainingId === training.id
+      (item) => Number(item.trainingId) === Number(training.id)
     )
 
     if (existingAssessment) {
-      setAssessment(existingAssessment)
+      setAssessment({
+        ...existingAssessment,
+
+        allowRetake: existingAssessment.allowRetake !== false,
+
+        unlimitedAttempts: existingAssessment.unlimitedAttempts === true,
+
+        maxAttempts:
+          Number(existingAssessment.maxAttempts) > 0
+            ? Number(existingAssessment.maxAttempts)
+            : 2
+      })
     }
   }, [training.id])
 
@@ -63,9 +74,13 @@ export default function TrainingAssessment({ training, onClose }) {
 
       trainingName: training.name,
 
-      minimumScore: training.minimumScore || 0,
+      minimumScore: Number(training.minimumScore) || 0,
 
       allowRetake: training.allowRetake !== false,
+
+      unlimitedAttempts: false,
+
+      maxAttempts: 2,
 
       attempts: [],
 
@@ -81,6 +96,57 @@ export default function TrainingAssessment({ training, onClose }) {
     setAssessment(createdAssessment)
   }
 
+  function handleAssessmentSettingChange(field, value) {
+    if (!assessment) {
+      return
+    }
+
+    const updatedAssessment = {
+      ...assessment,
+      [field]: value
+    }
+
+    const updatedAssessments = updateTrainingAssessment(updatedAssessment)
+
+    const updated = updatedAssessments.find((item) => item.id === assessment.id)
+
+    setAssessment(updated)
+  }
+
+  function handleAllowRetakeChange(e) {
+    const allowRetake = e.target.checked
+
+    if (!assessment) {
+      return
+    }
+
+    const updatedAssessment = {
+      ...assessment,
+
+      allowRetake,
+
+      unlimitedAttempts: allowRetake ? assessment.unlimitedAttempts : false
+    }
+
+    const updatedAssessments = updateTrainingAssessment(updatedAssessment)
+
+    const updated = updatedAssessments.find((item) => item.id === assessment.id)
+
+    setAssessment(updated)
+  }
+
+  function handleUnlimitedAttemptsChange(e) {
+    const unlimitedAttempts = e.target.checked
+
+    handleAssessmentSettingChange('unlimitedAttempts', unlimitedAttempts)
+  }
+
+  function handleMaxAttemptsChange(e) {
+    const value = Math.max(2, Number(e.target.value) || 2)
+
+    handleAssessmentSettingChange('maxAttempts', value)
+  }
+
   function handleAddQuestion(e) {
     e.preventDefault()
 
@@ -90,6 +156,7 @@ export default function TrainingAssessment({ training, onClose }) {
 
     if (!question.question.trim()) {
       alert('Informe a pergunta.')
+
       return
     }
 
@@ -99,6 +166,7 @@ export default function TrainingAssessment({ training, onClose }) {
 
     if (hasEmptyAlternative) {
       alert('Preencha todas as alternativas.')
+
       return
     }
 
@@ -150,6 +218,17 @@ export default function TrainingAssessment({ training, onClose }) {
 
     if (!question.question.trim()) {
       alert('Informe a pergunta.')
+
+      return
+    }
+
+    const hasEmptyAlternative = question.alternatives.some(
+      (alternative) => !alternative.trim()
+    )
+
+    if (hasEmptyAlternative) {
+      alert('Preencha todas as alternativas.')
+
       return
     }
 
@@ -157,9 +236,13 @@ export default function TrainingAssessment({ training, onClose }) {
       item.id === editingQuestion.id
         ? {
             ...item,
+
             question: question.question.trim(),
+
             alternatives: [...question.alternatives],
+
             correctAnswer: Number(question.correctAnswer),
+
             points: Number(question.points) || 1
           }
         : item
@@ -167,6 +250,7 @@ export default function TrainingAssessment({ training, onClose }) {
 
     const updatedAssessment = {
       ...assessment,
+
       questions: updatedQuestions
     }
 
@@ -219,6 +303,20 @@ export default function TrainingAssessment({ training, onClose }) {
     })
   }
 
+  function handleDeleteAssessment() {
+    const confirmed = window.confirm(
+      'Deseja excluir a avaliação deste treinamento? As perguntas cadastradas também serão removidas.'
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    deleteTrainingAssessment(assessment.id)
+
+    setAssessment(null)
+  }
+
   function calculateTotalPoints() {
     if (!assessment?.questions) {
       return 0
@@ -230,11 +328,15 @@ export default function TrainingAssessment({ training, onClose }) {
     )
   }
 
+  const attemptLimitText = !assessment?.allowRetake
+    ? '1 tentativa'
+    : assessment.unlimitedAttempts
+      ? 'Ilimitadas'
+      : `${assessment.maxAttempts || 2} tentativas`
+
   return (
     <div className="training-modal-overlay">
-      <div className="training-content-modal">
-        {/* CABEÇALHO */}
-
+      <div className="training-content-modal training-assessment-modal">
         <div className="training-modal-header">
           <div>
             <h2>Avaliação</h2>
@@ -268,7 +370,13 @@ export default function TrainingAssessment({ training, onClose }) {
             </button>
           </div>
         ) : (
-          <div className="training-content-body">
+          <div
+            className="training-content-body"
+            style={{
+              maxHeight: 'calc(90vh - 145px)',
+              overflowY: 'auto'
+            }}
+          >
             {/* RESUMO */}
 
             <div className="training-assessment-summary">
@@ -288,6 +396,99 @@ export default function TrainingAssessment({ training, onClose }) {
                 <span>Nota mínima</span>
 
                 <strong>{assessment.minimumScore}%</strong>
+              </div>
+
+              <div>
+                <span>Tentativas</span>
+
+                <strong>{attemptLimitText}</strong>
+              </div>
+            </div>
+
+            {/* CONFIGURAÇÃO DAS TENTATIVAS */}
+
+            <div className="training-assessment-settings">
+              <div className="training-assessment-settings-header">
+                <div>
+                  <h3>Configuração das tentativas</h3>
+
+                  <p>
+                    Defina se o funcionário poderá refazer a avaliação e qual
+                    será o limite de tentativas.
+                  </p>
+                </div>
+              </div>
+
+              <label className="training-assessment-setting-checkbox">
+                <input
+                  type="checkbox"
+                  checked={assessment.allowRetake}
+                  onChange={handleAllowRetakeChange}
+                />
+
+                <span>
+                  <strong>Permitir refazer a avaliação</strong>
+
+                  <small>
+                    O funcionário poderá realizar novas tentativas enquanto
+                    houver tentativas disponíveis.
+                  </small>
+                </span>
+              </label>
+
+              {assessment.allowRetake && (
+                <div className="training-attempt-settings">
+                  <label className="training-assessment-setting-checkbox">
+                    <input
+                      type="checkbox"
+                      checked={assessment.unlimitedAttempts}
+                      onChange={handleUnlimitedAttemptsChange}
+                    />
+
+                    <span>
+                      <strong>Permitir tentativas ilimitadas</strong>
+
+                      <small>
+                        O funcionário poderá refazer a avaliação quantas vezes
+                        quiser.
+                      </small>
+                    </span>
+                  </label>
+
+                  {!assessment.unlimitedAttempts && (
+                    <div className="training-field full training-attempt-number-field">
+                      <label htmlFor="training-max-attempts">
+                        Número máximo de tentativas
+                      </label>
+
+                      <input
+                        id="training-max-attempts"
+                        type="number"
+                        min="2"
+                        step="1"
+                        value={assessment.maxAttempts || 2}
+                        onChange={handleMaxAttemptsChange}
+                        style={{
+                          width: '220px',
+                          minWidth: '220px',
+                          maxWidth: '280px',
+                          fontSize: '16px',
+                          padding: '13px 14px'
+                        }}
+                      />
+
+                      <small>Inclui a primeira tentativa do funcionário.</small>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className="training-best-score-info">
+                🏆
+                <span>
+                  A maior nota obtida entre todas as tentativas será sempre
+                  considerada como a nota válida do funcionário.
+                </span>
               </div>
             </div>
 
@@ -366,7 +567,7 @@ export default function TrainingAssessment({ training, onClose }) {
               )}
             </div>
 
-            {/* FORMULÁRIO */}
+            {/* FORMULÁRIO DE PERGUNTA */}
 
             <form
               className="training-new-content"
@@ -459,6 +660,16 @@ export default function TrainingAssessment({ training, onClose }) {
         )}
 
         <div className="training-modal-footer">
+          {assessment && (
+            <button
+              type="button"
+              className="training-danger-button"
+              onClick={handleDeleteAssessment}
+            >
+              Excluir avaliação
+            </button>
+          )}
+
           <button
             type="button"
             className="training-secondary-button"

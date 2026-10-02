@@ -15,8 +15,6 @@ export default function Navbar() {
 
   const profileRef = useRef(null)
 
-  // Carrega novamente os dados do usuário e do funcionário vinculado
-  // sempre que navegamos para outra página.
   useEffect(() => {
     const loggedUser = JSON.parse(localStorage.getItem('loggedUser'))
 
@@ -24,6 +22,7 @@ export default function Navbar() {
 
     if (!loggedUser) {
       setEmployee(null)
+
       return
     }
 
@@ -43,7 +42,6 @@ export default function Navbar() {
     navigate('/')
   }
 
-  // Fecha o menu quando clicar fora dele.
   useEffect(() => {
     function handleClickOutside(event) {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
@@ -70,12 +68,13 @@ export default function Navbar() {
 
   const userInitial = userName.charAt(0).toUpperCase()
 
-  // A foto vem primeiro do funcionário vinculado.
-  // currentUser.photo fica como fallback para usuários que
-  // eventualmente tenham uma foto própria.
   const userPhoto = employee?.photo || currentUser.photo || null
 
-  const roleName = currentUser.roleName || currentUser.role || 'Usuário'
+  const roleName =
+    currentUser.accessRoleName ||
+    currentUser.roleName ||
+    currentUser.role ||
+    'Usuário'
 
   return (
     <nav className="navbar">
@@ -101,6 +100,10 @@ export default function Navbar() {
             {hasPermission('users_view') && (
               <Link to="/usuarios">Cadastrar Usuários</Link>
             )}
+
+            {hasPermission('access_roles_view') && (
+              <Link to="/perfis-acesso">Perfis de Acesso</Link>
+            )}
           </div>
         </div>
 
@@ -110,23 +113,35 @@ export default function Navbar() {
           <button className="dropbtn">Organograma</button>
 
           <div className="dropdown-content">
-            <Link to="/organograma">Organograma</Link>
-
             {hasPermission('branches_view') && (
               <Link to="/filiais">Filiais</Link>
             )}
 
-            <Link to="/departamentos">Departamentos</Link>
+            {hasPermission('departments_view') && (
+              <Link to="/departamentos">Departamentos</Link>
+            )}
 
             {hasPermission('roles_view') && <Link to="/cargos">Cargos</Link>}
+
+            <Link to="/organograma">Organograma</Link>
           </div>
         </div>
 
-        {/* TREINAMENTOS */}
+        {/* TREINAMENTOS ADMINISTRATIVOS */}
 
-        <Link to="/treinamentos" className="nav-link">
-          Treinamentos
-        </Link>
+        {hasPermission('trainings_view') && (
+          <Link to="/treinamentos" className="nav-link">
+            Treinamentos
+          </Link>
+        )}
+
+        {/* MEUS TREINAMENTOS */}
+
+        {hasPermission('my_trainings_view') && (
+          <Link to="/meus-treinamentos" className="nav-link">
+            Meus Treinamentos
+          </Link>
+        )}
 
         {/* AVALIAÇÕES */}
 
@@ -141,12 +156,19 @@ export default function Navbar() {
 
           <div className="dropdown-content">
             <Link to="/ponto/bater">Bater Ponto</Link>
+
             <Link to="/ponto/espelho">Meu Espelho</Link>
+
             <Link to="/ponto/controle">Controle de Ponto</Link>
+
             <Link to="/ponto/banco-horas">Banco de Horas</Link>
+
             <Link to="/ponto/horas-extras">Horas Extras</Link>
+
             <Link to="/ponto/faltas-atrasos">Faltas e Atrasos</Link>
+
             <Link to="/ponto/fechamento">Fechamento Mensal</Link>
+
             <Link to="/ponto/relatorios">Relatórios</Link>
           </div>
         </div>
@@ -158,6 +180,7 @@ export default function Navbar() {
 
           <div className="dropdown-content">
             <Link to="#">Horas</Link>
+
             <Link to="#">Folha</Link>
           </div>
         </div>
@@ -169,7 +192,9 @@ export default function Navbar() {
 
           <div className="dropdown-content">
             <Link to="#">Checklist</Link>
+
             <Link to="#">Exames</Link>
+
             <Link to="#">Quadro de Funcionários</Link>
           </div>
         </div>
@@ -181,8 +206,11 @@ export default function Navbar() {
 
           <div className="dropdown-content">
             <Link to="#">Currículo</Link>
+
             <Link to="#">Pré-cadastro</Link>
+
             <Link to="#">Vagas</Link>
+
             <Link to="#">Entrevistas</Link>
           </div>
         </div>
@@ -194,7 +222,9 @@ export default function Navbar() {
 
           <div className="dropdown-content">
             <Link to="#">Busca</Link>
+
             <Link to="#">Docs</Link>
+
             <Link to="#">Currículos</Link>
           </div>
         </div>
@@ -267,6 +297,7 @@ export default function Navbar() {
                 className="profile-dropdown-item"
                 onClick={() => {
                   setProfileOpen(false)
+
                   navigate('/perfil')
                 }}
               >
@@ -280,14 +311,13 @@ export default function Navbar() {
                 className="profile-dropdown-item"
                 onClick={() => {
                   setProfileOpen(false)
+
                   navigate('/alterar-senha')
                 }}
               >
                 Alterar senha
               </button>
             )}
-
-            {/* SAIR */}
 
             <div className="profile-dropdown-divider" />
 

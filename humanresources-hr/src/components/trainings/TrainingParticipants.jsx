@@ -33,7 +33,7 @@ export default function TrainingParticipants({ training, onClose }) {
 
     setParticipants(
       storedParticipants.filter(
-        (participant) => participant.trainingId === training.id
+        (participant) => Number(participant.trainingId) === Number(training.id)
       )
     )
   }
@@ -88,6 +88,10 @@ export default function TrainingParticipants({ training, onClose }) {
 
       score: null,
 
+      bestScore: null,
+
+      minimumScore: Number(training.minimumScore) || 0,
+
       assessmentStatus: null,
 
       attempts: [],
@@ -126,11 +130,13 @@ export default function TrainingParticipants({ training, onClose }) {
 
   function handleViewParticipant(participant) {
     setDetailsMode('view')
+
     setSelectedParticipant(participant)
   }
 
   function handleEditParticipant(participant) {
     setDetailsMode('edit')
+
     setSelectedParticipant(participant)
   }
 

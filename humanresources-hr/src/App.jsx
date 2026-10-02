@@ -1,5 +1,6 @@
 import EmployeeProfile from './pages/EmployeeProfile/EmployeeProfile'
 import { Routes, Route } from 'react-router-dom'
+
 import Navbar from './components/layout/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -29,6 +30,7 @@ import FechamentoMensal from './pages/Ponto/FechamentoMensal/FechamentoMensal'
 import Relatorios from './pages/Ponto/Relatorios/Relatorios'
 
 import Treinamentos from './pages/Treinamentos/Treinamentos'
+import MeusTreinamentos from './pages/MeusTreinamentos/MeusTreinamentos'
 
 import Header from './components/layout/Header'
 
@@ -36,7 +38,9 @@ function Layout({ children }) {
   return (
     <>
       <Header />
+
       <Navbar />
+
       {children}
     </>
   )
@@ -193,7 +197,7 @@ function App() {
         }
       />
 
-      {/* TREINAMENTOS */}
+      {/* TREINAMENTOS - ADMINISTRAÇÃO */}
 
       <Route
         path="/treinamentos"
@@ -201,6 +205,19 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <Treinamentos />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* TREINAMENTOS - FUNCIONÁRIO */}
+
+      <Route
+        path="/meus-treinamentos"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <MeusTreinamentos />
             </Layout>
           </ProtectedRoute>
         }

@@ -138,6 +138,33 @@ export const permissions = [
   },
 
   {
+    category: 'Treinamentos',
+
+    items: [
+      {
+        key: 'trainings_view',
+        label: 'Gerenciar treinamentos'
+      },
+      {
+        key: 'trainings_create',
+        label: 'Cadastrar treinamentos'
+      },
+      {
+        key: 'trainings_edit',
+        label: 'Editar treinamentos'
+      },
+      {
+        key: 'trainings_delete',
+        label: 'Excluir treinamentos'
+      },
+      {
+        key: 'my_trainings_view',
+        label: 'Realizar meus treinamentos'
+      }
+    ]
+  },
+
+  {
     category: 'Dashboard',
 
     items: [
