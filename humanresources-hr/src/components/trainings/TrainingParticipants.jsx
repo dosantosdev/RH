@@ -5,11 +5,12 @@ import { getStoredArray } from '../../services/storage'
 import {
   addTrainingParticipant,
   deleteTrainingParticipant,
-  getTrainingParticipants,
+  getTrainingParticipantsByTrainingId,
   updateTrainingParticipant
 } from '../../services/trainingParticipant'
 
 import TrainingParticipantDetails from './TrainingParticipantDetails'
+import TrainingCertificate from './TrainingCertificate'
 
 export default function TrainingParticipants({ training, onClose }) {
   const [employees, setEmployees] = useState([])
@@ -22,6 +23,8 @@ export default function TrainingParticipants({ training, onClose }) {
 
   const [detailsMode, setDetailsMode] = useState('view')
 
+  const [certificateParticipant, setCertificateParticipant] = useState(null)
+
   useEffect(() => {
     setEmployees(getStoredArray('employees'))
 
@@ -29,13 +32,7 @@ export default function TrainingParticipants({ training, onClose }) {
   }, [training.id])
 
   function reloadParticipants() {
-    const storedParticipants = getTrainingParticipants()
-
-    setParticipants(
-      storedParticipants.filter(
-        (participant) => Number(participant.trainingId) === Number(training.id)
-      )
-    )
+    setParticipants(getTrainingParticipantsByTrainingId(training.id))
   }
 
   function handleAddParticipant(e) {
@@ -88,10 +85,6 @@ export default function TrainingParticipants({ training, onClose }) {
 
       score: null,
 
-      bestScore: null,
-
-      minimumScore: Number(training.minimumScore) || 0,
-
       assessmentStatus: null,
 
       attempts: [],
@@ -130,13 +123,15 @@ export default function TrainingParticipants({ training, onClose }) {
 
   function handleViewParticipant(participant) {
     setDetailsMode('view')
-
     setSelectedParticipant(participant)
+  }
+
+  function handleOpenCertificate(participant) {
+    setCertificateParticipant(participant)
   }
 
   function handleEditParticipant(participant) {
     setDetailsMode('edit')
-
     setSelectedParticipant(participant)
   }
 
@@ -276,6 +271,17 @@ export default function TrainingParticipants({ training, onClose }) {
                         ✏️
                       </button>
 
+                      {/* CERTIFICADO */}
+
+                      <button
+                        type="button"
+                        className="training-content-certificate"
+                        onClick={() => handleOpenCertificate(participant)}
+                        title="Certificado"
+                      >
+                        🎓
+                      </button>
+
                       {/* EXCLUIR */}
 
                       <button
@@ -315,6 +321,16 @@ export default function TrainingParticipants({ training, onClose }) {
           mode={detailsMode}
           onClose={() => setSelectedParticipant(null)}
           onSave={handleUpdateParticipant}
+        />
+      )}
+
+      {/* CERTIFICADO */}
+
+      {certificateParticipant && (
+        <TrainingCertificate
+          training={training}
+          participant={certificateParticipant}
+          onClose={() => setCertificateParticipant(null)}
         />
       )}
     </div>

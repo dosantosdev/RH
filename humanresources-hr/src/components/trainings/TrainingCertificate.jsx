@@ -67,6 +67,8 @@ export default function TrainingCertificate({
   return (
     <div className="training-modal-overlay">
       <div className="training-content-modal training-certificate-modal">
+        {/* CABEÇALHO */}
+
         <div className="training-modal-header no-print">
           <div>
             <h2>Certificado</h2>
@@ -82,6 +84,8 @@ export default function TrainingCertificate({
             ×
           </button>
         </div>
+
+        {/* CERTIFICADO BLOQUEADO */}
 
         {!isCompleted && !certificate && (
           <div className="training-certificate-locked">
@@ -116,6 +120,8 @@ export default function TrainingCertificate({
           </div>
         )}
 
+        {/* PRONTO PARA GERAR */}
+
         {isCompleted && !certificate && (
           <div className="training-certificate-generate">
             <div className="training-certificate-generate-icon">🎓</div>
@@ -133,6 +139,8 @@ export default function TrainingCertificate({
             </button>
           </div>
         )}
+
+        {/* CERTIFICADO GERADO */}
 
         {certificate && (
           <div className="training-certificate-area">
@@ -185,6 +193,8 @@ export default function TrainingCertificate({
               </div>
             </div>
 
+            {/* AÇÕES */}
+
             <div className="training-modal-footer no-print">
               <button
                 type="button"
@@ -204,6 +214,8 @@ export default function TrainingCertificate({
             </div>
           </div>
         )}
+
+        {/* RODAPÉ DO CERTIFICADO BLOQUEADO */}
 
         {!isCompleted && !certificate && (
           <div className="training-modal-footer no-print">

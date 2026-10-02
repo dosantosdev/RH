@@ -2,7 +2,12 @@ import { useEffect, useState } from 'react'
 
 import { getTrainingAssessments } from '../../services/trainingAssessment'
 
-import { addAssessmentAttempt } from '../../services/trainingParticipant'
+import {
+  addAssessmentAttempt,
+  getTrainingParticipants
+} from '../../services/trainingParticipant'
+
+import TrainingCertificate from './TrainingCertificate'
 
 export default function TrainingTakeAssessment({
   training,
@@ -16,6 +21,10 @@ export default function TrainingTakeAssessment({
   const [answers, setAnswers] = useState({})
 
   const [result, setResult] = useState(null)
+
+  const [certificateParticipant, setCertificateParticipant] = useState(null)
+
+  const [showCertificate, setShowCertificate] = useState(false)
 
   useEffect(() => {
     const assessments = getTrainingAssessments()
@@ -195,11 +204,54 @@ export default function TrainingTakeAssessment({
     if (onComplete) {
       onComplete(attempt)
     }
+
+    /*
+     * Depois de salvar a tentativa, buscamos novamente
+     * o participante no localStorage.
+     *
+     * Isso é necessário porque o objeto `participant`
+     * recebido pelo componente ainda pode conter os
+     * dados anteriores à avaliação.
+     */
+    if (approved) {
+      const updatedParticipants = getTrainingParticipants()
+
+      const updatedParticipant = updatedParticipants.find(
+        (item) => item.id === participant.id
+      )
+
+      if (updatedParticipant) {
+        setCertificateParticipant(updatedParticipant)
+      }
+    }
   }
 
   function handleFinishApproved() {
+    /*
+     * Se o treinamento já estiver completamente concluído,
+     * o funcionário pode abrir o certificado imediatamente.
+     */
+    if (result?.approved && certificateParticipant?.status === 'completed') {
+      setShowCertificate(true)
+
+      return
+    }
+
     if (onApproved) {
       onApproved()
+
+      return
+    }
+
+    onClose()
+  }
+
+  function handleCloseCertificate() {
+    setShowCertificate(false)
+
+    if (onApproved) {
+      onApproved()
+
       return
     }
 
@@ -215,6 +267,22 @@ export default function TrainingTakeAssessment({
           {footer}
         </div>
       </div>
+    )
+  }
+
+  /*
+   * CERTIFICADO
+   *
+   * O certificado aparece diretamente depois da aprovação
+   * quando todos os conteúdos também foram concluídos.
+   */
+  if (showCertificate && certificateParticipant) {
+    return (
+      <TrainingCertificate
+        training={training}
+        participant={certificateParticipant}
+        onClose={handleCloseCertificate}
+      />
     )
   }
 
@@ -392,9 +460,15 @@ export default function TrainingTakeAssessment({
           <button
             type="button"
             className="training-primary-button"
-            onClick={handleFinishApproved}
+            onClick={() => {
+              if (certificateParticipant?.status === 'completed') {
+                setShowCertificate(true)
+              } else {
+                handleFinishApproved()
+              }
+            }}
           >
-            ✓ Concluir treinamento
+            🎓 Ver certificado
           </button>
         )}
       </div>
@@ -406,6 +480,9 @@ export default function TrainingTakeAssessment({
   ====================================== */
 
   if (result) {
+    const canIssueCertificate =
+      result.approved && certificateParticipant?.status === 'completed'
+
     return renderModal(
       <>
         <div className="training-modal-header">
@@ -481,9 +558,31 @@ export default function TrainingTakeAssessment({
               </div>
             </div>
 
-            <p className="training-assessment-result-note">
-              A maior nota obtida é mantida como a nota válida da avaliação.
-            </p>
+            {result.approved && canIssueCertificate && (
+              <div className="training-certificate-ready">
+                <span>🎓</span>
+
+                <strong>Certificado disponível</strong>
+
+                <p>
+                  Você concluiu o treinamento e foi aprovado na avaliação. Seu
+                  certificado já pode ser emitido.
+                </p>
+              </div>
+            )}
+
+            {result.approved && !canIssueCertificate && (
+              <p className="training-assessment-result-note">
+                A avaliação foi aprovada. Conclua todos os conteúdos do
+                treinamento para liberar o certificado.
+              </p>
+            )}
+
+            {!result.approved && (
+              <p className="training-assessment-result-note">
+                A maior nota obtida é mantida como a nota válida da avaliação.
+              </p>
+            )}
           </div>
         </div>
       </>,
@@ -499,7 +598,17 @@ export default function TrainingTakeAssessment({
           </button>
         )}
 
-        {result.approved && (
+        {result.approved && canIssueCertificate && (
+          <button
+            type="button"
+            className="training-primary-button"
+            onClick={() => setShowCertificate(true)}
+          >
+            🎓 Emitir certificado
+          </button>
+        )}
+
+        {result.approved && !canIssueCertificate && (
           <button
             type="button"
             className="training-primary-button"

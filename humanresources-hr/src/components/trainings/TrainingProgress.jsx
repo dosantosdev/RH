@@ -1,60 +1,21 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
-import { getTrainingAssessments } from '../../services/trainingAssessment'
+import { updateParticipantProgress } from '../../services/trainingParticipant'
 
-import {
-  completeParticipantTraining,
-  getTrainingParticipants,
-  updateParticipantProgress
-} from '../../services/trainingParticipant'
-
-import TrainingTakeAssessment from './TrainingTakeAssessment'
-
-import './TrainingProgress.css'
+import TrainingCertificate from './TrainingCertificate'
 
 export default function TrainingProgress({ training, participant, onClose }) {
   const [currentParticipant, setCurrentParticipant] = useState(participant)
 
-  const [showAssessment, setShowAssessment] = useState(false)
+  const [showCertificate, setShowCertificate] = useState(false)
 
-  const contents = useMemo(
-    () =>
-      [...(training.contents || [])].sort(
-        (a, b) => (a.order || 0) - (b.order || 0)
-      ),
-    [training.contents]
+  const contents = [...(training.contents || [])].sort(
+    (a, b) => (a.order || 0) - (b.order || 0)
   )
-
-  const assessment = useMemo(() => {
-    const assessments = getTrainingAssessments()
-
-    return (
-      assessments.find(
-        (item) => Number(item.trainingId) === Number(training.id)
-      ) || null
-    )
-  }, [training.id, showAssessment])
-
-  const hasAssessment =
-    !!assessment &&
-    Array.isArray(assessment.questions) &&
-    assessment.questions.length > 0
 
   useEffect(() => {
     setCurrentParticipant(participant)
   }, [participant])
-
-  function refreshParticipant() {
-    const participants = getTrainingParticipants()
-
-    const updatedParticipant = participants.find(
-      (item) => item.id === participant.id
-    )
-
-    if (updatedParticipant) {
-      setCurrentParticipant(updatedParticipant)
-    }
-  }
 
   function calculateProgress(completedContents) {
     if (contents.length === 0) {
@@ -62,6 +23,22 @@ export default function TrainingProgress({ training, participant, onClose }) {
     }
 
     return Math.round((completedContents.length / contents.length) * 100)
+  }
+
+  function calculateStatus(progress) {
+    if (currentParticipant.assessmentStatus === 'failed') {
+      return 'failed'
+    }
+
+    if (progress >= 100 && currentParticipant.assessmentStatus === 'approved') {
+      return 'completed'
+    }
+
+    if (progress > 0) {
+      return 'in_progress'
+    }
+
+    return 'pending'
   }
 
   function toggleContent(contentId) {
@@ -75,66 +52,25 @@ export default function TrainingProgress({ training, participant, onClose }) {
 
     const progress = calculateProgress(updatedCompleted)
 
+    const updatedParticipant = {
+      ...currentParticipant,
+
+      completedContents: updatedCompleted,
+
+      progress
+    }
+
     updateParticipantProgress(currentParticipant.id, progress, updatedCompleted)
 
-    refreshParticipant()
-  }
+    const storedParticipants = JSON.parse(
+      localStorage.getItem('trainingParticipants') || '[]'
+    )
 
-  const completedContents = currentParticipant.completedContents || []
+    const savedParticipant = storedParticipants.find(
+      (item) => item.id === currentParticipant.id
+    )
 
-  const progress = calculateProgress(completedContents)
-
-  const allContentsCompleted =
-    contents.length === 0 || completedContents.length >= contents.length
-
-  const assessmentApproved = currentParticipant.assessmentStatus === 'approved'
-
-  const assessmentFailed = currentParticipant.assessmentStatus === 'failed'
-
-  const trainingCompleted = currentParticipant.status === 'completed'
-
-  function handleOpenAssessment() {
-    if (!hasAssessment) {
-      return
-    }
-
-    if (!allContentsCompleted) {
-      alert('Conclua todos os conteúdos antes de realizar a avaliação.')
-
-      return
-    }
-
-    setShowAssessment(true)
-  }
-
-  function handleCloseAssessment() {
-    setShowAssessment(false)
-
-    refreshParticipant()
-  }
-
-  function handleAssessmentComplete() {
-    refreshParticipant()
-  }
-
-  function handleCompleteTraining() {
-    if (!allContentsCompleted) {
-      alert('Conclua todos os conteúdos antes de finalizar o treinamento.')
-
-      return
-    }
-
-    if (hasAssessment && currentParticipant.assessmentStatus !== 'approved') {
-      alert(
-        'É necessário ser aprovado na avaliação antes de concluir o treinamento.'
-      )
-
-      return
-    }
-
-    completeParticipantTraining(currentParticipant.id)
-
-    refreshParticipant()
+    setCurrentParticipant(savedParticipant || updatedParticipant)
   }
 
   function renderContent(content) {
@@ -153,13 +89,13 @@ export default function TrainingProgress({ training, participant, onClose }) {
               <iframe
                 src={content.content}
                 title={content.title || 'Vídeo'}
+                width="100%"
+                height="450"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
               />
             ) : (
-              <div className="training-progress-unavailable">
-                Vídeo não disponível.
-              </div>
+              <p>Vídeo não disponível.</p>
             )}
           </div>
         )
@@ -172,6 +108,8 @@ export default function TrainingProgress({ training, participant, onClose }) {
                 <iframe
                   src={content.content}
                   title={content.title || 'Documento PDF'}
+                  width="100%"
+                  height="500"
                 />
 
                 <a
@@ -184,54 +122,66 @@ export default function TrainingProgress({ training, participant, onClose }) {
                 </a>
               </>
             ) : (
-              <div className="training-progress-unavailable">
-                PDF não disponível.
-              </div>
+              <p>PDF não disponível.</p>
             )}
           </div>
         )
 
       default:
         return (
-          <div className="training-progress-unavailable">
-            Este conteúdo não possui uma visualização disponível.
+          <div className="training-progress-content-other">
+            <p>Este conteúdo não possui uma visualização disponível.</p>
           </div>
         )
     }
   }
 
   /*
-   * Quando o funcionário avança para a avaliação,
-   * substituímos o acompanhamento pela prova.
+   * Se o usuário clicar em "Emitir certificado",
+   * mostramos o componente de certificado no lugar
+   * da tela de acompanhamento.
    */
-  if (showAssessment) {
+  if (showCertificate) {
     return (
-      <TrainingTakeAssessment
+      <TrainingCertificate
         training={training}
         participant={currentParticipant}
-        onClose={handleCloseAssessment}
-        onComplete={handleAssessmentComplete}
-        onApproved={handleCloseAssessment}
+        onClose={() => setShowCertificate(false)}
       />
     )
   }
 
-  let statusLabel = 'Pendente'
+  const completedContents = currentParticipant.completedContents || []
 
-  if (trainingCompleted) {
-    statusLabel = 'Concluído'
-  } else if (assessmentFailed) {
-    statusLabel = 'Reprovado'
-  } else if (progress > 0) {
-    statusLabel = 'Em andamento'
+  const progress = calculateProgress(completedContents)
+
+  const status = calculateStatus(progress)
+
+  const statusLabels = {
+    pending: 'Pendente',
+    in_progress: 'Em andamento',
+    completed: 'Concluído',
+    failed: 'Reprovado'
   }
+
+  /*
+   * O certificado só fica disponível quando:
+   *
+   * 1. Todos os conteúdos foram concluídos.
+   * 2. A avaliação foi aprovada.
+   * 3. O status calculado do treinamento é "completed".
+   */
+  const canIssueCertificate =
+    progress >= 100 &&
+    currentParticipant.assessmentStatus === 'approved' &&
+    status === 'completed'
 
   return (
     <div className="training-modal-overlay">
-      <div className="training-content-modal training-progress-modal">
+      <div className="training-content-modal">
         {/* CABEÇALHO */}
 
-        <div className="training-modal-header training-progress-header">
+        <div className="training-modal-header">
           <div>
             <span className="training-progress-kicker">TREINAMENTO</span>
 
@@ -244,190 +194,145 @@ export default function TrainingProgress({ training, participant, onClose }) {
             type="button"
             className="training-modal-close"
             onClick={onClose}
-            aria-label="Fechar"
           >
             ×
           </button>
         </div>
 
-        {/* CONTEÚDO COM ROLAGEM */}
+        {/* RESUMO */}
 
-        <div className="training-progress-scroll">
-          {/* RESUMO */}
+        <div className="training-progress-summary">
+          <div className="training-progress-summary-info">
+            <div>
+              <span>Treinamento</span>
 
-          <section className="training-progress-overview-card">
-            <div className="training-progress-overview-grid">
-              <div className="training-progress-overview-item">
-                <span>Treinamento</span>
-
-                <strong>{training.name}</strong>
-              </div>
-
-              <div className="training-progress-overview-item">
-                <span>Status</span>
-
-                <strong
-                  className={`training-progress-status status-${
-                    currentParticipant.status || 'pending'
-                  }`}
-                >
-                  {statusLabel}
-                </strong>
-              </div>
-
-              <div className="training-progress-overview-item">
-                <span>Avaliação</span>
-
-                <strong>
-                  {hasAssessment
-                    ? assessmentApproved
-                      ? 'Aprovada'
-                      : assessmentFailed
-                        ? 'Reprovada'
-                        : 'Não realizada'
-                    : 'Não aplicável'}
-                </strong>
-              </div>
-
-              <div className="training-progress-overview-score">
-                <strong>{progress}%</strong>
-
-                <span>concluído</span>
-              </div>
+              <strong>{training.name}</strong>
             </div>
 
-            <div className="training-progress-main-bar">
-              <div
-                style={{
-                  width: `${progress}%`
-                }}
-              />
+            <div>
+              <span>Status</span>
+
+              <strong>{statusLabels[status]}</strong>
             </div>
 
-            <div className="training-progress-overview-footer">
-              <span>
-                {completedContents.length} de {contents.length} conteúdo(s)
-                concluído(s)
-              </span>
+            <div>
+              <span>Avaliação</span>
 
-              {hasAssessment && (
-                <span className="training-progress-assessment-indicator">
-                  📝 Avaliação obrigatória
-                </span>
-              )}
-            </div>
-          </section>
-
-          {/* CONTEÚDOS */}
-
-          <section className="training-progress-section">
-            <div className="training-progress-section-header">
-              <div>
-                <h3>Conteúdos do treinamento</h3>
-
-                <p>Marque cada conteúdo após concluí-lo.</p>
-              </div>
-
-              <strong className="training-progress-count-badge">
-                {completedContents.length}/{contents.length}
+              <strong>
+                {currentParticipant.assessmentStatus === 'approved'
+                  ? 'Aprovada'
+                  : currentParticipant.assessmentStatus === 'failed'
+                    ? 'Reprovada'
+                    : 'Não realizada'}
               </strong>
             </div>
+          </div>
 
-            {contents.length === 0 ? (
-              <div className="training-progress-empty">
-                <span>📚</span>
+          <div className="training-progress-percentage">
+            <strong>{progress}%</strong>
 
-                <strong>Nenhum conteúdo cadastrado</strong>
+            <span>concluído</span>
+          </div>
 
-                <p>Este treinamento não possui conteúdos.</p>
-              </div>
-            ) : (
-              <div className="training-progress-content-list">
-                {contents.map((content, index) => {
-                  const isCompleted = completedContents.includes(content.id)
+          <div className="training-progress-bar">
+            <div
+              style={{
+                width: `${progress}%`
+              }}
+            />
+          </div>
 
-                  return (
-                    <article
-                      key={content.id}
-                      className={`training-progress-content-card ${
-                        isCompleted ? 'is-completed' : ''
-                      }`}
-                    >
-                      <div className="training-progress-content-card-header">
-                        <div className="training-progress-content-number">
-                          {isCompleted ? '✓' : index + 1}
-                        </div>
+          <div className="training-progress-count">
+            <span>
+              {completedContents.length} de {contents.length} conteúdo(s)
+              concluído(s)
+            </span>
+          </div>
+        </div>
 
-                        <div className="training-progress-content-title">
-                          <strong>
-                            {content.title || `Conteúdo ${index + 1}`}
-                          </strong>
+        {/* CONTEÚDOS */}
 
-                          <span>
-                            {content.type === 'text' && 'Texto'}
+        <div className="training-progress-body">
+          <div className="training-content-section-header">
+            <div>
+              <h3>Conteúdos do treinamento</h3>
 
-                            {content.type === 'video' && 'Vídeo'}
+              <span>Marque cada conteúdo após concluí-lo.</span>
+            </div>
 
-                            {content.type === 'pdf' && 'PDF'}
+            <span>
+              {completedContents.length}/{contents.length}
+            </span>
+          </div>
 
-                            {!['text', 'video', 'pdf'].includes(content.type) &&
-                              'Material'}
-                          </span>
-                        </div>
+          {contents.length === 0 ? (
+            <div className="training-content-empty">
+              <span>📚</span>
 
-                        <label className="training-progress-check">
-                          <input
-                            type="checkbox"
-                            checked={isCompleted}
-                            onChange={() => toggleContent(content.id)}
-                          />
+              <p>Este treinamento ainda não possui conteúdos.</p>
+            </div>
+          ) : (
+            <div className="training-progress-content-list">
+              {contents.map((content, index) => {
+                const isCompleted = completedContents.includes(content.id)
 
-                          <span>
-                            {isCompleted ? 'Concluído' : 'Concluir conteúdo'}
-                          </span>
-                        </label>
+                return (
+                  <div
+                    key={content.id}
+                    className={
+                      isCompleted
+                        ? 'training-progress-content-item completed'
+                        : 'training-progress-content-item'
+                    }
+                  >
+                    <div className="training-progress-content-header">
+                      <div className="training-progress-content-number">
+                        {isCompleted ? '✓' : index + 1}
                       </div>
 
-                      <div className="training-progress-content-preview">
-                        {renderContent(content)}
+                      <div className="training-progress-content-info">
+                        <strong>
+                          {content.title || `Conteúdo ${index + 1}`}
+                        </strong>
+
+                        <span>
+                          {content.type === 'text' && 'Texto'}
+
+                          {content.type === 'video' && 'Vídeo'}
+
+                          {content.type === 'pdf' && 'PDF'}
+
+                          {!['text', 'video', 'pdf'].includes(content.type) &&
+                            'Material'}
+                        </span>
                       </div>
-                    </article>
-                  )
-                })}
-              </div>
-            )}
-          </section>
 
-          {/* AVISO DO PRÓXIMO PASSO */}
+                      <label className="training-progress-check">
+                        <input
+                          type="checkbox"
+                          checked={isCompleted}
+                          onChange={() => toggleContent(content.id)}
+                        />
 
-          {hasAssessment && allContentsCompleted && !trainingCompleted && (
-            <section className="training-progress-next-step">
-              <div className="training-progress-next-icon">📝</div>
+                        <span>
+                          {isCompleted ? 'Concluído' : 'Marcar como concluído'}
+                        </span>
+                      </label>
+                    </div>
 
-              <div className="training-progress-next-info">
-                <strong>
-                  {assessmentApproved
-                    ? 'Avaliação aprovada'
-                    : assessmentFailed
-                      ? 'Avaliação reprovada'
-                      : 'Conteúdos concluídos'}
-                </strong>
-
-                <p>
-                  {assessmentApproved
-                    ? 'A avaliação foi aprovada. Finalize o treinamento para concluir o processo.'
-                    : assessmentFailed
-                      ? 'Realize novamente a avaliação para tentar alcançar a nota mínima.'
-                      : 'Todos os conteúdos foram concluídos. O próximo passo é realizar a avaliação.'}
-                </p>
-              </div>
-            </section>
+                    <div className="training-progress-content-preview">
+                      {renderContent(content)}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
           )}
         </div>
 
         {/* RODAPÉ */}
 
-        <div className="training-modal-footer training-progress-footer">
+        <div className="training-modal-footer">
           <button
             type="button"
             className="training-secondary-button"
@@ -436,53 +341,14 @@ export default function TrainingProgress({ training, participant, onClose }) {
             Fechar
           </button>
 
-          {/* COM AVALIAÇÃO */}
-
-          {hasAssessment &&
-            allContentsCompleted &&
-            !assessmentApproved &&
-            !trainingCompleted && (
-              <button
-                type="button"
-                className="training-primary-button"
-                onClick={handleOpenAssessment}
-              >
-                {assessmentFailed
-                  ? 'Realizar avaliação novamente'
-                  : 'Avançar para avaliação'}
-              </button>
-            )}
-
-          {/* AVALIAÇÃO APROVADA */}
-
-          {hasAssessment && assessmentApproved && !trainingCompleted && (
+          {canIssueCertificate && (
             <button
               type="button"
               className="training-primary-button"
-              onClick={handleCompleteTraining}
+              onClick={() => setShowCertificate(true)}
             >
-              ✓ Concluir treinamento
+              🎓 Emitir certificado
             </button>
-          )}
-
-          {/* SEM AVALIAÇÃO */}
-
-          {!hasAssessment && allContentsCompleted && !trainingCompleted && (
-            <button
-              type="button"
-              className="training-primary-button"
-              onClick={handleCompleteTraining}
-            >
-              ✓ Concluir treinamento
-            </button>
-          )}
-
-          {/* CONCLUÍDO */}
-
-          {trainingCompleted && (
-            <span className="training-progress-completed-label">
-              ✓ Treinamento concluído
-            </span>
           )}
         </div>
       </div>
