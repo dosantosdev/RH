@@ -1,13 +1,19 @@
 import { useEffect, useState } from 'react'
 
-import { updateParticipantProgress } from '../../services/trainingParticipant'
+import {
+  updateParticipantProgress,
+  getTrainingParticipants
+} from '../../services/trainingParticipant'
 
 import TrainingCertificate from './TrainingCertificate'
+import TrainingTakeAssessment from './TrainingTakeAssessment'
 
 export default function TrainingProgress({ training, participant, onClose }) {
   const [currentParticipant, setCurrentParticipant] = useState(participant)
 
   const [showCertificate, setShowCertificate] = useState(false)
+
+  const [showAssessment, setShowAssessment] = useState(false)
 
   const contents = [...(training.contents || [])].sort(
     (a, b) => (a.order || 0) - (b.order || 0)
@@ -25,12 +31,15 @@ export default function TrainingProgress({ training, participant, onClose }) {
     return Math.round((completedContents.length / contents.length) * 100)
   }
 
-  function calculateStatus(progress) {
-    if (currentParticipant.assessmentStatus === 'failed') {
+  function calculateStatus(
+    progress,
+    assessmentStatus = currentParticipant.assessmentStatus
+  ) {
+    if (assessmentStatus === 'failed') {
       return 'failed'
     }
 
-    if (progress >= 100 && currentParticipant.assessmentStatus === 'approved') {
+    if (progress >= 100 && assessmentStatus === 'approved') {
       return 'completed'
     }
 
@@ -39,6 +48,20 @@ export default function TrainingProgress({ training, participant, onClose }) {
     }
 
     return 'pending'
+  }
+
+  function refreshParticipant() {
+    const participants = getTrainingParticipants()
+
+    const savedParticipant = participants.find(
+      (item) => item.id === currentParticipant.id
+    )
+
+    if (savedParticipant) {
+      setCurrentParticipant(savedParticipant)
+    }
+
+    return savedParticipant || currentParticipant
   }
 
   function toggleContent(contentId) {
@@ -52,25 +75,31 @@ export default function TrainingProgress({ training, participant, onClose }) {
 
     const progress = calculateProgress(updatedCompleted)
 
-    const updatedParticipant = {
-      ...currentParticipant,
-
-      completedContents: updatedCompleted,
-
-      progress
-    }
-
-    updateParticipantProgress(currentParticipant.id, progress, updatedCompleted)
-
-    const storedParticipants = JSON.parse(
-      localStorage.getItem('trainingParticipants') || '[]'
+    const updatedParticipants = updateParticipantProgress(
+      currentParticipant.id,
+      progress,
+      updatedCompleted
     )
 
-    const savedParticipant = storedParticipants.find(
+    const savedParticipant = updatedParticipants.find(
       (item) => item.id === currentParticipant.id
     )
 
-    setCurrentParticipant(savedParticipant || updatedParticipant)
+    setCurrentParticipant(
+      savedParticipant || {
+        ...currentParticipant,
+        completedContents: updatedCompleted,
+        progress
+      }
+    )
+  }
+
+  function handleAssessmentComplete() {
+    setShowAssessment(false)
+
+    const updatedParticipant = refreshParticipant()
+
+    setCurrentParticipant(updatedParticipant)
   }
 
   function renderContent(content) {
@@ -136,17 +165,23 @@ export default function TrainingProgress({ training, participant, onClose }) {
     }
   }
 
-  /*
-   * Se o usuário clicar em "Emitir certificado",
-   * mostramos o componente de certificado no lugar
-   * da tela de acompanhamento.
-   */
   if (showCertificate) {
     return (
       <TrainingCertificate
         training={training}
         participant={currentParticipant}
         onClose={() => setShowCertificate(false)}
+      />
+    )
+  }
+
+  if (showAssessment) {
+    return (
+      <TrainingTakeAssessment
+        training={training}
+        participant={currentParticipant}
+        onClose={() => setShowAssessment(false)}
+        onComplete={handleAssessmentComplete}
       />
     )
   }
@@ -164,13 +199,8 @@ export default function TrainingProgress({ training, participant, onClose }) {
     failed: 'Reprovado'
   }
 
-  /*
-   * O certificado só fica disponível quando:
-   *
-   * 1. Todos os conteúdos foram concluídos.
-   * 2. A avaliação foi aprovada.
-   * 3. O status calculado do treinamento é "completed".
-   */
+  const canTakeAssessment = progress >= 100
+
   const canIssueCertificate =
     progress >= 100 &&
     currentParticipant.assessmentStatus === 'approved' &&
@@ -179,8 +209,6 @@ export default function TrainingProgress({ training, participant, onClose }) {
   return (
     <div className="training-modal-overlay">
       <div className="training-content-modal">
-        {/* CABEÇALHO */}
-
         <div className="training-modal-header">
           <div>
             <span className="training-progress-kicker">TREINAMENTO</span>
@@ -198,8 +226,6 @@ export default function TrainingProgress({ training, participant, onClose }) {
             ×
           </button>
         </div>
-
-        {/* RESUMO */}
 
         <div className="training-progress-summary">
           <div className="training-progress-summary-info">
@@ -250,12 +276,10 @@ export default function TrainingProgress({ training, participant, onClose }) {
           </div>
         </div>
 
-        {/* CONTEÚDOS */}
-
         <div className="training-progress-body">
           <div className="training-content-section-header">
             <div>
-              <h3>Conteúdos do treinamento</h3>
+              <h3>Conteúdos</h3>
 
               <span>Marque cada conteúdo após concluí-lo.</span>
             </div>
@@ -330,8 +354,6 @@ export default function TrainingProgress({ training, participant, onClose }) {
           )}
         </div>
 
-        {/* RODAPÉ */}
-
         <div className="training-modal-footer">
           <button
             type="button"
@@ -340,6 +362,20 @@ export default function TrainingProgress({ training, participant, onClose }) {
           >
             Fechar
           </button>
+
+          {canTakeAssessment &&
+            currentParticipant.assessmentStatus !== 'approved' && (
+              <button
+                type="button"
+                className="training-primary-button"
+                onClick={() => setShowAssessment(true)}
+              >
+                📝{' '}
+                {currentParticipant.assessmentStatus === 'failed'
+                  ? 'Tentar novamente'
+                  : 'Realizar avaliação'}
+              </button>
+            )}
 
           {canIssueCertificate && (
             <button

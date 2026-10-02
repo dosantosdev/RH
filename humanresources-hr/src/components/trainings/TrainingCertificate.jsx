@@ -1,9 +1,30 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import {
   addTrainingCertificate,
   getCertificateByParticipant
 } from '../../services/trainingCertificate'
+
+function formatDate(date) {
+  if (!date) {
+    return '--'
+  }
+
+  const parsedDate = new Date(date)
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return '--'
+  }
+
+  return parsedDate.toLocaleDateString('pt-BR')
+}
+
+function createCertificateNumber() {
+  const timestamp = Date.now()
+  const randomPart = Math.floor(Math.random() * 9000) + 1000
+
+  return `CERT-${timestamp}-${randomPart}`
+}
 
 export default function TrainingCertificate({
   training,
@@ -14,8 +35,23 @@ export default function TrainingCertificate({
     getCertificateByParticipant(participant.id)
   )
 
+  const progress = Number(participant.progress || 0)
+
+  const assessmentApproved = participant.assessmentStatus === 'approved'
+
+  /*
+   * O certificado só pode ser emitido quando:
+   *
+   * 1. O treinamento estiver 100% concluído.
+   * 2. A avaliação estiver aprovada.
+   */
+  const isCompleted = useMemo(
+    () => progress >= 100 && assessmentApproved,
+    [progress, assessmentApproved]
+  )
+
   function handleGenerateCertificate() {
-    if (participant.status !== 'completed') {
+    if (!isCompleted) {
       alert(
         'O participante ainda não concluiu todos os requisitos do treinamento.'
       )
@@ -23,6 +59,13 @@ export default function TrainingCertificate({
       return
     }
 
+    /*
+     * Antes de criar um novo certificado,
+     * verificamos se já existe um emitido para esse participante.
+     *
+     * Isso permite que o funcionário volte posteriormente
+     * e faça uma segunda via sem gerar outro número.
+     */
     const existingCertificate = getCertificateByParticipant(participant.id)
 
     if (existingCertificate) {
@@ -30,6 +73,8 @@ export default function TrainingCertificate({
 
       return
     }
+
+    const issuedAt = new Date().toISOString()
 
     const newCertificate = {
       id: Date.now(),
@@ -44,13 +89,18 @@ export default function TrainingCertificate({
 
       trainingName: training.name,
 
-      issuedAt: new Date().toISOString(),
+      issuedAt,
 
-      certificateNumber: `CERT-${Date.now()}`,
+      completedAt: participant.completedAt || issuedAt,
 
-      score: participant.score,
+      certificateNumber: createCertificateNumber(),
 
-      workload: training.duration || 0
+      score:
+        participant.score !== null && participant.score !== undefined
+          ? Number(participant.score)
+          : null,
+
+      workload: Number(training.duration || 0)
     }
 
     addTrainingCertificate(newCertificate)
@@ -62,8 +112,6 @@ export default function TrainingCertificate({
     window.print()
   }
 
-  const isCompleted = participant.status === 'completed'
-
   return (
     <div className="training-modal-overlay">
       <div className="training-content-modal training-certificate-modal">
@@ -71,7 +119,9 @@ export default function TrainingCertificate({
 
         <div className="training-modal-header no-print">
           <div>
-            <h2>Certificado</h2>
+            <span className="training-progress-kicker">CERTIFICADO</span>
+
+            <h2>Certificado de conclusão</h2>
 
             <p>{training.name}</p>
           </div>
@@ -94,33 +144,31 @@ export default function TrainingCertificate({
             <h3>Certificado indisponível</h3>
 
             <p>
-              O participante precisa concluir os conteúdos e ser aprovado na
-              avaliação para receber o certificado.
+              O participante precisa concluir todos os conteúdos e ser aprovado
+              na avaliação para receber o certificado.
             </p>
 
             <div className="certificate-requirements">
               <div>
                 <span>Conteúdos</span>
 
-                <strong>{participant.progress || 0}%</strong>
+                <strong>{progress}%</strong>
               </div>
 
               <div>
                 <span>Avaliação</span>
 
                 <strong>
-                  {participant.assessmentStatus === 'approved'
-                    ? 'Aprovado'
-                    : participant.assessmentStatus === 'failed'
-                      ? 'Reprovado'
-                      : 'Não realizada'}
+                  {participant.assessmentStatus === 'failed'
+                    ? 'Reprovada'
+                    : 'Não realizada'}
                 </strong>
               </div>
             </div>
           </div>
         )}
 
-        {/* PRONTO PARA GERAR */}
+        {/* EMISSÃO DO CERTIFICADO */}
 
         {isCompleted && !certificate && (
           <div className="training-certificate-generate">
@@ -128,29 +176,36 @@ export default function TrainingCertificate({
 
             <h3>Treinamento concluído!</h3>
 
-            <p>O participante cumpriu todos os requisitos deste treinamento.</p>
+            <p>
+              Todos os requisitos foram cumpridos. O certificado pode ser
+              emitido agora.
+            </p>
 
             <button
               type="button"
               className="training-primary-button"
               onClick={handleGenerateCertificate}
             >
-              Gerar certificado
+              🎓 Emitir certificado
             </button>
           </div>
         )}
 
-        {/* CERTIFICADO GERADO */}
+        {/* CERTIFICADO EMITIDO */}
 
         {certificate && (
           <div className="training-certificate-area">
             <div className="training-certificate">
               <div className="certificate-border">
+                {/* CABEÇALHO DO CERTIFICADO */}
+
                 <div className="certificate-header">
                   <span>CERTIFICADO</span>
 
                   <h1>Certificado de Conclusão</h1>
                 </div>
+
+                {/* CORPO */}
 
                 <div className="certificate-body">
                   <p>Certificamos que</p>
@@ -166,28 +221,43 @@ export default function TrainingCertificate({
                     <strong>{certificate.workload} hora(s)</strong>.
                   </p>
 
-                  {certificate.score !== null && (
-                    <p>
-                      Aproveitamento: <strong>{certificate.score}%</strong>
-                    </p>
-                  )}
+                  {certificate.score !== null &&
+                    certificate.score !== undefined && (
+                      <p>
+                        Aproveitamento: <strong>{certificate.score}%</strong>
+                      </p>
+                    )}
                 </div>
 
-                <div className="certificate-footer">
-                  <div>
-                    <span>Data de emissão</span>
+                {/* DATAS */}
 
-                    <strong>
-                      {new Date(certificate.issuedAt).toLocaleDateString(
-                        'pt-BR'
-                      )}
-                    </strong>
+                <div className="certificate-details">
+                  <div>
+                    <span>Data de conclusão</span>
+
+                    <strong>{formatDate(certificate.completedAt)}</strong>
                   </div>
 
                   <div>
-                    <span>Certificado</span>
+                    <span>Data de emissão</span>
+
+                    <strong>{formatDate(certificate.issuedAt)}</strong>
+                  </div>
+                </div>
+
+                {/* IDENTIFICAÇÃO */}
+
+                <div className="certificate-footer">
+                  <div>
+                    <span>Número do certificado</span>
 
                     <strong>{certificate.certificateNumber}</strong>
+                  </div>
+
+                  <div>
+                    <span>Documento</span>
+
+                    <strong>Certificado de treinamento</strong>
                   </div>
                 </div>
               </div>
@@ -215,7 +285,7 @@ export default function TrainingCertificate({
           </div>
         )}
 
-        {/* RODAPÉ DO CERTIFICADO BLOQUEADO */}
+        {/* RODAPÉ QUANDO BLOQUEADO */}
 
         {!isCompleted && !certificate && (
           <div className="training-modal-footer no-print">

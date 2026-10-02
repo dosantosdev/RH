@@ -1,15 +1,25 @@
 .my-trainings-page {
-  padding: 30px;
-  min-height: calc(100vh - 120px);
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 25px 30px 50px;
   box-sizing: border-box;
 }
 
 .my-trainings-header {
-  margin-bottom: 30px;
+  margin-bottom: 25px;
+}
+
+.my-trainings-kicker {
+  display: inline-block;
+  margin-bottom: 6px;
+  color: #4f67c6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
 }
 
 .my-trainings-header h1 {
-  margin: 0 0 8px;
+  margin: 0 0 7px;
 }
 
 .my-trainings-header p {
@@ -17,176 +27,362 @@
   color: #666;
 }
 
-.my-trainings-list {
+.my-trainings-summary {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  grid-template-columns: repeat(4, 1fr);
+  gap: 18px;
+  margin-bottom: 25px;
+}
+
+.my-trainings-summary-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 20px;
+  background: white;
+  border: 1px solid #e5e6ea;
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04);
+}
+
+.my-trainings-summary-card > span {
+  font-size: 26px;
+}
+
+.my-trainings-summary-card div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.my-trainings-summary-card strong {
+  font-size: 23px;
+}
+
+.my-trainings-summary-card small {
+  color: #666;
+  font-size: 12px;
+}
+
+.my-trainings-content {
+  padding: 25px;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.05);
+}
+
+.my-trainings-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.my-trainings-list-header h2 {
+  margin: 0 0 5px;
+}
+
+.my-trainings-list-header p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.my-trainings-list-header input {
+  width: 300px;
+  padding: 11px 13px;
+  border: 1px solid #dcdcdc;
+  border-radius: 9px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.my-trainings-list-header input:focus {
+  border-color: #4f67c6;
+  box-shadow: 0 0 0 3px rgba(79, 103, 198, 0.1);
+}
+
+.my-trainings-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 20px;
 }
 
 .my-training-card {
-  background: #fff;
-  border: 1px solid #e5e5e5;
+  min-width: 0;
+  padding: 21px;
+  background: white;
+  border: 1px solid #e1e3e8;
   border-radius: 14px;
-  padding: 22px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.my-training-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.07);
 }
 
 .my-training-card-header {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
-  gap: 15px;
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.my-training-category {
-  display: inline-block;
-  margin-bottom: 8px;
-  font-size: 12px;
-  font-weight: 600;
+.my-training-card-header > div:first-child {
+  min-width: 0;
+}
+
+.my-training-card-category {
+  display: block;
+  margin-bottom: 5px;
+  color: #555;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
   text-transform: uppercase;
-  color: #777;
 }
 
-.my-training-card h2 {
+.my-training-card h3 {
   margin: 0;
-  font-size: 20px;
+  color: #111;
+  font-size: 18px;
+  line-height: 1.35;
+}
+
+.my-training-card-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.my-training-certificate {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.my-training-certificate.locked {
+  background: #f0f1f4;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.my-training-certificate.available {
+  background: #eef5ff;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.my-training-certificate.available:hover {
+  background: #dceaff;
+  transform: translateY(-1px) scale(1.04);
 }
 
 .my-training-status {
-  padding: 6px 10px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 9px;
   border-radius: 20px;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
 }
 
-.status-pending {
-  background: #f1f1f1;
-  color: #555;
-}
-
-.status-in_progress {
-  background: #fff4d6;
-  color: #8a6500;
-}
-
-.status-completed {
-  background: #dff5e5;
-  color: #26733d;
-}
-
-.status-failed {
-  background: #fde2e2;
-  color: #a12b2b;
-}
-
-.my-training-description {
-  min-height: 45px;
-  margin: 18px 0;
+.my-training-status.pending {
+  background: #eef0f4;
   color: #666;
-  line-height: 1.5;
 }
 
-.my-training-info {
+.my-training-status.in_progress {
+  background: #eef3ff;
+  color: #4f67c6;
+}
+
+.my-training-status.completed {
+  background: #e1f4e6;
+  color: #26753a;
+}
+
+.my-training-status.failed {
+  background: #fbe7e7;
+  color: #a33c3c;
+}
+
+.my-training-card-description {
+  min-height: 66px;
+  margin: 15px 0 0;
+  color: #666;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.my-training-card-info {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 15px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 18px;
 }
 
-.my-training-info div {
+.my-training-card-info > div {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
-.my-training-info span {
-  font-size: 12px;
+.my-training-card-info span {
   color: #777;
+  font-size: 11px;
 }
 
-.my-training-info strong {
-  font-size: 14px;
+.my-training-card-info strong {
+  color: #222;
+  font-size: 12px;
 }
 
-.my-training-progress {
-  margin-bottom: 18px;
+.my-training-card-progress {
+  margin-top: 18px;
 }
 
-.my-training-progress-bar {
+.my-training-card-progress-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+  color: #666;
+  font-size: 12px;
+}
+
+.my-training-card-progress-header strong {
+  color: #222;
+}
+
+.my-training-card-progress-bar {
+  width: 100%;
   height: 8px;
-  background: #eee;
-  border-radius: 20px;
+  background: #e5e8ef;
+  border-radius: 999px;
   overflow: hidden;
 }
 
-.my-training-progress-bar div {
+.my-training-card-progress-bar > div {
   height: 100%;
-  background: #4b7bec;
-  border-radius: inherit;
-  transition: width 0.2s ease;
+  background: #4f67c6;
+  border-radius: 999px;
+  transition: width 0.3s ease;
 }
 
 .my-training-card-footer {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  gap: 15px;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #eee;
 }
 
 .my-training-card-footer > span {
-  font-size: 13px;
   color: #777;
+  font-size: 11px;
+  line-height: 1.35;
 }
 
-.my-training-button {
+.my-training-view-button {
   border: none;
   border-radius: 8px;
-  padding: 10px 15px;
-  background: #4b7bec;
+  padding: 10px 13px;
+  background: #4f67c6;
   color: white;
-  cursor: pointer;
+  font-size: 12px;
   font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
 }
 
-.my-training-button:hover {
-  opacity: 0.9;
+.my-training-view-button:hover {
+  background: #435ab3;
+  transform: translateY(-1px);
 }
 
-.my-trainings-empty,
-.my-trainings-access-denied {
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 14px;
-  padding: 50px 30px;
+.my-trainings-empty {
+  display: flex;
+  min-height: 280px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
   text-align: center;
+  padding: 40px 20px;
+  border: 1px dashed #d8d8d8;
+  border-radius: 12px;
 }
 
-.my-trainings-empty span,
-.my-trainings-access-denied span {
-  display: block;
-  font-size: 42px;
-  margin-bottom: 15px;
+.my-trainings-empty.compact {
+  min-height: 220px;
 }
 
-.my-trainings-empty h2,
-.my-trainings-access-denied h2 {
-  margin: 0 0 8px;
+.my-trainings-empty-icon {
+  margin-bottom: 10px;
+  font-size: 44px;
 }
 
-.my-trainings-empty p,
-.my-trainings-access-denied p {
-  margin: 0;
+.my-trainings-empty h2 {
+  margin: 5px 0;
+  font-size: 20px;
+}
+
+.my-trainings-empty p {
+  max-width: 600px;
+  margin: 5px 0;
   color: #666;
+  line-height: 1.55;
 }
 
-@media (max-width: 700px) {
-  .my-trainings-page {
-    padding: 20px;
+@media (max-width: 900px) {
+  .my-trainings-summary {
+    grid-template-columns: repeat(2, 1fr);
   }
 
-  .my-training-info {
+  .my-trainings-list-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .my-trainings-list-header input {
+    width: 100%;
+  }
+}
+
+@media (max-width: 650px) {
+  .my-trainings-page {
+    padding: 20px 15px 40px;
+  }
+
+  .my-trainings-summary {
     grid-template-columns: 1fr;
+  }
+
+  .my-trainings-content {
+    padding: 18px;
+  }
+
+  .my-training-card-info {
+    grid-template-columns: 1fr 1fr;
   }
 
   .my-training-card-footer {
@@ -194,7 +390,21 @@
     align-items: stretch;
   }
 
-  .my-training-button {
+  .my-training-view-button {
     width: 100%;
+  }
+}
+
+@media (max-width: 450px) {
+  .my-training-card-info {
+    grid-template-columns: 1fr;
+  }
+
+  .my-training-card-header {
+    flex-direction: column;
+  }
+
+  .my-training-card-header-actions {
+    align-self: flex-end;
   }
 }

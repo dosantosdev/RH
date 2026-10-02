@@ -1,6 +1,5 @@
 import EmployeeProfile from './pages/EmployeeProfile/EmployeeProfile'
 import { Routes, Route } from 'react-router-dom'
-
 import Navbar from './components/layout/Navbar'
 import ProtectedRoute from './components/ProtectedRoute'
 
@@ -38,9 +37,7 @@ function Layout({ children }) {
   return (
     <>
       <Header />
-
       <Navbar />
-
       {children}
     </>
   )
@@ -197,7 +194,7 @@ function App() {
         }
       />
 
-      {/* TREINAMENTOS - ADMINISTRAÇÃO */}
+      {/* TREINAMENTOS */}
 
       <Route
         path="/treinamentos"
@@ -209,8 +206,6 @@ function App() {
           </ProtectedRoute>
         }
       />
-
-      {/* TREINAMENTOS - FUNCIONÁRIO */}
 
       <Route
         path="/meus-treinamentos"

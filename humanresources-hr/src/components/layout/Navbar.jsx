@@ -22,7 +22,6 @@ export default function Navbar() {
 
     if (!loggedUser) {
       setEmployee(null)
-
       return
     }
 
@@ -70,11 +69,7 @@ export default function Navbar() {
 
   const userPhoto = employee?.photo || currentUser.photo || null
 
-  const roleName =
-    currentUser.accessRoleName ||
-    currentUser.roleName ||
-    currentUser.role ||
-    'Usuário'
+  const roleName = currentUser.roleName || currentUser.role || 'Usuário'
 
   return (
     <nav className="navbar">
@@ -113,35 +108,29 @@ export default function Navbar() {
           <button className="dropbtn">Organograma</button>
 
           <div className="dropdown-content">
+            <Link to="/organograma">Organograma</Link>
+
             {hasPermission('branches_view') && (
               <Link to="/filiais">Filiais</Link>
             )}
 
-            {hasPermission('departments_view') && (
-              <Link to="/departamentos">Departamentos</Link>
-            )}
+            <Link to="/departamentos">Departamentos</Link>
 
             {hasPermission('roles_view') && <Link to="/cargos">Cargos</Link>}
-
-            <Link to="/organograma">Organograma</Link>
           </div>
         </div>
 
-        {/* TREINAMENTOS ADMINISTRATIVOS */}
+        {/* TREINAMENTOS */}
 
-        {hasPermission('trainings_view') && (
-          <Link to="/treinamentos" className="nav-link">
-            Treinamentos
-          </Link>
-        )}
+        <div className="dropdown">
+          <button className="dropbtn">Treinamentos</button>
 
-        {/* MEUS TREINAMENTOS */}
+          <div className="dropdown-content">
+            <Link to="/treinamentos">Gerenciar treinamentos</Link>
 
-        {hasPermission('my_trainings_view') && (
-          <Link to="/meus-treinamentos" className="nav-link">
-            Meus Treinamentos
-          </Link>
-        )}
+            <Link to="/meus-treinamentos">Meus treinamentos</Link>
+          </div>
+        </div>
 
         {/* AVALIAÇÕES */}
 
@@ -297,7 +286,6 @@ export default function Navbar() {
                 className="profile-dropdown-item"
                 onClick={() => {
                   setProfileOpen(false)
-
                   navigate('/perfil')
                 }}
               >
@@ -311,7 +299,6 @@ export default function Navbar() {
                 className="profile-dropdown-item"
                 onClick={() => {
                   setProfileOpen(false)
-
                   navigate('/alterar-senha')
                 }}
               >
