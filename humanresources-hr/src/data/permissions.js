@@ -165,6 +165,29 @@ export const permissions = [
   },
 
   {
+    category: 'Ponto',
+
+    items: [
+      {
+        key: 'work_schedules_view',
+        label: 'Visualizar jornadas e escalas'
+      },
+      {
+        key: 'work_schedules_create',
+        label: 'Cadastrar jornadas e escalas'
+      },
+      {
+        key: 'work_schedules_edit',
+        label: 'Editar jornadas e escalas'
+      },
+      {
+        key: 'work_schedules_delete',
+        label: 'Excluir jornadas e escalas'
+      }
+    ]
+  },
+
+  {
     category: 'Dashboard',
 
     items: [

@@ -40,7 +40,11 @@ export const defaultAccessRoles = [
       'trainings_view',
       'trainings_create',
       'trainings_edit',
-      'trainings_delete'
+      'trainings_delete',
+      'work_schedules_view',
+      'work_schedules_create',
+      'work_schedules_edit',
+      'work_schedules_delete'
     ]
   },
 

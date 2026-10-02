@@ -22,26 +22,54 @@ export default function Organograma() {
     branchId: '',
     departmentId: '',
     parentPositionId: '',
-    active: true
+    active: true,
+
+    /*
+     * ============================================================
+     * JORNADA DA POSIÇÃO
+     * ============================================================
+     *
+     * Por padrão, a posição recebe a jornada definida no cargo.
+     *
+     * Mantemos os dados na posição porque futuramente poderemos
+     * permitir uma exceção específica para determinada posição.
+     */
+
+    scheduleType: '',
+    workload: '',
+    dailyHours: '',
+    workDaysPerWeek: '',
+    cycleWorkDays: '',
+    cycleRestDays: ''
   }
 
   const [position, setPosition] = useState(initialPosition)
+
   const [positions, setPositions] = useState([])
+
   const [roles, setRoles] = useState([])
+
   const [branches, setBranches] = useState([])
+
   const [departments, setDepartments] = useState([])
+
   const [employees, setEmployees] = useState([])
 
   const [editingId, setEditingId] = useState(null)
+
   const [deleteId, setDeleteId] = useState(null)
 
   const { toast, showToast } = useToast()
 
   useEffect(() => {
     setPositions(getPositions())
+
     setRoles(getStoredArray('roles'))
+
     setBranches(getStoredArray('branches'))
+
     setDepartments(getStoredArray('departments'))
+
     setEmployees(getStoredArray('employees'))
   }, [])
 
@@ -49,14 +77,180 @@ export default function Organograma() {
     return <h2>Acesso negado</h2>
   }
 
+  /*
+   * ============================================================
+   * ALTERAÇÃO DOS CAMPOS
+   * ============================================================
+   */
+
   function handleChange(e) {
     const { name, value, type, checked } = e.target
 
     setPosition((prev) => ({
       ...prev,
+
       [name]: type === 'checkbox' ? checked : value
     }))
   }
+
+  /*
+   * ============================================================
+   * CARREGAR JORNADA DO CARGO
+   * ============================================================
+   */
+
+  function loadRoleSchedule(roleId) {
+    const selectedRole = roles.find(
+      (role) => Number(role.id) === Number(roleId)
+    )
+
+    if (!selectedRole) {
+      return
+    }
+
+    setPosition((previousPosition) => ({
+      ...previousPosition,
+
+      cargoId: roleId,
+
+      scheduleType: selectedRole.scheduleType || 'weekly',
+
+      workload: selectedRole.workload || '',
+
+      dailyHours: selectedRole.dailyHours || '',
+
+      workDaysPerWeek: selectedRole.workDaysPerWeek || '',
+
+      cycleWorkDays: selectedRole.cycleWorkDays || '',
+
+      cycleRestDays: selectedRole.cycleRestDays || ''
+    }))
+  }
+
+  /*
+   * ============================================================
+   * VALIDAÇÃO DA JORNADA
+   * ============================================================
+   */
+
+  function validatePositionSchedule() {
+    const workload = Number(position.workload)
+
+    const dailyHours = Number(position.dailyHours)
+
+    const workDaysPerWeek = Number(position.workDaysPerWeek)
+
+    if (position.workload === '' || Number.isNaN(workload) || workload <= 0) {
+      return 'O cargo selecionado não possui uma carga horária semanal válida.'
+    }
+
+    /*
+     * Jornada semanal:
+     *
+     * horas por dia × dias trabalhados
+     *
+     * não pode ultrapassar a carga semanal definida no cargo.
+     */
+
+    if (position.scheduleType === 'weekly') {
+      if (!position.dailyHours || Number.isNaN(dailyHours) || dailyHours <= 0) {
+        return 'O cargo selecionado não possui uma quantidade válida de horas por dia.'
+      }
+
+      if (
+        !position.workDaysPerWeek ||
+        Number.isNaN(workDaysPerWeek) ||
+        workDaysPerWeek <= 0 ||
+        workDaysPerWeek > 7
+      ) {
+        return 'O cargo selecionado não possui uma quantidade válida de dias trabalhados por semana.'
+      }
+
+      const calculatedWeeklyHours = dailyHours * workDaysPerWeek
+
+      if (calculatedWeeklyHours > workload) {
+        return (
+          `A jornada da posição soma ${calculatedWeeklyHours}h por semana, ` +
+          `mas o cargo está configurado para ${workload}h.`
+        )
+      }
+    }
+
+    /*
+     * ==========================================================
+     * 12x36
+     * ==========================================================
+     */
+
+    if (position.scheduleType === '12x36') {
+      if (dailyHours !== 12) {
+        return (
+          'A posição está vinculada a uma jornada 12x36, ' +
+          'portanto deve trabalhar 12 horas por dia de trabalho.'
+        )
+      }
+
+      if (
+        Number(position.cycleWorkDays) !== 1 ||
+        Number(position.cycleRestDays) !== 1
+      ) {
+        return 'A escala 12x36 deve permanecer configurada como 1 dia trabalhado e 1 ciclo de descanso.'
+      }
+    }
+
+    /*
+     * ==========================================================
+     * 4x2
+     * ==========================================================
+     */
+
+    if (position.scheduleType === '4x2') {
+      if (
+        Number(position.cycleWorkDays) !== 4 ||
+        Number(position.cycleRestDays) !== 2
+      ) {
+        return 'A escala 4x2 deve permanecer configurada como 4 dias trabalhados e 2 dias de descanso.'
+      }
+    }
+
+    /*
+     * ==========================================================
+     * 5x2
+     * ==========================================================
+     */
+
+    if (position.scheduleType === '5x2') {
+      if (
+        Number(position.cycleWorkDays) !== 5 ||
+        Number(position.cycleRestDays) !== 2
+      ) {
+        return 'A escala 5x2 deve permanecer configurada como 5 dias trabalhados e 2 dias de descanso.'
+      }
+    }
+
+    /*
+     * ==========================================================
+     * 6x1
+     * ==========================================================
+     */
+
+    if (position.scheduleType === '6x1') {
+      if (
+        Number(position.cycleWorkDays) !== 6 ||
+        Number(position.cycleRestDays) !== 1
+      ) {
+        return 'A escala 6x1 deve permanecer configurada como 6 dias trabalhados e 1 dia de descanso.'
+      }
+    }
+
+    return null
+  }
+
+  /*
+   * ============================================================
+   * SALVAR
+   * ============================================================
+   */
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -78,59 +272,113 @@ export default function Organograma() {
 
     if (!editingId && !hasPermission('roles_create')) {
       showToast('Você não tem permissão para criar posições.', 'warning')
+
       return
     }
 
     if (editingId && !hasPermission('roles_edit')) {
       showToast('Você não tem permissão para editar posições.', 'warning')
+
       return
     }
 
     /*
      * Uma posição não pode ser superior a ela mesma.
      */
+
     if (
       editingId &&
       position.parentPositionId &&
       Number(position.parentPositionId) === Number(editingId)
     ) {
       showToast('Uma posição não pode ser superior dela mesma.', 'warning')
+
+      return
+    }
+
+    /*
+     * Valida a jornada herdada do cargo.
+     */
+
+    const scheduleError = validatePositionSchedule()
+
+    if (scheduleError) {
+      showToast(scheduleError, 'warning')
       return
     }
 
     const selectedRole = roles.find(
-      (role) => role.id === Number(position.cargoId)
+      (role) => Number(role.id) === Number(position.cargoId)
     )
 
     const selectedBranch = branches.find(
-      (branch) => branch.id === Number(position.branchId)
+      (branch) => Number(branch.id) === Number(position.branchId)
     )
 
     const selectedDepartment = departments.find(
-      (department) => department.id === Number(position.departmentId)
+      (department) => Number(department.id) === Number(position.departmentId)
     )
 
     const selectedParent = positions.find(
-      (item) => item.id === Number(position.parentPositionId)
+      (item) => Number(item.id) === Number(position.parentPositionId)
     )
 
     const positionData = {
       ...position,
 
       cargoId: Number(position.cargoId),
+
       cargoName: selectedRole?.name || '',
 
       branchId: Number(position.branchId),
+
       branchName: selectedBranch?.name || '',
 
       departmentId: Number(position.departmentId),
+
       departmentName: selectedDepartment?.name || '',
 
       parentPositionId: position.parentPositionId
         ? Number(position.parentPositionId)
         : null,
 
-      parentPositionName: selectedParent?.cargoName || ''
+      parentPositionName: selectedParent?.cargoName || '',
+
+      /*
+       * Guarda também uma cópia das informações da jornada.
+       *
+       * Isso permite que o módulo de ponto consulte a posição
+       * sem precisar descobrir novamente qual era a configuração
+       * utilizada no momento do cadastro.
+       */
+
+      scheduleType:
+        position.scheduleType || selectedRole?.scheduleType || 'weekly',
+
+      workload:
+        position.workload !== ''
+          ? Number(position.workload)
+          : Number(selectedRole?.workload || 0),
+
+      dailyHours:
+        position.dailyHours !== ''
+          ? Number(position.dailyHours)
+          : Number(selectedRole?.dailyHours || 0),
+
+      workDaysPerWeek:
+        position.workDaysPerWeek !== ''
+          ? Number(position.workDaysPerWeek)
+          : Number(selectedRole?.workDaysPerWeek || 0),
+
+      cycleWorkDays:
+        position.cycleWorkDays !== ''
+          ? Number(position.cycleWorkDays)
+          : Number(selectedRole?.cycleWorkDays || 0),
+
+      cycleRestDays:
+        position.cycleRestDays !== ''
+          ? Number(position.cycleRestDays)
+          : Number(selectedRole?.cycleRestDays || 0)
     }
 
     if (editingId) {
@@ -156,30 +404,62 @@ export default function Organograma() {
     }
 
     setPosition(initialPosition)
+
     setEditingId(null)
   }
+
+  /*
+   * ============================================================
+   * EDITAR
+   * ============================================================
+   */
 
   function handleEdit(item) {
     if (!hasPermission('roles_edit')) {
       showToast('Você não tem permissão para editar posições.', 'warning')
+
       return
     }
 
     setPosition({
       ...initialPosition,
+
       ...item,
+
       cargoId: item.cargoId || '',
+
       branchId: item.branchId || '',
+
       departmentId: item.departmentId || '',
-      parentPositionId: item.parentPositionId || ''
+
+      parentPositionId: item.parentPositionId || '',
+
+      scheduleType: item.scheduleType || 'weekly',
+
+      workload: item.workload ?? '',
+
+      dailyHours: item.dailyHours ?? '',
+
+      workDaysPerWeek: item.workDaysPerWeek ?? '',
+
+      cycleWorkDays: item.cycleWorkDays ?? '',
+
+      cycleRestDays: item.cycleRestDays ?? ''
     })
 
     setEditingId(item.id)
   }
 
+  /*
+   * ============================================================
+   * EXCLUIR
+   * ============================================================
+   */
+
   function handleDelete(id) {
     if (!hasPermission('roles_delete')) {
       showToast('Você não tem permissão para excluir posições.', 'warning')
+
       return
     }
 
@@ -187,6 +467,7 @@ export default function Organograma() {
      * Não permite excluir uma posição que possui
      * outras posições subordinadas.
      */
+
     const hasChildren = positions.some(
       (item) => Number(item.parentPositionId) === Number(id)
     )
@@ -196,6 +477,7 @@ export default function Organograma() {
         'Esta posição possui subordinados. Remova ou mova os subordinados antes de excluí-la.',
         'warning'
       )
+
       return
     }
 
@@ -205,6 +487,7 @@ export default function Organograma() {
      * Mesmo assim, não permitimos sua exclusão enquanto
      * existir algum funcionário vinculado a ela.
      */
+
     const linkedEmployees = employees.filter(
       (employee) =>
         employee.positionId && Number(employee.positionId) === Number(id)
@@ -229,17 +512,30 @@ export default function Organograma() {
     setDeleteId(id)
   }
 
+  /*
+   * ============================================================
+   * CONFIRMAR EXCLUSÃO
+   * ============================================================
+   */
+
   function confirmDelete() {
     const updated = deletePosition(deleteId)
 
     setPositions(updated)
+
     setDeleteId(null)
 
     showToast('Posição excluída com sucesso!', 'success')
   }
 
+  /*
+   * ============================================================
+   * LISTAS AUXILIARES
+   * ============================================================
+   */
+
   const availableDepartments = departments.filter(
-    (department) => department.branchId === Number(position.branchId)
+    (department) => Number(department.branchId) === Number(position.branchId)
   )
 
   const availableParents = positions.filter((item) => {
@@ -248,10 +544,16 @@ export default function Organograma() {
     }
 
     return (
-      item.branchId === Number(position.branchId) &&
-      item.departmentId === Number(position.departmentId)
+      Number(item.branchId) === Number(position.branchId) &&
+      Number(item.departmentId) === Number(position.departmentId)
     )
   })
+
+  /*
+   * ============================================================
+   * RENDER
+   * ============================================================
+   */
 
   return (
     <div className="organograma-page">
@@ -261,13 +563,17 @@ export default function Organograma() {
         <p>Estruture os cargos da empresa em uma hierarquia organizacional.</p>
       </div>
 
-      {/* CADASTRO DE POSIÇÃO */}
+      {/* ======================================================
+          CADASTRO DE POSIÇÃO
+      ======================================================= */}
 
       <div className="organograma-form-card">
         <h2>{editingId ? 'Editar posição' : 'Nova posição'}</h2>
 
         <form onSubmit={handleSubmit}>
           <div className="organograma-form-grid">
+            {/* FILIAL */}
+
             <select
               name="branchId"
               value={position.branchId}
@@ -291,6 +597,8 @@ export default function Organograma() {
                   </option>
                 ))}
             </select>
+
+            {/* DEPARTAMENTO */}
 
             <select
               name="departmentId"
@@ -316,10 +624,14 @@ export default function Organograma() {
                 ))}
             </select>
 
+            {/* CARGO */}
+
             <select
               name="cargoId"
               value={position.cargoId}
-              onChange={handleChange}
+              onChange={(e) => {
+                loadRoleSchedule(e.target.value)
+              }}
             >
               <option value="">Selecione o cargo</option>
 
@@ -331,6 +643,8 @@ export default function Organograma() {
                   </option>
                 ))}
             </select>
+
+            {/* SUPERIOR */}
 
             <select
               name="parentPositionId"
@@ -347,6 +661,84 @@ export default function Organograma() {
               ))}
             </select>
           </div>
+
+          {/* ==================================================
+              RESUMO DA JORNADA
+          =================================================== */}
+
+          {position.cargoId && (
+            <div
+              style={{
+                marginTop: '20px',
+                padding: '16px',
+                border: '1px solid #e2e4ea',
+                borderRadius: '10px',
+                background: '#f8f9fc'
+              }}
+            >
+              <strong>Jornada da posição</strong>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                  gap: '12px',
+                  marginTop: '12px'
+                }}
+              >
+                <div>
+                  <small>Tipo</small>
+
+                  <div>
+                    {position.scheduleType === 'weekly' && 'Jornada semanal'}
+
+                    {position.scheduleType === '12x36' && '12x36'}
+
+                    {position.scheduleType === '4x2' && '4x2'}
+
+                    {position.scheduleType === '5x2' && '5x2'}
+
+                    {position.scheduleType === '6x1' && '6x1'}
+
+                    {position.scheduleType === 'custom' && 'Personalizada'}
+                  </div>
+                </div>
+
+                <div>
+                  <small>Carga semanal</small>
+
+                  <div>{position.workload || '-'}h</div>
+                </div>
+
+                <div>
+                  <small>Horas por dia</small>
+
+                  <div>{position.dailyHours || '-'}h</div>
+                </div>
+
+                {position.scheduleType === 'weekly' && (
+                  <div>
+                    <small>Dias por semana</small>
+
+                    <div>{position.workDaysPerWeek || '-'}</div>
+                  </div>
+                )}
+
+                {position.cycleWorkDays && (
+                  <div>
+                    <small>Ciclo</small>
+
+                    <div>
+                      {position.cycleWorkDays} dias trabalho /{' '}
+                      {position.cycleRestDays} dias descanso
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* STATUS */}
 
           <label className="organograma-checkbox">
             <input
@@ -370,6 +762,7 @@ export default function Organograma() {
                   className="cancel-btn"
                   onClick={() => {
                     setPosition(initialPosition)
+
                     setEditingId(null)
                   }}
                 >
@@ -381,7 +774,9 @@ export default function Organograma() {
         </form>
       </div>
 
-      {/* ESTRUTURA */}
+      {/* ======================================================
+          ESTRUTURA
+      ======================================================= */}
 
       <div className="organograma-section">
         <div className="organograma-section-header">
@@ -399,7 +794,7 @@ export default function Organograma() {
             <p className="organograma-empty">Nenhuma posição cadastrada.</p>
           ) : (
             positions
-              .filter((position) => !position.parentPositionId)
+              .filter((positionItem) => !positionItem.parentPositionId)
               .map((root) => (
                 <TreeNode
                   key={root.id}
@@ -427,6 +822,12 @@ export default function Organograma() {
   )
 }
 
+/*
+ * ==============================================================
+ * ÁRVORE DO ORGANOGRAMA
+ * ==============================================================
+ */
+
 function TreeNode({ node, positions, employees, onEdit, onDelete }) {
   const children = positions.filter(
     (position) => Number(position.parentPositionId) === Number(node.id)
@@ -437,6 +838,7 @@ function TreeNode({ node, positions, employees, onEdit, onDelete }) {
    *
    * Por isso usamos filter() em vez de find().
    */
+
   const positionEmployees = employees.filter(
     (employee) =>
       employee.active === true &&
@@ -454,7 +856,22 @@ function TreeNode({ node, positions, employees, onEdit, onDelete }) {
 
           <small>{node.branchName}</small>
 
-          {/* FUNCIONÁRIOS DA POSIÇÃO */}
+          {/* JORNADA */}
+
+          {node.scheduleType && (
+            <small>
+              Jornada:{' '}
+              {node.scheduleType === 'weekly' &&
+                `${node.workload || 0}h semanais`}
+              {node.scheduleType === '12x36' && '12x36'}
+              {node.scheduleType === '4x2' && '4x2'}
+              {node.scheduleType === '5x2' && '5x2'}
+              {node.scheduleType === '6x1' && '6x1'}
+              {node.scheduleType === 'custom' && 'Personalizada'}
+            </small>
+          )}
+
+          {/* FUNCIONÁRIOS */}
 
           {positionEmployees.length === 0 ? (
             <span>Vaga disponível</span>

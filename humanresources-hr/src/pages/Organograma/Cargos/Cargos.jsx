@@ -23,8 +23,40 @@ export default function Cargos() {
     experience: '',
     skills: '',
     workRegime: '',
+
+    /*
+     * ============================================================
+     * JORNADA DE TRABALHO
+     * ============================================================
+     *
+     * weekly:
+     * Jornada semanal tradicional.
+     *
+     * 12x36:
+     * Trabalha 12 horas e descansa 36 horas.
+     *
+     * 4x2:
+     * Trabalha 4 dias e descansa 2.
+     *
+     * 5x2:
+     * Trabalha 5 dias e descansa 2.
+     *
+     * 6x1:
+     * Trabalha 6 dias e descansa 1.
+     *
+     * custom:
+     * Permite configurar uma jornada específica.
+     */
+
     workload: '',
+    scheduleType: 'weekly',
+    dailyHours: '',
+    workDaysPerWeek: '',
+    cycleWorkDays: '',
+    cycleRestDays: '',
+
     active: true,
+
     requiresCnh: false,
     requiredCnhCategories: [],
     requiredCertificates: []
@@ -72,16 +104,8 @@ export default function Cargos() {
 
   /*
    * ============================================================
-   * IDENTIFICA OS ANTIGOS REGISTROS DE ACESSO
+   * IDENTIFICA PERFIS DE ACESSO ANTIGOS
    * ============================================================
-   *
-   * Antes da separação entre Cargo e Perfil de Acesso,
-   * admin, gestao_rh e funcionario ficavam dentro de "roles".
-   *
-   * Agora eles existem em "accessRoles".
-   *
-   * Não vamos apagar os registros antigos ainda.
-   * Apenas não os trataremos como cargos profissionais.
    */
 
   const legacyAccessRoleIds = accessRoles
@@ -95,19 +119,10 @@ export default function Cargos() {
 
     const isLegacyAccessRole = legacyAccessRoleIds.includes(roleId)
 
-    /*
-     * Se o ID corresponde a um dos antigos perfis
-     * migrados, ele não aparece como cargo.
-     */
     if (isLegacyAccessRole) {
       return false
     }
 
-    /*
-     * Também verificamos pelo nome para proteger
-     * instalações antigas onde os IDs podem ter sido
-     * alterados.
-     */
     const normalizedName = String(roleItem.name || '')
       .trim()
       .toLowerCase()
@@ -144,10 +159,141 @@ export default function Cargos() {
   function handleChange(e) {
     const { name, value, type, checked } = e.target
 
-    setRole({
-      ...role,
+    setRole((previousRole) => ({
+      ...previousRole,
       [name]: type === 'checkbox' ? checked : value
-    })
+    }))
+  }
+
+  /*
+   * ============================================================
+   * VALIDAÇÃO DA JORNADA
+   * ============================================================
+   */
+
+  function validateWorkSchedule() {
+    const workload = Number(role.workload)
+    const dailyHours = Number(role.dailyHours)
+    const workDaysPerWeek = Number(role.workDaysPerWeek)
+
+    /*
+     * A carga semanal é obrigatória para qualquer jornada.
+     */
+    if (!role.workload || Number.isNaN(workload) || workload <= 0) {
+      return 'Informe uma carga horária semanal válida.'
+    }
+
+    /*
+     * A carga horária não precisa ser 44h.
+     *
+     * O sistema aceita, por exemplo:
+     * 30h
+     * 40h
+     * 44h
+     * 36h
+     * etc.
+     */
+
+    if (role.scheduleType === 'weekly') {
+      if (!role.dailyHours || Number.isNaN(dailyHours) || dailyHours <= 0) {
+        return 'Informe a quantidade de horas trabalhadas por dia.'
+      }
+
+      if (
+        !role.workDaysPerWeek ||
+        Number.isNaN(workDaysPerWeek) ||
+        workDaysPerWeek <= 0 ||
+        workDaysPerWeek > 7
+      ) {
+        return 'Informe uma quantidade válida de dias trabalhados por semana.'
+      }
+
+      const calculatedWeeklyHours = dailyHours * workDaysPerWeek
+
+      /*
+       * A soma dos dias não pode ultrapassar
+       * a carga semanal configurada.
+       */
+      if (calculatedWeeklyHours > workload) {
+        return (
+          `A jornada configurada soma ${calculatedWeeklyHours}h por semana, ` +
+          `mas a carga horária definida é de ${workload}h. ` +
+          'Ajuste as horas diárias, os dias trabalhados ou a carga semanal.'
+        )
+      }
+    }
+
+    /*
+     * ==========================================================
+     * ESCALAS CICLICAS
+     * ==========================================================
+     *
+     * Para 12x36, 4x2, 5x2 e 6x1,
+     * armazenamos o ciclo.
+     *
+     * Não usamos simplesmente:
+     *
+     * horas x 7 dias
+     *
+     * porque isso não representa corretamente
+     * uma escala cíclica.
+     */
+
+    if (['12x36', '4x2', '5x2', '6x1'].includes(role.scheduleType)) {
+      if (!role.dailyHours || Number.isNaN(dailyHours) || dailyHours <= 0) {
+        return 'Informe a quantidade de horas trabalhadas por dia.'
+      }
+    }
+
+    if (role.scheduleType === '12x36') {
+      if (dailyHours !== 12) {
+        return 'Na escala 12x36, a jornada diária deve ser de 12 horas.'
+      }
+    }
+
+    if (role.scheduleType === '4x2') {
+      if (role.cycleWorkDays && Number(role.cycleWorkDays) !== 4) {
+        return 'Na escala 4x2, devem ser configurados 4 dias trabalhados.'
+      }
+
+      if (role.cycleRestDays && Number(role.cycleRestDays) !== 2) {
+        return 'Na escala 4x2, devem ser configurados 2 dias de descanso.'
+      }
+    }
+
+    if (role.scheduleType === '5x2') {
+      if (role.cycleWorkDays && Number(role.cycleWorkDays) !== 5) {
+        return 'Na escala 5x2, devem ser configurados 5 dias trabalhados.'
+      }
+
+      if (role.cycleRestDays && Number(role.cycleRestDays) !== 2) {
+        return 'Na escala 5x2, devem ser configurados 2 dias de descanso.'
+      }
+    }
+
+    if (role.scheduleType === '6x1') {
+      if (role.cycleWorkDays && Number(role.cycleWorkDays) !== 6) {
+        return 'Na escala 6x1, devem ser configurados 6 dias trabalhados.'
+      }
+
+      if (role.cycleRestDays && Number(role.cycleRestDays) !== 1) {
+        return 'Na escala 6x1, deve ser configurado 1 dia de descanso.'
+      }
+    }
+
+    /*
+     * Jornada personalizada.
+     *
+     * Aqui não fazemos uma regra rígida porque futuramente
+     * poderemos configurar jornadas ainda mais específicas.
+     */
+    if (role.scheduleType === 'custom') {
+      if (role.dailyHours && (Number.isNaN(dailyHours) || dailyHours <= 0)) {
+        return 'Informe uma quantidade válida de horas por dia.'
+      }
+    }
+
+    return null
   }
 
   /*
@@ -159,22 +305,22 @@ export default function Cargos() {
   function handleSubmit(e) {
     e.preventDefault()
 
-    /*
-     * CRIAÇÃO
-     */
-
     if (!editingId && !hasPermission('roles_create')) {
       showToast('Você não tem permissão para criar cargos', 'warning')
 
       return
     }
 
-    /*
-     * EDIÇÃO
-     */
-
     if (editingId && !hasPermission('roles_edit')) {
       showToast('Você não tem permissão para editar cargos', 'warning')
+
+      return
+    }
+
+    const scheduleError = validateWorkSchedule()
+
+    if (scheduleError) {
+      showToast(scheduleError, 'warning')
 
       return
     }
@@ -235,14 +381,6 @@ export default function Cargos() {
       return
     }
 
-    /*
-     * Segurança adicional:
-     *
-     * Caso algum registro antigo de perfil de acesso
-     * ainda consiga chegar aqui, não permitimos sua edição
-     * como cargo.
-     */
-
     const isLegacyAccessRole = accessRoles.some(
       (accessRole) =>
         Number(accessRole.id) === Number(selectedRole.id) &&
@@ -262,6 +400,16 @@ export default function Cargos() {
       ...initialRole,
 
       ...selectedRole,
+
+      scheduleType: selectedRole.scheduleType || 'weekly',
+
+      dailyHours: selectedRole.dailyHours || '',
+
+      workDaysPerWeek: selectedRole.workDaysPerWeek || '',
+
+      cycleWorkDays: selectedRole.cycleWorkDays || '',
+
+      cycleRestDays: selectedRole.cycleRestDays || '',
 
       requiredCnhCategories: selectedRole.requiredCnhCategories || [],
 
@@ -283,11 +431,6 @@ export default function Cargos() {
 
       return
     }
-
-    /*
-     * Nunca permitimos excluir um antigo perfil de acesso
-     * através da tela de cargos.
-     */
 
     const isLegacyAccessRole = accessRoles.some(
       (accessRole) =>

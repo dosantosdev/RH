@@ -1,0 +1,351 @@
+.controle-ponto-page {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 25px 30px 50px;
+}
+
+.controle-ponto-header {
+  margin-bottom: 24px;
+}
+
+.controle-ponto-kicker {
+  color: #4f67c6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.controle-ponto-header h1 {
+  margin: 4px 0 6px;
+}
+
+.controle-ponto-header p {
+  margin: 0;
+  color: #666;
+}
+
+.controle-ponto-toolbar {
+  margin-bottom: 20px;
+}
+
+.controle-ponto-toolbar input {
+  width: min(420px, 100%);
+  padding: 12px 14px;
+  border: 1px solid #d9dce3;
+  border-radius: 9px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.controle-ponto-toolbar input:focus {
+  border-color: #4f67c6;
+  box-shadow: 0 0 0 3px rgba(79, 103, 198, 0.1);
+}
+
+.controle-ponto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 18px;
+}
+
+.controle-ponto-card {
+  background: white;
+  border: 1px solid #e1e3e8;
+  border-radius: 13px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.controle-ponto-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.controle-ponto-card-header > div {
+  min-width: 0;
+}
+
+.controle-ponto-card-header span:first-child {
+  color: #777;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.controle-ponto-card-header h2 {
+  margin: 4px 0 0;
+  font-size: 18px;
+}
+
+.controle-ponto-badge {
+  flex-shrink: 0;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.controle-ponto-badge.valid {
+  background: #e6f5ea;
+  color: #2f7741;
+}
+
+.controle-ponto-badge.warning {
+  background: #fff1df;
+  color: #9a631d;
+}
+
+.controle-ponto-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.controle-ponto-info-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.controle-ponto-info-grid span,
+.controle-ponto-modal-summary span {
+  color: #777;
+  font-size: 11px;
+}
+
+.controle-ponto-info-grid strong,
+.controle-ponto-modal-summary strong {
+  color: #222;
+  font-size: 14px;
+}
+
+.controle-ponto-alert {
+  margin-top: 15px;
+  padding: 11px 12px;
+  border-radius: 8px;
+  background: #fff8ed;
+  color: #85591c;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.controle-ponto-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid #eee;
+}
+
+.controle-ponto-card-footer span {
+  color: #777;
+  font-size: 11px;
+}
+
+.controle-ponto-card-footer button,
+.controle-ponto-modal-footer button {
+  border: none;
+  border-radius: 8px;
+  background: #4f67c6;
+  color: white;
+  padding: 9px 13px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.controle-ponto-card-footer button:hover,
+.controle-ponto-modal-footer button:hover {
+  opacity: 0.9;
+}
+
+.controle-ponto-empty {
+  padding: 65px 25px;
+  text-align: center;
+  border: 1px dashed #d5d8df;
+  border-radius: 12px;
+}
+
+.controle-ponto-empty span {
+  font-size: 42px;
+}
+
+.controle-ponto-empty h3 {
+  margin: 10px 0 5px;
+}
+
+.controle-ponto-empty p {
+  max-width: 550px;
+  margin: 0 auto;
+  color: #666;
+  line-height: 1.5;
+}
+
+.controle-ponto-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.controle-ponto-modal {
+  width: min(760px, 100%);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+}
+
+.controle-ponto-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.controle-ponto-modal-header span {
+  color: #4f67c6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.controle-ponto-modal-header h2 {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+
+.controle-ponto-modal-header button {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #666;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.controle-ponto-modal-header button:hover {
+  background: #f3f4f8;
+}
+
+.controle-ponto-modal-body {
+  overflow-y: auto;
+  padding: 24px;
+}
+
+.controle-ponto-modal-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.controle-ponto-modal-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid #e5e6eb;
+  border-radius: 9px;
+  background: #fafafa;
+}
+
+.controle-ponto-week-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.controle-ponto-week-table > div {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #e5e6eb;
+  border-radius: 8px;
+}
+
+.controle-ponto-week-table strong {
+  font-size: 13px;
+}
+
+.controle-ponto-week-table span,
+.controle-ponto-week-table small {
+  color: #666;
+  font-size: 12px;
+}
+
+.controle-ponto-scale-description {
+  padding: 18px;
+  border: 1px solid #e5e6eb;
+  border-radius: 9px;
+  background: #fafafa;
+}
+
+.controle-ponto-scale-description p {
+  margin: 7px 0 0;
+  color: #666;
+  line-height: 1.6;
+}
+
+.controle-ponto-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 24px;
+  border-top: 1px solid #eee;
+}
+
+@media (max-width: 700px) {
+  .controle-ponto-page {
+    padding: 20px 15px 40px;
+  }
+
+  .controle-ponto-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .controle-ponto-info-grid,
+  .controle-ponto-modal-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .controle-ponto-week-table > div {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+@media (max-width: 480px) {
+  .controle-ponto-card-header {
+    flex-direction: column;
+  }
+
+  .controle-ponto-info-grid,
+  .controle-ponto-modal-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .controle-ponto-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controle-ponto-card-footer button {
+    width: 100%;
+  }
+}

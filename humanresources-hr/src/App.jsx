@@ -31,6 +31,8 @@ import Relatorios from './pages/Ponto/Relatorios/Relatorios'
 import Treinamentos from './pages/Treinamentos/Treinamentos'
 import MeusTreinamentos from './pages/MeusTreinamentos/MeusTreinamentos'
 
+import JornadasEscalas from './pages/Ponto/JornadasEscalas/JornadasEscalas'
+
 import Header from './components/layout/Header'
 
 function Layout({ children }) {
@@ -271,6 +273,17 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <BaterPonto />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/ponto/jornadas"
+        element={
+          <ProtectedRoute permission="work_schedules_view">
+            <Layout>
+              <JornadasEscalas />
             </Layout>
           </ProtectedRoute>
         }

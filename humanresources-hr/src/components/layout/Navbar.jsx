@@ -188,6 +188,10 @@ export default function Navbar() {
           <div className="dropdown-content">
             <Link to="/ponto/bater">Bater Ponto</Link>
 
+            {hasPermission('work_schedules_view') && (
+              <Link to="/ponto/jornadas">Jornadas e Escalas</Link>
+            )}
+
             <Link to="/ponto/espelho">Meu Espelho</Link>
 
             <Link to="/ponto/controle">Controle de Ponto</Link>

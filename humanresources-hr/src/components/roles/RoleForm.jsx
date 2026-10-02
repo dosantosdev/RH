@@ -11,6 +11,68 @@ export default function RoleForm({
 }) {
   const certificates = getStoredArray('certificates')
 
+  const scheduleType = role.scheduleType || 'weekly'
+
+  function updateField(name, value) {
+    handleChange({
+      target: {
+        name,
+        value,
+        type: 'custom'
+      }
+    })
+  }
+
+  function handleScheduleTypeChange(e) {
+    const value = e.target.value
+
+    updateField('scheduleType', value)
+
+    /*
+     * Quando o tipo de jornada muda,
+     * limpamos campos que pertencem a outro modelo.
+     *
+     * Isso evita carregar informações antigas de uma
+     * jornada semanal para uma escala 12x36, por exemplo.
+     */
+
+    if (value === 'weekly') {
+      updateField('cycleWorkDays', '')
+      updateField('cycleRestDays', '')
+    }
+
+    if (value === '12x36') {
+      updateField('dailyHours', '12')
+      updateField('cycleWorkDays', '1')
+      updateField('cycleRestDays', '1')
+      updateField('workDaysPerWeek', '')
+    }
+
+    if (value === '4x2') {
+      updateField('cycleWorkDays', '4')
+      updateField('cycleRestDays', '2')
+      updateField('workDaysPerWeek', '')
+    }
+
+    if (value === '5x2') {
+      updateField('cycleWorkDays', '5')
+      updateField('cycleRestDays', '2')
+      updateField('workDaysPerWeek', '')
+    }
+
+    if (value === '6x1') {
+      updateField('cycleWorkDays', '6')
+      updateField('cycleRestDays', '1')
+      updateField('workDaysPerWeek', '')
+    }
+
+    if (value === 'custom') {
+      updateField('cycleWorkDays', '')
+      updateField('cycleRestDays', '')
+      updateField('workDaysPerWeek', '')
+    }
+  }
+
   return (
     <div className="role-form-container">
       <div className="form-card">
@@ -212,6 +274,33 @@ export default function RoleForm({
             <h3>Jornada de Trabalho</h3>
 
             <div className="form-grid">
+              {/* TIPO DA JORNADA */}
+
+              <div className="field-group field-full">
+                <label htmlFor="scheduleType">Tipo de jornada</label>
+
+                <select
+                  id="scheduleType"
+                  name="scheduleType"
+                  value={scheduleType}
+                  onChange={handleScheduleTypeChange}
+                >
+                  <option value="weekly">Jornada semanal</option>
+
+                  <option value="12x36">Escala 12x36</option>
+
+                  <option value="4x2">Escala 4x2</option>
+
+                  <option value="5x2">Escala 5x2</option>
+
+                  <option value="6x1">Escala 6x1</option>
+
+                  <option value="custom">Jornada personalizada</option>
+                </select>
+              </div>
+
+              {/* CARGA SEMANAL */}
+
               <div className="field-group field-workload">
                 <label htmlFor="workload">Carga horária semanal</label>
 
@@ -222,9 +311,172 @@ export default function RoleForm({
                   value={role.workload}
                   placeholder="Ex.: 44"
                   min="0"
-                  step="1"
+                  step="0.5"
                   onChange={handleChange}
                 />
+
+                <small>
+                  Pode ser 30h, 36h, 40h, 44h ou outro valor definido para o
+                  cargo.
+                </small>
+              </div>
+
+              {/* HORAS POR DIA */}
+
+              <div className="field-group field-workload">
+                <label htmlFor="dailyHours">Horas trabalhadas por dia</label>
+
+                <input
+                  id="dailyHours"
+                  type="number"
+                  name="dailyHours"
+                  value={role.dailyHours}
+                  placeholder="Ex.: 8"
+                  min="0"
+                  step="0.5"
+                  onChange={handleChange}
+                  disabled={scheduleType === '12x36'}
+                />
+
+                {scheduleType === '12x36' && (
+                  <small>
+                    A escala 12x36 utiliza 12 horas de trabalho por dia.
+                  </small>
+                )}
+              </div>
+
+              {/* DIAS POR SEMANA */}
+
+              {scheduleType === 'weekly' && (
+                <div className="field-group field-workload">
+                  <label htmlFor="workDaysPerWeek">
+                    Dias trabalhados por semana
+                  </label>
+
+                  <input
+                    id="workDaysPerWeek"
+                    type="number"
+                    name="workDaysPerWeek"
+                    value={role.workDaysPerWeek}
+                    placeholder="Ex.: 5"
+                    min="1"
+                    max="7"
+                    step="1"
+                    onChange={handleChange}
+                  />
+
+                  <small>
+                    O sistema verificará se horas por dia × dias trabalhados
+                    respeitam a carga semanal.
+                  </small>
+                </div>
+              )}
+
+              {/* CICLO */}
+
+              {['12x36', '4x2', '5x2', '6x1'].includes(scheduleType) && (
+                <>
+                  <div className="field-group field-workload">
+                    <label htmlFor="cycleWorkDays">
+                      Dias trabalhados no ciclo
+                    </label>
+
+                    <input
+                      id="cycleWorkDays"
+                      type="number"
+                      name="cycleWorkDays"
+                      value={role.cycleWorkDays}
+                      min="1"
+                      step="1"
+                      onChange={handleChange}
+                      disabled
+                    />
+                  </div>
+
+                  <div className="field-group field-workload">
+                    <label htmlFor="cycleRestDays">
+                      Dias de descanso no ciclo
+                    </label>
+
+                    <input
+                      id="cycleRestDays"
+                      type="number"
+                      name="cycleRestDays"
+                      value={role.cycleRestDays}
+                      min="1"
+                      step="1"
+                      onChange={handleChange}
+                      disabled
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* RESUMO */}
+
+              <div className="field-group field-full">
+                <div
+                  style={{
+                    padding: '14px 16px',
+                    borderRadius: '8px',
+                    background: '#f7f8fc',
+                    border: '1px solid #e4e6ec',
+                    color: '#555',
+                    lineHeight: '1.5',
+                    fontSize: '13px'
+                  }}
+                >
+                  {scheduleType === 'weekly' && (
+                    <>
+                      <strong>Jornada semanal:</strong>{' '}
+                      {role.workload || 'não informada'}h semanais
+                      {role.dailyHours && role.workDaysPerWeek && (
+                        <>
+                          {' '}
+                          — {role.dailyHours}h × {role.workDaysPerWeek} dias ={' '}
+                          {Number(role.dailyHours) *
+                            Number(role.workDaysPerWeek)}
+                          h
+                        </>
+                      )}
+                    </>
+                  )}
+
+                  {scheduleType === '12x36' && (
+                    <>
+                      <strong>Escala 12x36:</strong> 12 horas trabalhadas e 36
+                      horas de descanso.
+                    </>
+                  )}
+
+                  {scheduleType === '4x2' && (
+                    <>
+                      <strong>Escala 4x2:</strong> 4 dias trabalhados e 2 dias
+                      de descanso.
+                    </>
+                  )}
+
+                  {scheduleType === '5x2' && (
+                    <>
+                      <strong>Escala 5x2:</strong> 5 dias trabalhados e 2 dias
+                      de descanso.
+                    </>
+                  )}
+
+                  {scheduleType === '6x1' && (
+                    <>
+                      <strong>Escala 6x1:</strong> 6 dias trabalhados e 1 dia de
+                      descanso.
+                    </>
+                  )}
+
+                  {scheduleType === 'custom' && (
+                    <>
+                      <strong>Jornada personalizada:</strong> configuração
+                      específica para este cargo.
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
