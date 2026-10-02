@@ -46,11 +46,15 @@ function Layout({ children }) {
 function App() {
   return (
     <Routes>
-      {/* LOGIN */}
+      {/* ======================================================
+          LOGIN
+      ====================================================== */}
 
       <Route path="/" element={<Login />} />
 
-      {/* DASHBOARD */}
+      {/* ======================================================
+          DASHBOARD
+      ====================================================== */}
 
       <Route
         path="/dashboard"
@@ -63,12 +67,14 @@ function App() {
         }
       />
 
-      {/* FUNCIONÁRIOS */}
+      {/* ======================================================
+          FUNCIONÁRIOS
+      ====================================================== */}
 
       <Route
         path="/buscar"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission="employees_view">
             <Layout>
               <EmployeeSearch />
             </Layout>
@@ -79,7 +85,7 @@ function App() {
       <Route
         path="/funcionario/:id"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission="employees_view">
             <Layout>
               <EmployeeProfile />
             </Layout>
@@ -90,7 +96,7 @@ function App() {
       <Route
         path="/cadastrar"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission="employees_create">
             <Layout>
               <EmployeeCreate />
             </Layout>
@@ -98,12 +104,14 @@ function App() {
         }
       />
 
-      {/* ORGANOGRAMA */}
+      {/* ======================================================
+          ORGANOGRAMA
+      ====================================================== */}
 
       <Route
         path="/cargos"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission="roles_view">
             <Layout>
               <Cargos />
             </Layout>
@@ -125,7 +133,7 @@ function App() {
       <Route
         path="/departamentos"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission="departments_view">
             <Layout>
               <Departamentos />
             </Layout>
@@ -136,7 +144,7 @@ function App() {
       <Route
         path="/filiais"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission="branches_view">
             <Layout>
               <Filiais />
             </Layout>
@@ -144,12 +152,14 @@ function App() {
         }
       />
 
-      {/* USUÁRIOS */}
+      {/* ======================================================
+          USUÁRIOS
+      ====================================================== */}
 
       <Route
         path="/usuarios"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission="users_view">
             <Layout>
               <Users />
             </Layout>
@@ -157,12 +167,14 @@ function App() {
         }
       />
 
-      {/* PERFIS DE ACESSO */}
+      {/* ======================================================
+          PERFIS DE ACESSO
+      ====================================================== */}
 
       <Route
         path="/perfis-acesso"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission="access_roles_view">
             <Layout>
               <AccessRoles />
             </Layout>
@@ -170,12 +182,14 @@ function App() {
         }
       />
 
-      {/* PERFIL */}
+      {/* ======================================================
+          PERFIL
+      ====================================================== */}
 
       <Route
         path="/perfil"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission="profile_view">
             <Layout>
               <Profile />
             </Layout>
@@ -186,7 +200,7 @@ function App() {
       <Route
         path="/alterar-senha"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission="password_change">
             <Layout>
               <ChangePassword />
             </Layout>
@@ -194,12 +208,24 @@ function App() {
         }
       />
 
-      {/* TREINAMENTOS */}
+      {/* ======================================================
+          TREINAMENTOS
+      ====================================================== */}
 
+      {/*
+       * Gerenciar Treinamentos
+       *
+       * Esta rota exige explicitamente a permissão:
+       *
+       * trainings_view
+       *
+       * Portanto, somente usuários cujo perfil possui essa
+       * permissão conseguem acessar esta tela.
+       */}
       <Route
         path="/treinamentos"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission="trainings_view">
             <Layout>
               <Treinamentos />
             </Layout>
@@ -207,10 +233,27 @@ function App() {
         }
       />
 
+      {/*
+       * Meus Treinamentos
+       *
+       * Esta é uma permissão separada de Gerenciar Treinamentos.
+       *
+       * Um funcionário pode ter:
+       *
+       * my_trainings_view
+       *
+       * sem possuir:
+       *
+       * trainings_view
+       *
+       * Assim ele consegue realizar os treinamentos atribuídos
+       * a ele, mas não consegue administrar os treinamentos
+       * da empresa.
+       */}
       <Route
         path="/meus-treinamentos"
         element={
-          <ProtectedRoute>
+          <ProtectedRoute permission="my_trainings_view">
             <Layout>
               <MeusTreinamentos />
             </Layout>
@@ -218,7 +261,9 @@ function App() {
         }
       />
 
-      {/* PONTO */}
+      {/* ======================================================
+          PONTO
+      ====================================================== */}
 
       <Route
         path="/ponto/bater"
@@ -308,7 +353,9 @@ function App() {
         }
       />
 
-      {/* CONFIGURAÇÕES */}
+      {/* ======================================================
+          CONFIGURAÇÕES
+      ====================================================== */}
 
       <Route
         path="/configuracoes"

@@ -71,6 +71,30 @@ export default function Navbar() {
 
   const roleName = currentUser.roleName || currentUser.role || 'Usuário'
 
+  /*
+   * ============================================================
+   * PERMISSÕES DE TREINAMENTOS
+   * ============================================================
+   *
+   * As duas funcionalidades são independentes.
+   *
+   * trainings_view:
+   *   Gerenciar treinamentos
+   *
+   * my_trainings_view:
+   *   Realizar meus treinamentos
+   */
+
+  const canManageTrainings = hasPermission('trainings_view')
+
+  const canViewMyTrainings = hasPermission('my_trainings_view')
+
+  /*
+   * O menu Treinamentos somente aparece quando o usuário possui
+   * pelo menos uma das duas permissões.
+   */
+  const canAccessTrainings = canManageTrainings || canViewMyTrainings
+
   return (
     <nav className="navbar">
       <div className="nav-left">
@@ -78,7 +102,9 @@ export default function Navbar() {
           Dashboard
         </Link>
 
-        {/* CADASTRO */}
+        {/* ======================================================
+            CADASTRO
+        ====================================================== */}
 
         <div className="dropdown">
           <button className="dropbtn">Cadastro</button>
@@ -102,7 +128,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* ORGANOGRAMA */}
+        {/* ======================================================
+            ORGANOGRAMA
+        ====================================================== */}
 
         <div className="dropdown">
           <button className="dropbtn">Organograma</button>
@@ -114,31 +142,45 @@ export default function Navbar() {
               <Link to="/filiais">Filiais</Link>
             )}
 
-            <Link to="/departamentos">Departamentos</Link>
+            {hasPermission('departments_view') && (
+              <Link to="/departamentos">Departamentos</Link>
+            )}
 
             {hasPermission('roles_view') && <Link to="/cargos">Cargos</Link>}
           </div>
         </div>
 
-        {/* TREINAMENTOS */}
+        {/* ======================================================
+            TREINAMENTOS
+        ====================================================== */}
 
-        <div className="dropdown">
-          <button className="dropbtn">Treinamentos</button>
+        {canAccessTrainings && (
+          <div className="dropdown">
+            <button className="dropbtn">Treinamentos</button>
 
-          <div className="dropdown-content">
-            <Link to="/treinamentos">Gerenciar treinamentos</Link>
+            <div className="dropdown-content">
+              {canManageTrainings && (
+                <Link to="/treinamentos">Gerenciar treinamentos</Link>
+              )}
 
-            <Link to="/meus-treinamentos">Meus treinamentos</Link>
+              {canViewMyTrainings && (
+                <Link to="/meus-treinamentos">Meus treinamentos</Link>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* AVALIAÇÕES */}
+        {/* ======================================================
+            AVALIAÇÕES
+        ====================================================== */}
 
         <Link to="/avaliacoes" className="nav-link">
           Avaliações
         </Link>
 
-        {/* PONTO */}
+        {/* ======================================================
+            PONTO
+        ====================================================== */}
 
         <div className="dropdown">
           <button className="dropbtn">Ponto</button>
@@ -162,7 +204,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* FINANCEIRO */}
+        {/* ======================================================
+            FINANCEIRO
+        ====================================================== */}
 
         <div className="dropdown">
           <button className="dropbtn">Financeiro</button>
@@ -174,7 +218,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* RELATÓRIOS */}
+        {/* ======================================================
+            RELATÓRIOS
+        ====================================================== */}
 
         <div className="dropdown">
           <button className="dropbtn">Relatórios</button>
@@ -188,7 +234,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* ÁREA DO CANDIDATO */}
+        {/* ======================================================
+            ÁREA DO CANDIDATO
+        ====================================================== */}
 
         <div className="dropdown">
           <button className="dropbtn">Área do Candidato</button>
@@ -204,7 +252,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* ARQUIVO */}
+        {/* ======================================================
+            ARQUIVO
+        ====================================================== */}
 
         <div className="dropdown">
           <button className="dropbtn">Arquivo</button>
@@ -218,7 +268,9 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* CONFIGURAÇÕES */}
+        {/* ======================================================
+            CONFIGURAÇÕES
+        ====================================================== */}
 
         {hasPermission('system_settings') && (
           <Link to="/configuracoes" className="nav-link">
@@ -227,7 +279,9 @@ export default function Navbar() {
         )}
       </div>
 
-      {/* ÁREA DO USUÁRIO */}
+      {/* ========================================================
+          ÁREA DO USUÁRIO
+      ======================================================== */}
 
       <div className="navbar-user-area" ref={profileRef}>
         <button
@@ -286,6 +340,7 @@ export default function Navbar() {
                 className="profile-dropdown-item"
                 onClick={() => {
                   setProfileOpen(false)
+
                   navigate('/perfil')
                 }}
               >
@@ -299,6 +354,7 @@ export default function Navbar() {
                 className="profile-dropdown-item"
                 onClick={() => {
                   setProfileOpen(false)
+
                   navigate('/alterar-senha')
                 }}
               >
