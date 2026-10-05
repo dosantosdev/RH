@@ -1,0 +1,766 @@
+.fechamento-mensal-page {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   CABEÇALHO
+   ============================================================ */
+
+.fechamento-mensal-header {
+  margin-bottom: 28px;
+}
+
+.fechamento-mensal-kicker {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #64748b;
+}
+
+.fechamento-mensal-header h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  color: #0f172a;
+}
+
+.fechamento-mensal-header p {
+  margin: 10px 0 0;
+  max-width: 760px;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   FILTROS
+   ============================================================ */
+
+.fechamento-mensal-filters {
+  display: grid;
+  grid-template-columns: 180px minmax(180px, 1fr) minmax(220px, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.fechamento-mensal-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.fechamento-mensal-filter label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+}
+
+.fechamento-mensal-filter input,
+.fechamento-mensal-filter select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 14px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.fechamento-mensal-filter input:focus,
+.fechamento-mensal-filter select:focus {
+  border-color: #64748b;
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.12);
+}
+
+/* ============================================================
+   STATUS DA COMPETÊNCIA
+   ============================================================ */
+
+.fechamento-mensal-status-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 28px;
+  margin-bottom: 20px;
+  padding: 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.fechamento-mensal-status-card > div:first-child span,
+.fechamento-mensal-status > span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.fechamento-mensal-status-card h2 {
+  margin: 0;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.fechamento-mensal-status-card p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.fechamento-mensal-status {
+  min-width: 130px;
+}
+
+.fechamento-mensal-status strong {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fechamento-mensal-status .status-open {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.fechamento-mensal-status .status-review {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.fechamento-mensal-status .status-closed {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.fechamento-mensal-status .status-not-created {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* ============================================================
+   AÇÕES
+   ============================================================ */
+
+.fechamento-mensal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.fechamento-mensal-actions button,
+.fechamento-mensal-modal-footer button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.fechamento-mensal-actions button:hover,
+.fechamento-mensal-modal-footer button:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.fechamento-mensal-actions button:active,
+.fechamento-mensal-modal-footer button:active {
+  transform: translateY(1px);
+}
+
+.fechamento-mensal-actions .fechamento-mensal-close-button {
+  border-color: #166534;
+  background: #166534;
+  color: #ffffff;
+}
+
+.fechamento-mensal-actions .fechamento-mensal-close-button:hover {
+  border-color: #14532d;
+  background: #14532d;
+}
+
+/* ============================================================
+   RESUMO
+   ============================================================ */
+
+.fechamento-mensal-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.fechamento-mensal-summary-card {
+  min-height: 118px;
+  padding: 18px;
+  box-sizing: border-box;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.fechamento-mensal-summary-card span {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.fechamento-mensal-summary-card strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #0f172a;
+  font-size: 25px;
+  line-height: 1.1;
+}
+
+.fechamento-mensal-summary-card small {
+  display: block;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.fechamento-mensal-summary-card.positive strong {
+  color: #15803d;
+}
+
+.fechamento-mensal-summary-card.negative strong {
+  color: #dc2626;
+}
+
+.fechamento-mensal-summary-card.warning strong {
+  color: #d97706;
+}
+
+.fechamento-mensal-summary-card.neutral strong {
+  color: #334155;
+}
+
+/* ============================================================
+   CARD PRINCIPAL
+   ============================================================ */
+
+.fechamento-mensal-card {
+  overflow: hidden;
+  margin-bottom: 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.fechamento-mensal-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.fechamento-mensal-card-header > div > span {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.fechamento-mensal-card-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+}
+
+.fechamento-mensal-card-header p {
+  max-width: 760px;
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.fechamento-mensal-card-header > strong {
+  flex-shrink: 0;
+  color: #475569;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   TABELA
+   ============================================================ */
+
+.fechamento-mensal-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.fechamento-mensal-table {
+  width: 100%;
+  min-width: 1050px;
+  border-collapse: collapse;
+}
+
+.fechamento-mensal-table th {
+  padding: 13px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.fechamento-mensal-table td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.fechamento-mensal-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.fechamento-mensal-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.fechamento-mensal-table td:first-child {
+  min-width: 190px;
+}
+
+.fechamento-mensal-table td:first-child strong {
+  display: block;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.fechamento-mensal-table td:first-child small,
+.fechamento-mensal-table td:nth-child(2) small {
+  display: block;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.fechamento-mensal-positive {
+  color: #15803d !important;
+}
+
+.fechamento-mensal-negative {
+  color: #dc2626 !important;
+}
+
+.fechamento-mensal-details-button {
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.fechamento-mensal-details-button:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+/* ============================================================
+   ESTADO VAZIO
+   ============================================================ */
+
+.fechamento-mensal-empty {
+  padding: 64px 24px;
+  text-align: center;
+}
+
+.fechamento-mensal-empty > span {
+  display: block;
+  margin-bottom: 14px;
+  font-size: 34px;
+}
+
+.fechamento-mensal-empty h3 {
+  margin: 0;
+  color: #334155;
+  font-size: 17px;
+}
+
+.fechamento-mensal-empty p {
+  max-width: 500px;
+  margin: 8px auto 0;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   INFORMAÇÕES DO FECHAMENTO
+   ============================================================ */
+
+.fechamento-mensal-info-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  margin-bottom: 20px;
+  padding: 20px 24px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.fechamento-mensal-info-card > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.fechamento-mensal-info-card span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fechamento-mensal-info-card strong {
+  color: #334155;
+  font-size: 13px;
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+
+.fechamento-mensal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  box-sizing: border-box;
+  background: rgba(15, 23, 42, 0.58);
+}
+
+.fechamento-mensal-modal {
+  width: min(100%, 900px);
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+}
+
+.fechamento-mensal-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.fechamento-mensal-modal-header > div > span {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.fechamento-mensal-modal-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 21px;
+}
+
+.fechamento-mensal-modal-header p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.fechamento-mensal-modal-header > button {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #64748b;
+  font-size: 25px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fechamento-mensal-modal-header > button:hover {
+  background: #f1f5f9;
+  color: #334155;
+}
+
+/* ============================================================
+   RESUMO DO MODAL
+   ============================================================ */
+
+.fechamento-mensal-modal-summary {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  padding: 18px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.fechamento-mensal-modal-summary > div {
+  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+}
+
+.fechamento-mensal-modal-summary span,
+.fechamento-mensal-modal-occurrences span {
+  display: block;
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.fechamento-mensal-modal-summary strong,
+.fechamento-mensal-modal-occurrences strong {
+  display: block;
+  color: #334155;
+  font-size: 15px;
+}
+
+/* ============================================================
+   OCORRÊNCIAS DO MODAL
+   ============================================================ */
+
+.fechamento-mensal-modal-occurrences {
+  display: flex;
+  gap: 10px;
+  padding: 16px 24px 0;
+}
+
+.fechamento-mensal-modal-occurrences > div {
+  min-width: 140px;
+  padding: 11px 14px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+}
+
+/* ============================================================
+   DIAS
+   ============================================================ */
+
+.fechamento-mensal-days {
+  overflow-y: auto;
+  padding: 16px 24px 24px;
+}
+
+.fechamento-mensal-day {
+  display: grid;
+  grid-template-columns: minmax(170px, 1.5fr) repeat(3, minmax(100px, 1fr)) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.fechamento-mensal-day:last-child {
+  border-bottom: none;
+}
+
+.fechamento-mensal-day > div:first-child strong {
+  display: block;
+  color: #334155;
+  font-size: 13px;
+}
+
+.fechamento-mensal-day > div:first-child span {
+  display: block;
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.fechamento-mensal-day > div:not(:first-child) span {
+  display: block;
+  margin-bottom: 4px;
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.fechamento-mensal-day > div:not(:first-child) strong {
+  color: #475569;
+  font-size: 12px;
+}
+
+.fechamento-mensal-day > small {
+  color: #94a3b8;
+  font-size: 10px;
+  text-align: right;
+}
+
+/* ============================================================
+   RODAPÉ DO MODAL
+   ============================================================ */
+
+.fechamento-mensal-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+/* ============================================================
+   RESPONSIVIDADE
+   ============================================================ */
+
+@media (max-width: 1100px) {
+  .fechamento-mensal-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fechamento-mensal-status-card {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fechamento-mensal-actions {
+    justify-content: flex-start;
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 800px) {
+  .fechamento-mensal-page {
+    padding: 20px;
+  }
+
+  .fechamento-mensal-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .fechamento-mensal-status-card {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .fechamento-mensal-actions {
+    grid-column: auto;
+  }
+
+  .fechamento-mensal-card-header {
+    flex-direction: column;
+  }
+
+  .fechamento-mensal-modal-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fechamento-mensal-day {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .fechamento-mensal-day > small {
+    text-align: left;
+  }
+}
+
+@media (max-width: 520px) {
+  .fechamento-mensal-page {
+    padding: 16px;
+  }
+
+  .fechamento-mensal-header h1 {
+    font-size: 26px;
+  }
+
+  .fechamento-mensal-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .fechamento-mensal-modal-overlay {
+    padding: 10px;
+  }
+
+  .fechamento-mensal-modal {
+    max-height: calc(100vh - 20px);
+  }
+
+  .fechamento-mensal-modal-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .fechamento-mensal-modal-occurrences {
+    flex-direction: column;
+  }
+
+  .fechamento-mensal-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .fechamento-mensal-actions button {
+    width: 100%;
+  }
+}

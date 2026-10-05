@@ -1,34 +1,57 @@
 import EmployeeProfile from './pages/EmployeeProfile/EmployeeProfile'
+
 import { Routes, Route } from 'react-router-dom'
+
 import Navbar from './components/layout/Navbar'
+
 import ProtectedRoute from './components/ProtectedRoute'
 
 import Profile from './pages/Profile/Profile'
+
 import ChangePassword from './pages/ChangePassword/ChangePassword'
+
 import Login from './pages/Login/Login'
+
 import Dashboard from './pages/Dashboard/Dashboard'
+
 import EmployeeSearch from './pages/EmployeeSearch/EmployeeSearch'
+
 import EmployeeCreate from './pages/EmployeeCreate/EmployeeCreate'
 
 import Cargos from './pages/Organograma/Cargos/Cargos'
+
 import Organograma from './pages/Organograma/Organograma/Organograma'
+
 import Departamentos from './pages/Organograma/Departamentos/Departamentos'
+
 import Users from './pages/Users/Users'
+
 import AccessRoles from './pages/AccessRoles/AccessRoles'
+
 import Filiais from './pages/Organograma/Filiais/Filiais'
 
 import Settings from './pages/Settings/Settings'
 
 import BaterPonto from './pages/Ponto/BaterPonto/BaterPonto'
+
 import MeuEspelho from './pages/Ponto/MeuEspelho/MeuEspelho'
+
 import ControlePonto from './pages/Ponto/ControlePonto/ControlePonto'
+
 import BancoHoras from './pages/Ponto/BancoHoras/BancoHoras'
+
 import HorasExtras from './pages/Ponto/HorasExtras/HorasExtras'
+
 import FaltasAtrasos from './pages/Ponto/FaltasAtrasos/FaltasAtrasos'
+
+import Atestados from './pages/Ponto/Atestados/Atestados'
+
 import FechamentoMensal from './pages/Ponto/FechamentoMensal/FechamentoMensal'
+
 import Relatorios from './pages/Ponto/Relatorios/Relatorios'
 
 import Treinamentos from './pages/Treinamentos/Treinamentos'
+
 import MeusTreinamentos from './pages/MeusTreinamentos/MeusTreinamentos'
 
 import JornadasEscalas from './pages/Ponto/JornadasEscalas/JornadasEscalas'
@@ -39,7 +62,9 @@ function Layout({ children }) {
   return (
     <>
       <Header />
+
       <Navbar />
+
       {children}
     </>
   )
@@ -214,16 +239,6 @@ function App() {
           TREINAMENTOS
       ====================================================== */}
 
-      {/*
-       * Gerenciar Treinamentos
-       *
-       * Esta rota exige explicitamente a permissão:
-       *
-       * trainings_view
-       *
-       * Portanto, somente usuários cujo perfil possui essa
-       * permissão conseguem acessar esta tela.
-       */}
       <Route
         path="/treinamentos"
         element={
@@ -235,23 +250,6 @@ function App() {
         }
       />
 
-      {/*
-       * Meus Treinamentos
-       *
-       * Esta é uma permissão separada de Gerenciar Treinamentos.
-       *
-       * Um funcionário pode ter:
-       *
-       * my_trainings_view
-       *
-       * sem possuir:
-       *
-       * trainings_view
-       *
-       * Assim ele consegue realizar os treinamentos atribuídos
-       * a ele, mas não consegue administrar os treinamentos
-       * da empresa.
-       */}
       <Route
         path="/meus-treinamentos"
         element={
@@ -267,18 +265,9 @@ function App() {
           PONTO
       ====================================================== */}
 
-      {/*
-       * ============================================================
-       * TERMINAL DE PONTO
-       * ============================================================
-       *
-       * Esta rota fica pública porque o terminal biométrico
-       * não deve exigir login.
-       *
-       * Quando o funcionário utilizar o modo remoto,
-       * a própria tela exigirá um usuário autenticado
-       * e vinculado a um funcionário.
-       */}
+      {/* ============================================================
+          TERMINAL DE PONTO
+      ============================================================ */}
 
       <Route path="/ponto/bater" element={<BaterPonto />} />
 
@@ -343,6 +332,17 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <FaltasAtrasos />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/ponto/atestados"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Atestados />
             </Layout>
           </ProtectedRoute>
         }

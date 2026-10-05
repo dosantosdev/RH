@@ -28,11 +28,14 @@ export default function EmployeeForm({
   validationAttempt = 0
 }) {
   const fileRef = useRef()
+
   const form = formData
 
   const {
     roles,
-    positions,
+    branches,
+    filteredDepartments,
+    filteredPositions,
     handleChange,
     handleCheckboxChange,
     handleDependentsChange,
@@ -40,97 +43,93 @@ export default function EmployeeForm({
   } = useEmployeeForm(formData, setFormData)
 
   /*
-   * Localiza a posição selecionada.
+   * ============================================================
+   * POSIÇÃO ATUAL
+   * ============================================================
    */
-  const selectedPosition = positions.find(
+
+  const selectedPosition = filteredPositions.find(
     (position) => Number(position.id) === Number(form.positionId)
   )
 
   /*
-   * O cargo continua sendo obtido através da posição.
+   * ============================================================
+   * CARGO ATUAL
+   * ============================================================
    *
-   * Isso mantém a estrutura atual funcionando:
-   *
-   * posição → cargo → regras de CNH/certificados
+   * O cargo continua sendo descoberto através da posição.
    */
+
   const selectedRole = selectedPosition
     ? roles.find((role) => Number(role.id) === Number(selectedPosition.cargoId))
     : roles.find((role) => Number(role.id) === Number(form.roleId))
 
   /*
-   * Quando uma posição é selecionada,
-   * seus dados relacionados são preenchidos automaticamente.
+   * ============================================================
+   * NORMALIZAÇÃO DE FUNCIONÁRIOS ANTIGOS
+   * ============================================================
+   *
+   * Caso exista algum funcionário antigo que tenha apenas
+   * positionId salvo, recuperamos automaticamente os dados
+   * organizacionais da posição.
+   *
+   * Isso evita perder os vínculos antigos.
    */
-  function handlePositionChange(e) {
-    const positionId = e.target.value
 
-    const selected = positions.find(
-      (position) => Number(position.id) === Number(positionId)
-    )
-
-    if (!selected) {
-      setFormData((prev) => ({
-        ...prev,
-
-        positionId: '',
-        positionName: '',
-
-        roleId: '',
-        roleName: '',
-
-        branchId: '',
-        branchName: '',
-
-        departmentId: '',
-        departmentName: ''
-      }))
-
-      clearFieldError('positionId')
-
+  useEffect(() => {
+    if (!form.positionId || !filteredPositions.length) {
       return
     }
 
-    const selectedRoleForPosition = roles.find(
-      (role) => Number(role.id) === Number(selected.cargoId)
+    const position = filteredPositions.find(
+      (item) => Number(item.id) === Number(form.positionId)
     )
+
+    if (!position) {
+      return
+    }
+
+    const needsUpdate =
+      !form.branchId ||
+      !form.departmentId ||
+      !form.branchName ||
+      !form.departmentName
+
+    if (!needsUpdate) {
+      return
+    }
 
     setFormData((prev) => ({
       ...prev,
 
-      /*
-       * POSIÇÃO
-       */
-      positionId: selected.id,
+      branchId: position.branchId || prev.branchId || '',
+      branchName: position.branchName || prev.branchName || '',
 
-      positionName: selected.cargoName || '',
+      departmentId: position.departmentId || prev.departmentId || '',
 
-      /*
-       * CARGO
-       *
-       * Mantemos roleId/roleName porque outras partes
-       * do sistema ainda utilizam esses dados.
-       */
-      roleId: selected.cargoId || '',
+      departmentName: position.departmentName || prev.departmentName || '',
 
-      roleName: selectedRoleForPosition?.name || selected.cargoName || '',
+      positionName: position.cargoName || prev.positionName || '',
 
-      /*
-       * FILIAL
-       */
-      branchId: selected.branchId || '',
+      roleId: position.cargoId || prev.roleId || '',
 
-      branchName: selected.branchName || '',
-
-      /*
-       * DEPARTAMENTO
-       */
-      departmentId: selected.departmentId || '',
-
-      departmentName: selected.departmentName || ''
+      roleName: position.cargoName || prev.roleName || ''
     }))
+  }, [
+    form.positionId,
+    form.branchId,
+    form.departmentId,
+    form.branchName,
+    form.departmentName,
+    filteredPositions,
+    setFormData
+  ])
 
-    clearFieldError('positionId')
-  }
+  /*
+   * ============================================================
+   * LIMPAR ERRO
+   * ============================================================
+   */
 
   function clearFieldError(fieldName) {
     if (!fieldName || !setFieldErrors) {
@@ -157,6 +156,12 @@ export default function EmployeeForm({
     })
   }
 
+  /*
+   * ============================================================
+   * ALTERAÇÃO NORMAL
+   * ============================================================
+   */
+
   function handleFieldChange(e) {
     const fieldName = e.target.name
 
@@ -165,11 +170,23 @@ export default function EmployeeForm({
     clearFieldError(fieldName)
   }
 
+  /*
+   * ============================================================
+   * CHECKBOX
+   * ============================================================
+   */
+
   function handleFieldCheckboxChange(e, field) {
     handleCheckboxChange(e, field)
 
     clearFieldError(field)
   }
+
+  /*
+   * ============================================================
+   * DEPENDENTES
+   * ============================================================
+   */
 
   function handleFieldDependentChange(index, field, value) {
     handleDependentFieldChange(index, field, value)
@@ -183,6 +200,146 @@ export default function EmployeeForm({
     clearFieldError('dependentsCount')
   }
 
+  /*
+   * ============================================================
+   * FILIAL
+   * ============================================================
+   *
+   * A filial é o primeiro nível da estrutura organizacional.
+   *
+   * Quando ela muda, não podemos manter departamento ou posição
+   * pertencentes à filial anterior.
+   */
+
+  function handleBranchChange(e) {
+    const branchId = e.target.value
+
+    const selectedBranch = branches.find(
+      (branch) => Number(branch.id) === Number(branchId)
+    )
+
+    setFormData((prev) => ({
+      ...prev,
+
+      branchId,
+
+      branchName: selectedBranch?.name || '',
+
+      departmentId: '',
+      departmentName: '',
+
+      positionId: '',
+      positionName: '',
+
+      roleId: '',
+      roleName: ''
+    }))
+
+    clearFieldError('branchId')
+    clearFieldError('departmentId')
+    clearFieldError('positionId')
+  }
+
+  /*
+   * ============================================================
+   * DEPARTAMENTO
+   * ============================================================
+   *
+   * O departamento só pode ser escolhido dentro da filial
+   * selecionada.
+   */
+
+  function handleDepartmentChange(e) {
+    const departmentId = e.target.value
+
+    const selectedDepartment = filteredDepartments.find(
+      (department) => Number(department.id) === Number(departmentId)
+    )
+
+    setFormData((prev) => ({
+      ...prev,
+
+      departmentId,
+
+      departmentName: selectedDepartment?.name || '',
+
+      positionId: '',
+      positionName: '',
+
+      roleId: '',
+      roleName: ''
+    }))
+
+    clearFieldError('departmentId')
+    clearFieldError('positionId')
+  }
+
+  /*
+   * ============================================================
+   * POSIÇÃO
+   * ============================================================
+   *
+   * A posição só aparece depois da filial + departamento.
+   *
+   * Ao selecionar uma posição, recuperamos o cargo relacionado.
+   */
+
+  function handlePositionChange(e) {
+    const positionId = e.target.value
+
+    const selected = filteredPositions.find(
+      (position) => Number(position.id) === Number(positionId)
+    )
+
+    if (!selected) {
+      setFormData((prev) => ({
+        ...prev,
+
+        positionId: '',
+        positionName: '',
+
+        roleId: '',
+        roleName: ''
+      }))
+
+      clearFieldError('positionId')
+
+      return
+    }
+
+    const selectedRoleForPosition = roles.find(
+      (role) => Number(role.id) === Number(selected.cargoId)
+    )
+
+    setFormData((prev) => ({
+      ...prev,
+
+      positionId: selected.id,
+
+      positionName: selected.cargoName || '',
+
+      roleId: selected.cargoId || '',
+
+      roleName: selectedRoleForPosition?.name || selected.cargoName || '',
+
+      branchId: selected.branchId || prev.branchId || '',
+
+      branchName: selected.branchName || prev.branchName || '',
+
+      departmentId: selected.departmentId || prev.departmentId || '',
+
+      departmentName: selected.departmentName || prev.departmentName || ''
+    }))
+
+    clearFieldError('positionId')
+  }
+
+  /*
+   * ============================================================
+   * SUBMIT
+   * ============================================================
+   */
+
   function handleSubmit(e) {
     e.preventDefault()
 
@@ -194,9 +351,11 @@ export default function EmployeeForm({
   }
 
   /*
-   * Após uma tentativa de validação,
-   * leva o usuário até o primeiro erro.
+   * ============================================================
+   * VALIDAÇÃO
+   * ============================================================
    */
+
   useEffect(() => {
     if (!validationAttempt) {
       return
@@ -228,12 +387,22 @@ export default function EmployeeForm({
     }, 350)
   }, [validationAttempt, fieldErrors])
 
+  /*
+   * ============================================================
+   * RENDER
+   * ============================================================
+   */
+
   return (
     <form className="form-container" onSubmit={handleSubmit}>
       <EmploymentSection
         form={form}
         handleChange={handleFieldChange}
-        positions={positions}
+        branches={branches}
+        filteredDepartments={filteredDepartments}
+        filteredPositions={filteredPositions}
+        handleBranchChange={handleBranchChange}
+        handleDepartmentChange={handleDepartmentChange}
         handlePositionChange={handlePositionChange}
         errors={fieldErrors}
       />

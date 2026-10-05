@@ -698,3 +698,28 @@
     width: 100%;
   }
 }
+
+.banco-horas-entry-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.banco-horas-edit-button {
+  border: none;
+  background: transparent;
+  color: #4f67c6;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.banco-horas-edit-button:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 700px) {
+  .banco-horas-entry-actions {
+    justify-content: flex-end;
+  }
+}

@@ -1,4 +1,9 @@
 import { getStoredArray, setStored } from './storage'
+import { getEmployees } from './employee'
+import {
+  getExpectedMinutesForDate,
+  getEmployeeWorkScheduleName
+} from './workSchedule'
 
 const STORAGE_KEY = 'timeClockRecords'
 
@@ -14,10 +19,6 @@ export const PUNCH_TYPES = {
   BREAK_END: 'break_end',
   EXIT: 'exit'
 }
-
-/*
- * Nome amigável de cada tipo de batida.
- */
 
 export const PUNCH_TYPE_LABELS = {
   [PUNCH_TYPES.ENTRY]: 'Entrada',
@@ -48,10 +49,6 @@ function saveTimeClockRecords(records) {
  * ============================================================
  */
 
-/*
- * Retorna a data local no formato YYYY-MM-DD.
- */
-
 export function getLocalDate(date = new Date()) {
   const year = date.getFullYear()
 
@@ -61,10 +58,6 @@ export function getLocalDate(date = new Date()) {
 
   return `${year}-${month}-${day}`
 }
-
-/*
- * Retorna o horário local no formato HH:mm.
- */
 
 export function getCurrentTime(date = new Date()) {
   const hours = String(date.getHours()).padStart(2, '0')
@@ -126,12 +119,6 @@ export function getNextPunchType(record) {
   }
 }
 
-/*
- * ============================================================
- * VALIDAÇÃO
- * ============================================================
- */
-
 export function canRegisterPunch(record) {
   return getNextPunchType(record) !== null
 }
@@ -189,27 +176,14 @@ export function registerPunch(employeeId, options = {}) {
 
   const punch = {
     id: `${Date.now()}-${Math.random()}`,
-
     type: nextPunchType,
-
     time,
-
     registeredAt: now.toISOString(),
-
-    /*
-     * Informações adicionais da forma de registro.
-     */
 
     source: options.source || 'remote',
 
     registrationMethod:
       options.registrationMethod || options.source || 'remote',
-
-    /*
-     * Localização.
-     *
-     * Quando não for fornecida, permanece null.
-     */
 
     location: options.location || null
   }
@@ -226,11 +200,8 @@ export function registerPunch(employeeId, options = {}) {
 
   return {
     success: true,
-
     record,
-
     punch,
-
     nextPunchType: getNextPunchType(record)
   }
 }
@@ -271,12 +242,6 @@ export function timeToMinutes(time) {
   return hours * 60 + minutes
 }
 
-/*
- * Calcula a diferença entre dois horários.
- *
- * Também permite jornadas que atravessam a meia-noite.
- */
-
 export function calculateMinutesBetween(start, end) {
   const startMinutes = timeToMinutes(start)
 
@@ -311,11 +276,9 @@ export function calculateWorkedMinutes(record) {
   let totalMinutes = 0
 
   /*
-   * Trabalhamos sempre em pares:
-   *
    * Entrada → Saída intervalo
    *
-   * Retorno intervalo → Saída
+   * Retorno → Saída
    */
 
   for (let index = 0; index < punches.length - 1; index += 2) {
@@ -352,10 +315,6 @@ export function formatMinutes(totalMinutes = 0) {
   )}`
 }
 
-/*
- * Formata saldo positivo ou negativo.
- */
-
 export function formatBalance(totalMinutes = 0) {
   const minutes = Math.round(Number(totalMinutes) || 0)
 
@@ -372,7 +331,7 @@ export function formatBalance(totalMinutes = 0) {
 
 /*
  * ============================================================
- * STATUS DO REGISTRO
+ * STATUS
  * ============================================================
  */
 
@@ -391,16 +350,8 @@ export function getTimeClockStatus(record) {
     return 'on_break'
   }
 
-  if (lastPunch.type === PUNCH_TYPES.BREAK_END) {
-    return 'working'
-  }
-
   return 'working'
 }
-
-/*
- * Texto amigável do status.
- */
 
 export function getTimeClockStatusLabel(record) {
   const status = getTimeClockStatus(record)
@@ -427,23 +378,6 @@ export function getTimeClockStatusLabel(record) {
  * ============================================================
  * FERIADOS
  * ============================================================
- *
- * O sistema considera:
- *
- * 1. Feriados nacionais.
- * 2. Feriado estadual do Rio Grande do Sul.
- * 3. Feriados móveis normalmente utilizados no calendário
- *    brasileiro.
- *
- * A estrutura foi criada para que futuramente possamos
- * adicionar feriados municipais ou específicos da empresa.
- * ============================================================
- */
-
-/*
- * Calcula a data da Páscoa pelo algoritmo de Meeus/Jones/Butcher.
- *
- * Retorna um objeto Date.
  */
 
 function calculateEasterDate(year) {
@@ -478,10 +412,6 @@ function calculateEasterDate(year) {
   return new Date(year, month - 1, day)
 }
 
-/*
- * Adiciona ou remove dias de uma data.
- */
-
 function addDays(date, amount) {
   const result = new Date(date)
 
@@ -490,20 +420,8 @@ function addDays(date, amount) {
   return result
 }
 
-/*
- * Retorna todos os feriados conhecidos para determinado ano.
- *
- * Neste momento o estado considerado é Rio Grande do Sul.
- */
-
 export function getHolidays(year) {
   const holidays = []
-
-  /*
-   * ==========================================================
-   * FERIADOS NACIONAIS
-   * ==========================================================
-   */
 
   holidays.push({
     date: `${year}-01-01`,
@@ -547,10 +465,6 @@ export function getHolidays(year) {
     type: 'national'
   })
 
-  /*
-   * 20 de novembro passou a ser feriado nacional.
-   */
-
   holidays.push({
     date: `${year}-11-20`,
     name: 'Dia Nacional de Zumbi e da Consciência Negra',
@@ -564,11 +478,8 @@ export function getHolidays(year) {
   })
 
   /*
-   * ==========================================================
-   * FERIADO ESTADUAL - RIO GRANDE DO SUL
-   * ==========================================================
+   * Rio Grande do Sul.
    */
-
   holidays.push({
     date: `${year}-09-20`,
     name: 'Revolução Farroupilha',
@@ -576,21 +487,7 @@ export function getHolidays(year) {
     state: 'RS'
   })
 
-  /*
-   * ==========================================================
-   * FERIADOS MÓVEIS
-   * ==========================================================
-   */
-
   const easter = calculateEasterDate(year)
-
-  /*
-   * Carnaval.
-   *
-   * Terça-feira de Carnaval não é feriado nacional em todos
-   * os contextos trabalhistas, mas é incluída no calendário
-   * para permitir o tratamento no sistema.
-   */
 
   const carnival = addDays(easter, -47)
 
@@ -600,14 +497,6 @@ export function getHolidays(year) {
     type: 'movable'
   })
 
-  /*
-   * Quarta-feira de Cinzas.
-   *
-   * Mantemos o registro até meio-dia através do calendário,
-   * mas neste momento o espelho trata o dia inteiro como
-   * uma data especial.
-   */
-
   const ashWednesday = addDays(easter, -46)
 
   holidays.push({
@@ -616,10 +505,6 @@ export function getHolidays(year) {
     type: 'movable'
   })
 
-  /*
-   * Sexta-feira Santa.
-   */
-
   const goodFriday = addDays(easter, -2)
 
   holidays.push({
@@ -627,10 +512,6 @@ export function getHolidays(year) {
     name: 'Sexta-feira Santa',
     type: 'movable'
   })
-
-  /*
-   * Corpus Christi.
-   */
 
   const corpusChristi = addDays(easter, 60)
 
@@ -642,18 +523,6 @@ export function getHolidays(year) {
 
   return holidays.sort((a, b) => a.date.localeCompare(b.date))
 }
-
-/*
- * ============================================================
- * FERIADO DE UMA DATA
- * ============================================================
- */
-
-/*
- * Retorna o feriado correspondente à data.
- *
- * Se não houver feriado, retorna null.
- */
 
 export function getHoliday(date) {
   if (!date) {
@@ -675,41 +544,15 @@ export function getHoliday(date) {
   return holidays.find((holiday) => holiday.date === formattedDate) || null
 }
 
-/*
- * ============================================================
- * VERIFICAÇÃO DE FERIADO
- * ============================================================
- */
-
 export function isHoliday(date) {
   return Boolean(getHoliday(date))
 }
 
 /*
  * ============================================================
- * JORNADA
- * ============================================================
- *
- * Enquanto ainda não temos a jornada configurável por
- * funcionário, utilizamos 8 horas de segunda a sexta.
- *
- * Sábado e domingo:
- *
- * 0 horas previstas.
- *
- * Feriados:
- *
- * 0 horas previstas.
+ * DATA FUTURA
  * ============================================================
  */
-
-const DEFAULT_WORKDAY_MINUTES = 8 * 60
-
-function isWeekend(date) {
-  const day = date.getDay()
-
-  return day === 0 || day === 6
-}
 
 function isFutureDate(date) {
   const today = new Date()
@@ -748,36 +591,19 @@ function calculateDateDifference(startDate, endDate) {
  */
 
 function formatDate(date) {
-  const year = date.getFullYear()
-
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-
-  const day = String(date.getDate()).padStart(2, '0')
-
-  return `${year}-${month}-${day}`
+  return getLocalDate(date)
 }
 
 /*
  * ============================================================
- * ESPELHO DE PONTO
- * ============================================================
- *
- * Calcula todos os dias entre uma data inicial e uma data
- * final.
- *
- * A data inicial e a data final são INCLUSIVAS.
- *
- * Exemplo:
- *
- * 20/09/2026 → 20/10/2026
- *
- * O dia 20/09 e o dia 20/10 fazem parte do período.
+ * ESPELHO DE PONTO / APURAÇÃO
  * ============================================================
  */
 
 export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
   if (!employeeId) {
     return {
+      employeeId: null,
       startDate: null,
       endDate: null,
       days: [],
@@ -799,6 +625,7 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
     start > end
   ) {
     return {
+      employeeId: Number(employeeId),
       startDate: null,
       endDate: null,
       days: [],
@@ -806,11 +633,21 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
     }
   }
 
+  const employees = getEmployees()
+
+  const employee =
+    employees.find((item) => Number(item.id) === Number(employeeId)) || null
+
   const days = []
 
   const totals = createEmptyTotals()
 
   const totalDays = calculateDateDifference(start, end)
+
+  /*
+   * Identificação da jornada utilizada.
+   */
+  const scheduleName = getEmployeeWorkScheduleName(employee)
 
   for (let index = 0; index <= totalDays; index += 1) {
     const currentDate = new Date(start)
@@ -821,14 +658,12 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
 
     const record = getTimeClockRecord(employeeId, date)
 
-    const weekend = isWeekend(currentDate)
-
     const future = isFutureDate(currentDate)
 
     /*
-     * ========================================================
+     * ----------------------------------------------------------
      * FERIADO
-     * ========================================================
+     * ----------------------------------------------------------
      */
 
     const holiday = getHoliday(currentDate)
@@ -836,18 +671,21 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
     const holidayDay = Boolean(holiday)
 
     /*
-     * ========================================================
+     * ----------------------------------------------------------
      * JORNADA PREVISTA
-     * ========================================================
+     * ----------------------------------------------------------
      *
-     * Segunda a sexta = 8h
+     * Agora a jornada não é mais obrigatoriamente 8h
+     * de segunda a sexta.
      *
-     * Sábado/domingo = folga
-     *
-     * Feriado = 0h
+     * Ela é obtida através da configuração do funcionário.
      */
+    const scheduleMinutes = getExpectedMinutesForDate(employee, currentDate)
 
-    const expectedMinutes = weekend || holidayDay ? 0 : DEFAULT_WORKDAY_MINUTES
+    /*
+     * Feriado sempre possui prioridade.
+     */
+    const expectedMinutes = holidayDay ? 0 : scheduleMinutes
 
     const workedMinutes = calculateWorkedMinutes(record)
 
@@ -856,11 +694,9 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
     let label
 
     /*
-     * ========================================================
-     * FERIADO
-     * ========================================================
-     *
-     * O feriado tem prioridade sobre falta ou pendência.
+     * ----------------------------------------------------------
+     * CLASSIFICAÇÃO DO DIA
+     * ----------------------------------------------------------
      */
 
     if (holidayDay) {
@@ -869,66 +705,42 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
       label = holiday.name
 
       totals.holidayDays += 1
-    } else if (weekend) {
-
-    /*
-     * ========================================================
-     * FOLGA
-     * ========================================================
-     */
-      status = 'off'
-
-      label = 'Folga'
-
-      totals.offDays += 1
     } else if (future) {
-
-    /*
-     * ========================================================
-     * FUTURO
-     * ========================================================
-     */
       status = 'pending'
 
       label = 'Pendente'
 
       totals.pendingDays += 1
-    } else if (!record?.punches?.length) {
+    } else if (expectedMinutes === 0 && !record?.punches?.length) {
+      /*
+       * Folga da escala.
+       *
+       * Isso também funciona para:
+       *
+       * 12x36
+       * 4x2
+       * 5x1
+       * sábados/domingo sem jornada
+       */
+      status = 'off'
 
-    /*
-     * ========================================================
-     * SEM BATIDA
-     * ========================================================
-     */
+      label = 'Folga'
+
+      totals.offDays += 1
+    } else if (!record?.punches?.length) {
       status = 'absence'
 
       label = 'Falta'
 
       totals.absenceDays += 1
     } else {
-
-    /*
-     * ========================================================
-     * COM BATIDA
-     * ========================================================
-     */
       const lastPunch = record.punches[record.punches.length - 1]
-
-      /*
-       * Se a jornada terminou com a saída,
-       * consideramos o dia concluído.
-       */
 
       if (lastPunch.type === PUNCH_TYPES.EXIT) {
         status = 'worked'
 
         label = 'Trabalhado'
       } else {
-        /*
-         * Existe uma batida, mas a jornada
-         * ainda não foi encerrada.
-         */
-
         status = 'pending'
 
         label = 'Em andamento'
@@ -938,23 +750,26 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
     }
 
     /*
-     * ========================================================
+     * ----------------------------------------------------------
      * SALDO DIÁRIO
-     * ========================================================
-     *
-     * Feriados, folgas e dias futuros não geram déficit.
+     * ----------------------------------------------------------
      */
 
     let differenceMinutes = 0
 
-    if (!weekend && !holidayDay && !future) {
+    /*
+     * Feriados e dias futuros não geram saldo.
+     *
+     * Folgas da escala também não geram déficit.
+     */
+    if (!holidayDay && !future && expectedMinutes > 0) {
       differenceMinutes = workedMinutes - expectedMinutes
     }
 
     /*
-     * ========================================================
+     * ----------------------------------------------------------
      * TOTAIS
-     * ========================================================
+     * ----------------------------------------------------------
      */
 
     totals.expectedMinutes += expectedMinutes
@@ -970,16 +785,6 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
     }
 
     totals.balanceMinutes += differenceMinutes
-
-    /*
-     * ========================================================
-     * DIA
-     * ========================================================
-     *
-     * Mantemos as informações do feriado dentro do próprio
-     * objeto do dia para que o MeuEspelho possa apresentar
-     * o nome do feriado.
-     */
 
     days.push({
       date,
@@ -1004,7 +809,15 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
             type: holiday.type,
             state: holiday.state || null
           }
-        : null
+        : null,
+
+      /*
+       * Informação da jornada utilizada
+       * naquele período.
+       */
+      scheduleName,
+
+      scheduleExpectedMinutes: scheduleMinutes
     })
   }
 
@@ -1014,6 +827,8 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
     startDate: formatDate(start),
 
     endDate: formatDate(end),
+
+    scheduleName,
 
     days,
 

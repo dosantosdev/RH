@@ -15,7 +15,8 @@ import {
   BANK_HOURS_ENTRY_TYPES,
   deleteBankHoursEntry,
   getBankHoursEntries,
-  getEmployeeBankHoursEntries
+  getEmployeeBankHoursEntries,
+  updateBankHoursEntry
 } from '../../../services/bankHours'
 
 import './bancoHoras.css'
@@ -52,6 +53,12 @@ function calculateManualBalanceFromEntries(
     }, 0)
 }
 
+/*
+ * ============================================================
+ * COMPONENTE PRINCIPAL
+ * ============================================================
+ */
+
 export default function BancoHoras() {
   const initialPeriod = getInitialPeriod()
 
@@ -74,6 +81,13 @@ export default function BancoHoras() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
 
   const [showEntryModal, setShowEntryModal] = useState(false)
+
+  /*
+   * Guarda o lançamento que está sendo editado.
+   *
+   * Quando for null, o modal está criando um novo lançamento.
+   */
+  const [editingEntry, setEditingEntry] = useState(null)
 
   const [entryForm, setEntryForm] = useState(createInitialEntry())
 
@@ -341,7 +355,7 @@ export default function BancoHoras() {
 
   /*
    * ============================================================
-   * LANÇAMENTO
+   * ABRIR NOVO LANÇAMENTO
    * ============================================================
    */
 
@@ -349,6 +363,8 @@ export default function BancoHoras() {
     setPeriodError('')
 
     setSelectedEmployeeId(String(employeeId))
+
+    setEditingEntry(null)
 
     setEntryForm({
       ...createInitialEntry(),
@@ -358,13 +374,51 @@ export default function BancoHoras() {
     setShowEntryModal(true)
   }
 
+  /*
+   * ============================================================
+   * ABRIR EDIÇÃO
+   * ============================================================
+   */
+
+  function openEditEntryModal(entry) {
+    setPeriodError('')
+
+    setSelectedEmployeeId(String(entry.employeeId))
+
+    setEditingEntry(entry)
+
+    setEntryForm({
+      date: entry.date || '',
+      type: entry.type || 'credit',
+      category: entry.category || 'manual_adjustment',
+      duration: minutesToDuration(entry.minutes),
+      reason: entry.reason || ''
+    })
+
+    setShowEntryModal(true)
+  }
+
+  /*
+   * ============================================================
+   * FECHAR MODAL DE LANÇAMENTO
+   * ============================================================
+   */
+
   function closeEntryModal() {
     setShowEntryModal(false)
+
+    setEditingEntry(null)
 
     setEntryForm(createInitialEntry())
 
     setPeriodError('')
   }
+
+  /*
+   * ============================================================
+   * ALTERAÇÃO DO FORMULÁRIO
+   * ============================================================
+   */
 
   function handleEntryChange(event) {
     const { name, value } = event.target
@@ -375,12 +429,22 @@ export default function BancoHoras() {
     }))
   }
 
+  /*
+   * ============================================================
+   * SALVAR LANÇAMENTO
+   * ============================================================
+   */
+
   function handleEntrySubmit(event) {
     event.preventDefault()
 
     if (!selectedEmployee) {
       return
     }
+
+    /*
+     * A data precisa estar dentro do período selecionado.
+     */
 
     if (
       !entryForm.date ||
@@ -394,6 +458,10 @@ export default function BancoHoras() {
       return
     }
 
+    /*
+     * Converte HH:MM para minutos.
+     */
+
     const minutes = durationToMinutes(entryForm.duration)
 
     if (minutes <= 0) {
@@ -402,21 +470,57 @@ export default function BancoHoras() {
       return
     }
 
-    addBankHoursEntry({
-      employeeId: selectedEmployee.employee.id,
+    /*
+     * ==========================================================
+     * EDIÇÃO
+     * ==========================================================
+     */
 
-      branchId: selectedEmployee.branchId,
+    if (editingEntry) {
+      updateBankHoursEntry({
+        ...editingEntry,
 
-      date: entryForm.date,
+        employeeId: selectedEmployee.employee.id,
 
-      type: entryForm.type,
+        branchId: selectedEmployee.branchId,
 
-      category: entryForm.category,
+        date: entryForm.date,
 
-      minutes,
+        type: entryForm.type,
 
-      reason: entryForm.reason.trim()
-    })
+        category: entryForm.category,
+
+        minutes,
+
+        reason: entryForm.reason.trim()
+      })
+    } else {
+      /*
+       * ========================================================
+       * NOVO LANÇAMENTO
+       * ========================================================
+       */
+
+      addBankHoursEntry({
+        employeeId: selectedEmployee.employee.id,
+
+        branchId: selectedEmployee.branchId,
+
+        date: entryForm.date,
+
+        type: entryForm.type,
+
+        category: entryForm.category,
+
+        minutes,
+
+        reason: entryForm.reason.trim()
+      })
+    }
+
+    /*
+     * Atualiza imediatamente o estado da tela.
+     */
 
     setEntries(getBankHoursEntries())
 
@@ -645,6 +749,7 @@ export default function BancoHoras() {
           entries={getEmployeeBankHoursEntries(selectedEmployee.employee.id)}
           onClose={() => setSelectedEmployeeId('')}
           onAddEntry={() => openEntryModal(selectedEmployee.employee.id)}
+          onEditEntry={openEditEntryModal}
           onDeleteEntry={handleDeleteEntry}
           getEntryLabel={getEntryLabel}
           getCategoryLabel={getCategoryLabel}
@@ -652,7 +757,7 @@ export default function BancoHoras() {
       )}
 
       {/* ======================================================
-          NOVO LANÇAMENTO
+          NOVO / EDITAR LANÇAMENTO
       ====================================================== */}
 
       {showEntryModal && selectedEmployee && (
@@ -660,6 +765,7 @@ export default function BancoHoras() {
           employee={selectedEmployee}
           form={entryForm}
           periodError={periodError}
+          editingEntry={editingEntry}
           onChange={handleEntryChange}
           onSubmit={handleEntrySubmit}
           onClose={closeEntryModal}
@@ -782,6 +888,7 @@ function BankDetailsModal({
   entries,
   onClose,
   onAddEntry,
+  onEditEntry,
   onDeleteEntry,
   getEntryLabel,
   getCategoryLabel
@@ -882,14 +989,25 @@ function BankDetailsModal({
                       {formatMinutes(entry.minutes)}
                     </strong>
 
-                    <button
-                      type="button"
-                      className="banco-horas-delete-button"
-                      onClick={() => onDeleteEntry(entry.id)}
-                      title="Excluir lançamento"
-                    >
-                      Excluir
-                    </button>
+                    <div className="banco-horas-entry-actions">
+                      <button
+                        type="button"
+                        className="banco-horas-edit-button"
+                        onClick={() => onEditEntry(entry)}
+                        title="Editar lançamento"
+                      >
+                        Editar
+                      </button>
+
+                      <button
+                        type="button"
+                        className="banco-horas-delete-button"
+                        onClick={() => onDeleteEntry(entry.id)}
+                        title="Excluir lançamento"
+                      >
+                        Excluir
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -917,16 +1035,19 @@ function EntryModal({
   employee,
   form,
   periodError,
+  editingEntry,
   onChange,
   onSubmit,
   onClose
 }) {
+  const isEditing = Boolean(editingEntry)
+
   return (
     <div className="banco-horas-modal-overlay">
       <div className="banco-horas-entry-modal">
         <header className="banco-horas-modal-header">
           <div>
-            <span>NOVO LANÇAMENTO</span>
+            <span>{isEditing ? 'EDITAR LANÇAMENTO' : 'NOVO LANÇAMENTO'}</span>
 
             <h2>{employee.employee.name}</h2>
 
@@ -1015,7 +1136,7 @@ function EntryModal({
             </button>
 
             <button type="submit" className="primary">
-              Salvar lançamento
+              {isEditing ? 'Salvar alteração' : 'Salvar lançamento'}
             </button>
           </footer>
         </form>
@@ -1120,6 +1241,25 @@ function durationToMinutes(value) {
   }
 
   return hours * 60 + minutes
+}
+
+/*
+ * ============================================================
+ * CONVERTER MINUTOS PARA HH:MM
+ * ============================================================
+ */
+
+function minutesToDuration(value) {
+  const minutes = Math.max(Math.round(Number(value) || 0), 0)
+
+  const hours = Math.floor(minutes / 60)
+
+  const remainingMinutes = minutes % 60
+
+  return `${String(hours).padStart(2, '0')}:${String(remainingMinutes).padStart(
+    2,
+    '0'
+  )}`
 }
 
 /*

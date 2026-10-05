@@ -1,0 +1,621 @@
+.faltas-atrasos-page {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 25px 30px 50px;
+}
+
+/* ============================================================
+   CABEÇALHO
+============================================================ */
+
+.faltas-atrasos-header {
+  margin-bottom: 24px;
+}
+
+.faltas-atrasos-kicker {
+  color: #4f67c6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.faltas-atrasos-header h1 {
+  margin: 4px 0 6px;
+}
+
+.faltas-atrasos-header p {
+  margin: 0;
+  color: #666;
+}
+
+/* ============================================================
+   FILTROS
+============================================================ */
+
+.faltas-atrasos-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 18px;
+  margin-bottom: 20px;
+  background: white;
+  border: 1px solid #e1e3e8;
+  border-radius: 13px;
+}
+
+.faltas-atrasos-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.faltas-atrasos-filter label {
+  color: #777;
+  font-size: 11px;
+}
+
+.faltas-atrasos-filter input,
+.faltas-atrasos-filter select {
+  height: 40px;
+  min-width: 155px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1px solid #d9dce3;
+  border-radius: 8px;
+  background: white;
+  color: #333;
+  outline: none;
+}
+
+.faltas-atrasos-filter select {
+  min-width: 190px;
+}
+
+.faltas-atrasos-filter input:focus,
+.faltas-atrasos-filter select:focus {
+  border-color: #4f67c6;
+  box-shadow: 0 0 0 3px rgba(79, 103, 198, 0.1);
+}
+
+.faltas-atrasos-clear-button {
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid #d9dce3;
+  border-radius: 8px;
+  background: white;
+  color: #4f67c6;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.faltas-atrasos-clear-button:hover {
+  background: #f4f5fa;
+}
+
+/* ============================================================
+   RESUMO
+============================================================ */
+
+.faltas-atrasos-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 25px;
+}
+
+.faltas-atrasos-summary-card {
+  padding: 17px 18px;
+  background: white;
+  border: 1px solid #e1e3e8;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.faltas-atrasos-summary-card span {
+  display: block;
+  margin-bottom: 7px;
+  color: #777;
+  font-size: 11px;
+}
+
+.faltas-atrasos-summary-card strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #222;
+  font-size: 25px;
+}
+
+.faltas-atrasos-summary-card small {
+  color: #888;
+  font-size: 10px;
+}
+
+.faltas-atrasos-summary-card.negative strong {
+  color: #a33c3c;
+}
+
+.faltas-atrasos-summary-card.warning strong {
+  color: #9a6a22;
+}
+
+.faltas-atrasos-summary-card.neutral strong {
+  color: #4f67c6;
+}
+
+/* ============================================================
+   CARD PRINCIPAL
+============================================================ */
+
+.faltas-atrasos-card {
+  overflow: hidden;
+  background: white;
+  border: 1px solid #e1e3e8;
+  border-radius: 13px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.faltas-atrasos-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  padding: 20px 22px;
+  border-bottom: 1px solid #eee;
+}
+
+.faltas-atrasos-card-header > div {
+  min-width: 0;
+}
+
+.faltas-atrasos-card-header span {
+  color: #4f67c6;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+}
+
+.faltas-atrasos-card-header h2 {
+  margin: 4px 0;
+  font-size: 19px;
+}
+
+.faltas-atrasos-card-header p {
+  margin: 0;
+  color: #777;
+  font-size: 12px;
+}
+
+.faltas-atrasos-card-header > strong {
+  flex-shrink: 0;
+  color: #4f67c6;
+  font-size: 12px;
+}
+
+/* ============================================================
+   TABELA
+============================================================ */
+
+.faltas-atrasos-table-wrapper {
+  overflow-x: auto;
+}
+
+.faltas-atrasos-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.faltas-atrasos-table th {
+  padding: 13px 15px;
+  background: #fafafa;
+  border-bottom: 1px solid #e5e6eb;
+  color: #777;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.faltas-atrasos-table td {
+  padding: 14px 15px;
+  border-bottom: 1px solid #eee;
+  color: #444;
+  vertical-align: middle;
+}
+
+.faltas-atrasos-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.faltas-atrasos-table tbody tr:hover {
+  background: #fafbfe;
+}
+
+.faltas-atrasos-table td:first-child {
+  min-width: 180px;
+}
+
+.faltas-atrasos-table td strong {
+  display: block;
+}
+
+.faltas-atrasos-table td small {
+  display: block;
+  margin-top: 4px;
+  color: #888;
+  font-size: 10px;
+}
+
+.faltas-atrasos-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.faltas-atrasos-status.absence {
+  background: #fdeaea;
+  color: #a33c3c;
+}
+
+.faltas-atrasos-status.delay {
+  background: #fff2dc;
+  color: #9a6a22;
+}
+
+.faltas-atrasos-negative {
+  color: #a33c3c !important;
+}
+
+.faltas-atrasos-warning {
+  color: #9a6a22 !important;
+}
+
+.faltas-atrasos-details-button {
+  padding: 7px 10px;
+  border: 1px solid #d9dce3;
+  border-radius: 7px;
+  background: white;
+  color: #4f67c6;
+  cursor: pointer;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.faltas-atrasos-details-button:hover {
+  background: #f3f5fc;
+}
+
+/* ============================================================
+   ESTADO VAZIO
+============================================================ */
+
+.faltas-atrasos-empty {
+  padding: 65px 25px;
+  text-align: center;
+}
+
+.faltas-atrasos-empty span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #e6f5ea;
+  color: #2f7741;
+  font-size: 25px;
+  font-weight: 700;
+}
+
+.faltas-atrasos-empty h3 {
+  margin: 12px 0 5px;
+}
+
+.faltas-atrasos-empty p {
+  margin: 0;
+  color: #777;
+  font-size: 12px;
+}
+
+/* ============================================================
+   MODAL
+============================================================ */
+
+.faltas-atrasos-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.faltas-atrasos-modal {
+  width: min(850px, 100%);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+}
+
+.faltas-atrasos-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.faltas-atrasos-modal-header span {
+  color: #4f67c6;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.faltas-atrasos-modal-header h2 {
+  margin: 4px 0;
+  font-size: 20px;
+}
+
+.faltas-atrasos-modal-header p {
+  margin: 0;
+  color: #777;
+  font-size: 12px;
+}
+
+.faltas-atrasos-modal-header button {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #666;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.faltas-atrasos-modal-header button:hover {
+  background: #f3f4f8;
+}
+
+/* ============================================================
+   RESUMO DO MODAL
+============================================================ */
+
+.faltas-atrasos-modal-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  padding: 20px 24px;
+}
+
+.faltas-atrasos-modal-summary > div {
+  padding: 13px;
+  border: 1px solid #e5e6eb;
+  border-radius: 9px;
+  background: #fafafa;
+}
+
+.faltas-atrasos-modal-summary span {
+  display: block;
+  margin-bottom: 5px;
+  color: #777;
+  font-size: 10px;
+}
+
+.faltas-atrasos-modal-summary strong {
+  font-size: 17px;
+}
+
+/* ============================================================
+   DETALHES
+============================================================ */
+
+.faltas-atrasos-details-list {
+  overflow-y: auto;
+  padding: 0 24px 24px;
+}
+
+.faltas-atrasos-detail-item {
+  margin-bottom: 10px;
+  padding: 14px;
+  border: 1px solid #e5e6eb;
+  border-radius: 9px;
+}
+
+.faltas-atrasos-detail-item:last-child {
+  margin-bottom: 0;
+}
+
+.faltas-atrasos-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 13px;
+}
+
+.faltas-atrasos-detail-header div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.faltas-atrasos-detail-header span {
+  color: #777;
+  font-size: 10px;
+}
+
+.faltas-atrasos-detail-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.faltas-atrasos-detail-info > div {
+  padding: 10px;
+  border-radius: 7px;
+  background: #fafafa;
+}
+
+.faltas-atrasos-detail-info span {
+  display: block;
+  margin-bottom: 4px;
+  color: #777;
+  font-size: 9px;
+}
+
+.faltas-atrasos-detail-info strong {
+  font-size: 13px;
+}
+
+.faltas-atrasos-punches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.faltas-atrasos-punches > div {
+  display: flex;
+  gap: 6px;
+  padding: 7px 9px;
+  border-radius: 7px;
+  background: #f3f5fc;
+}
+
+.faltas-atrasos-punches span {
+  color: #777;
+  font-size: 10px;
+}
+
+.faltas-atrasos-punches strong {
+  color: #4f67c6;
+  font-size: 10px;
+}
+
+.faltas-atrasos-no-punches {
+  margin-top: 10px;
+  padding: 9px 10px;
+  border-radius: 7px;
+  background: #fff5f5;
+  color: #a33c3c;
+  font-size: 10px;
+}
+
+.faltas-atrasos-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 24px;
+  border-top: 1px solid #eee;
+}
+
+.faltas-atrasos-modal-footer button {
+  padding: 8px 13px;
+  border: 1px solid #d9dce3;
+  border-radius: 8px;
+  background: white;
+  color: #4f67c6;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.faltas-atrasos-modal-footer button:hover {
+  background: #f3f5fc;
+}
+
+/* ============================================================
+   RESPONSIVIDADE
+============================================================ */
+
+@media (max-width: 1100px) {
+  .faltas-atrasos-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .faltas-atrasos-filters {
+    align-items: stretch;
+  }
+
+  .faltas-atrasos-filter {
+    flex: 1 1 180px;
+  }
+
+  .faltas-atrasos-clear-button {
+    align-self: flex-end;
+  }
+}
+
+@media (max-width: 700px) {
+  .faltas-atrasos-page {
+    padding: 20px 15px 40px;
+  }
+
+  .faltas-atrasos-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .faltas-atrasos-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .faltas-atrasos-modal-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .faltas-atrasos-detail-info {
+    grid-template-columns: 1fr;
+  }
+
+  .faltas-atrasos-modal {
+    max-height: 95vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .faltas-atrasos-filters {
+    flex-direction: column;
+  }
+
+  .faltas-atrasos-filter {
+    width: 100%;
+  }
+
+  .faltas-atrasos-filter input,
+  .faltas-atrasos-filter select,
+  .faltas-atrasos-clear-button {
+    width: 100%;
+  }
+
+  .faltas-atrasos-clear-button {
+    align-self: stretch;
+  }
+
+  .faltas-atrasos-modal-overlay {
+    padding: 10px;
+  }
+
+  .faltas-atrasos-modal-header,
+  .faltas-atrasos-details-list {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .faltas-atrasos-modal-summary {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+}

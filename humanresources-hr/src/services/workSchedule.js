@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'workSchedules'
+
 const ASSIGNMENTS_STORAGE_KEY = 'employeeWorkSchedules'
 
 /*
@@ -56,13 +57,6 @@ export const WEEK_DAYS = [
  * ============================================================
  * TIPOS DE DIA
  * ============================================================
- *
- * Estes são os tipos utilizados dentro de cada dia
- * da jornada.
- *
- * work   = dia trabalhado
- * course = curso/abono
- * off    = folga
  */
 
 export const DAY_TYPES = [
@@ -84,9 +78,6 @@ export const DAY_TYPES = [
  * ============================================================
  * TIPOS DE JORNADA
  * ============================================================
- *
- * Mantemos esta constante separada para que outros módulos,
- * como Cargos, possam utilizar os tipos de jornada.
  */
 
 export const WORK_SCHEDULE_TYPES = [
@@ -145,13 +136,9 @@ function createPeriod(start = '08:00', end = '17:00') {
 function createWeeklyDay(dayOfWeek, type = 'off') {
   return {
     id: generateId(),
-
     dayOfWeek,
-
     type,
-
     periods: type === 'work' ? [createPeriod()] : [],
-
     creditedHours: type === 'course' ? '0' : ''
   }
 }
@@ -184,13 +171,9 @@ export function createCycleDays(length = 2) {
 
   return Array.from({ length: totalDays }, (_, index) => ({
     id: generateId(),
-
     cycleDay: index + 1,
-
     type: index === 0 ? 'work' : 'off',
-
     periods: index === 0 ? [createPeriod()] : [],
-
     creditedHours: ''
   }))
 }
@@ -447,11 +430,9 @@ export function calculateScheduleWeeklyMinutes(schedule) {
   }
 
   /*
-   * Jornada por ciclo não deve ser tratada simplesmente
-   * como segunda a domingo.
+   * Jornada por ciclo.
    *
-   * Neste primeiro momento calculamos a média semanal
-   * proporcional ao ciclo.
+   * Calculamos a média semanal proporcional ao ciclo.
    */
 
   if (schedule.mode === 'cycle') {
@@ -558,10 +539,7 @@ export function validateWorkSchedule(schedule) {
   const calculatedHours = calculatedMinutes / 60
 
   /*
-   * A trava de carga horária.
-   *
-   * Se foi informado 40h, a configuração
-   * não pode resultar em mais de 40h.
+   * Trava de carga horária.
    */
 
   if (schedule?.mode === 'weekly' && calculatedHours > weeklyHours + 0.001) {
@@ -574,11 +552,8 @@ export function validateWorkSchedule(schedule) {
 
   return {
     valid: errors.length === 0,
-
     errors,
-
     calculatedWeeklyHours: calculatedHours,
-
     calculatedWeeklyMinutes: calculatedMinutes
   }
 }
@@ -610,9 +585,6 @@ export function calculateExpectedHoursForDate(schedule, date = new Date()) {
 
   /*
    * Jornada por ciclo.
-   *
-   * O cálculo exato do ciclo dependerá da data
-   * de início configurada.
    */
 
   if (schedule.mode === 'cycle') {
@@ -667,9 +639,7 @@ export function compareWorkedHours(expectedHours, workedHours) {
 
   return {
     expected,
-
     worked,
-
     difference,
 
     status:
@@ -809,11 +779,10 @@ export function assignWorkSchedule({
   const assignments = getEmployeeWorkSchedules()
 
   /*
-   * Cada funcionário pode ter somente
-   * um vínculo vigente para o mesmo período.
+   * Não removemos vínculos anteriores.
    *
-   * Para não perder histórico, não apagamos
-   * automaticamente os vínculos anteriores.
+   * Dessa forma o sistema consegue manter
+   * o histórico.
    */
 
   const assignment = {
@@ -886,12 +855,141 @@ export function getEmployeeCurrentWorkSchedule(employeeId, date = new Date()) {
 
 /*
  * ============================================================
+ * NOME DA JORNADA DO FUNCIONÁRIO
+ * ============================================================
+ *
+ * Utilizado pelo módulo de Ponto.
+ *
+ * O parâmetro pode ser:
+ * - funcionário
+ * - ID do funcionário
+ *
+ * Primeiro tenta localizar a jornada vigente.
+ */
+
+export function getEmployeeWorkScheduleName(employee, date = new Date()) {
+  if (!employee) {
+    return ''
+  }
+
+  const employeeId = typeof employee === 'object' ? employee.id : employee
+
+  if (!employeeId) {
+    return ''
+  }
+
+  const schedule = getEmployeeCurrentWorkSchedule(employeeId, date)
+
+  return schedule?.name || ''
+}
+
+/*
+ * ============================================================
+ * MINUTOS ESPERADOS PARA UMA DATA
+ * ============================================================
+ *
+ * Utilizado pelo módulo de Ponto.
+ *
+ * Esta função centraliza a descoberta da jornada
+ * que o funcionário deveria cumprir naquele dia.
+ */
+
+export function getExpectedMinutesForDate(employee, date = new Date()) {
+  if (!employee) {
+    return 0
+  }
+
+  const employeeId = typeof employee === 'object' ? employee.id : employee
+
+  if (!employeeId) {
+    return 0
+  }
+
+  const schedule = getEmployeeCurrentWorkSchedule(employeeId, date)
+
+  if (!schedule) {
+    return 0
+  }
+
+  /*
+   * Jornada no formato novo.
+   */
+
+  if (schedule.mode === 'weekly' || schedule.mode === 'cycle') {
+    return Math.round(calculateExpectedHoursForDate(schedule, date) * 60)
+  }
+
+  /*
+   * Compatibilidade com jornadas antigas
+   * utilizadas pelo módulo de Cargos.
+   */
+
+  if (schedule.type === 'weekly') {
+    const dayOfWeek = date.getDay()
+
+    const dayKey = WEEK_DAYS.find((item) => item.value === dayOfWeek)?.key
+
+    const day = dayKey && schedule.schedule?.[dayKey]
+
+    if (!day?.enabled) {
+      return 0
+    }
+
+    return Math.round(
+      calculateIntervalHours(day.start, day.end, day.breakMinutes) * 60
+    )
+  }
+
+  /*
+   * Escala 12x36.
+   *
+   * Se existir uma configuração diária,
+   * usamos ela. Caso contrário, utilizamos
+   * 12 horas como padrão.
+   */
+
+  if (schedule.type === '12x36') {
+    return Math.round(
+      Number(schedule.dailyHours || schedule.shiftHours || 12) * 60
+    )
+  }
+
+  /*
+   * Escala 4x2 e demais jornadas antigas.
+   *
+   * Caso possuam days em formato de array,
+   * tentamos encontrar o dia correspondente.
+   */
+
+  if (Array.isArray(schedule.days)) {
+    const dayOfWeek = date.getDay()
+
+    const day = schedule.days.find(
+      (item) => Number(item.dayOfWeek) === Number(dayOfWeek)
+    )
+
+    return day ? calculateDayPlannedMinutes(day) : 0
+  }
+
+  return 0
+}
+
+/*
+ * ============================================================
  * COMPATIBILIDADE COM CARGOS
  * ============================================================
  *
  * O módulo de Cargos utiliza o formato antigo
- * de jornada. Estas funções continuam disponíveis
- * para não quebrar o cadastro de cargos.
+ * de jornada.
+ *
+ * Estas funções devem permanecer disponíveis
+ * para não quebrar o cadastro e a edição de cargos.
+ */
+
+/*
+ * ============================================================
+ * CALCULA HORAS SEMANAIS — FORMATO LEGADO
+ * ============================================================
  */
 
 export function calculateWeeklyScheduleHours(schedule) {
@@ -899,15 +997,36 @@ export function calculateWeeklyScheduleHours(schedule) {
     return 0
   }
 
+  /*
+   * Escala 12x36:
+   *
+   * 12 horas trabalhadas a cada 36 horas.
+   *
+   * Média semanal aproximada:
+   * 12 × 3,5 = 42 horas.
+   */
+
   if (schedule.type === '12x36') {
     return Number(schedule.dailyHours || schedule.shiftHours || 12) * 3.5
   }
+
+  /*
+   * Escala 4x2:
+   *
+   * 4 dias trabalhados a cada 6 dias.
+   *
+   * Cálculo proporcional para 28 dias.
+   */
 
   if (schedule.type === '4x2') {
     const dailyHours = Number(schedule.dailyHours || schedule.shiftHours) || 0
 
     return (dailyHours * 28) / 6
   }
+
+  /*
+   * Jornada semanal no formato antigo.
+   */
 
   if (schedule.type === 'weekly') {
     if (schedule.days && !Array.isArray(schedule.days)) {
@@ -965,12 +1084,18 @@ export function getScheduleValidation(schedule, workload) {
     }
   }
 
+  /*
+   * A escala 12x36 precisa possuir
+   * exatamente 12 horas por plantão.
+   */
+
   if (
     schedule.type === '12x36' &&
     Number(schedule.dailyHours || schedule.shiftHours || 0) !== 12
   ) {
     return {
       valid: false,
+
       message:
         'Na escala 12x36, a jornada deve possuir exatamente 12 horas por plantão.'
     }

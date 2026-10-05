@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 
 import './navbar.css'
@@ -75,24 +76,12 @@ export default function Navbar() {
    * ============================================================
    * PERMISSÕES DE TREINAMENTOS
    * ============================================================
-   *
-   * As duas funcionalidades são independentes.
-   *
-   * trainings_view:
-   *   Gerenciar treinamentos
-   *
-   * my_trainings_view:
-   *   Realizar meus treinamentos
    */
 
   const canManageTrainings = hasPermission('trainings_view')
 
   const canViewMyTrainings = hasPermission('my_trainings_view')
 
-  /*
-   * O menu Treinamentos somente aparece quando o usuário possui
-   * pelo menos uma das duas permissões.
-   */
   const canAccessTrainings = canManageTrainings || canViewMyTrainings
 
   return (
@@ -201,6 +190,8 @@ export default function Navbar() {
             <Link to="/ponto/horas-extras">Horas Extras</Link>
 
             <Link to="/ponto/faltas-atrasos">Faltas e Atrasos</Link>
+
+            <Link to="/ponto/atestados">Atestados</Link>
 
             <Link to="/ponto/fechamento">Fechamento Mensal</Link>
 

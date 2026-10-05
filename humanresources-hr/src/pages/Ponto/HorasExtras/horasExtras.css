@@ -1,0 +1,537 @@
+.horas-extras-page {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 25px 30px 50px;
+}
+
+.horas-extras-header {
+  margin-bottom: 24px;
+}
+
+.horas-extras-kicker {
+  color: #4f67c6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.horas-extras-header h1 {
+  margin: 4px 0 6px;
+}
+
+.horas-extras-header p {
+  margin: 0;
+  color: #666;
+}
+
+/* ============================================================
+   FILTROS
+   ============================================================ */
+
+.horas-extras-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(150px, 1fr)
+    minmax(150px, 1fr)
+    minmax(190px, 1fr)
+    minmax(230px, 1.3fr)
+    auto;
+  gap: 12px;
+  align-items: end;
+  margin-bottom: 20px;
+  padding: 18px;
+  background: white;
+  border: 1px solid #e1e3e8;
+  border-radius: 13px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.horas-extras-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.horas-extras-filter label {
+  color: #666;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.horas-extras-filter input,
+.horas-extras-filter select {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 11px;
+  box-sizing: border-box;
+  border: 1px solid #d9dce3;
+  border-radius: 8px;
+  background: white;
+  color: #333;
+  outline: none;
+}
+
+.horas-extras-filter input:focus,
+.horas-extras-filter select:focus {
+  border-color: #4f67c6;
+  box-shadow: 0 0 0 3px rgba(79, 103, 198, 0.1);
+}
+
+.horas-extras-clear-button {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid #d9dce3;
+  border-radius: 8px;
+  background: #f7f8fa;
+  color: #555;
+  cursor: pointer;
+}
+
+.horas-extras-clear-button:hover {
+  background: #eef0f4;
+}
+
+/* ============================================================
+   RESUMO
+   ============================================================ */
+
+.horas-extras-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.horas-extras-summary-card {
+  padding: 18px;
+  background: white;
+  border: 1px solid #e1e3e8;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.horas-extras-summary-card span {
+  display: block;
+  color: #777;
+  font-size: 11px;
+}
+
+.horas-extras-summary-card strong {
+  display: block;
+  margin-top: 5px;
+  color: #222;
+  font-size: 25px;
+}
+
+.horas-extras-summary-card small {
+  display: block;
+  margin-top: 4px;
+  color: #999;
+  font-size: 11px;
+}
+
+/* ============================================================
+   CARD PRINCIPAL
+   ============================================================ */
+
+.horas-extras-card {
+  background: white;
+  border: 1px solid #e1e3e8;
+  border-radius: 13px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.horas-extras-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 20px 22px;
+  border-bottom: 1px solid #eee;
+}
+
+.horas-extras-card-header > div {
+  min-width: 0;
+}
+
+.horas-extras-card-header span {
+  color: #4f67c6;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.horas-extras-card-header h2 {
+  margin: 4px 0;
+  font-size: 19px;
+}
+
+.horas-extras-card-header p {
+  margin: 0;
+  color: #777;
+  font-size: 12px;
+}
+
+.horas-extras-card-header > strong {
+  flex-shrink: 0;
+  color: #666;
+  font-size: 12px;
+}
+
+/* ============================================================
+   TABELA
+   ============================================================ */
+
+.horas-extras-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.horas-extras-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+.horas-extras-table th {
+  padding: 12px 15px;
+  background: #fafafa;
+  color: #777;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid #eee;
+}
+
+.horas-extras-table td {
+  padding: 14px 15px;
+  border-bottom: 1px solid #f0f0f0;
+  color: #555;
+  font-size: 12px;
+}
+
+.horas-extras-table tbody tr:hover {
+  background: #fafbfe;
+}
+
+.horas-extras-table td strong {
+  display: block;
+  color: #222;
+}
+
+.horas-extras-table td small {
+  display: block;
+  margin-top: 3px;
+  color: #999;
+  font-size: 10px;
+}
+
+.horas-extras-schedule {
+  display: inline-block;
+  max-width: 210px;
+  color: #666;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.horas-extras-positive {
+  color: #2f7741 !important;
+}
+
+.horas-extras-details-button {
+  padding: 8px 11px;
+  border: none;
+  border-radius: 7px;
+  background: #4f67c6;
+  color: white;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.horas-extras-details-button:hover {
+  opacity: 0.9;
+}
+
+/* ============================================================
+   VAZIO
+   ============================================================ */
+
+.horas-extras-empty {
+  padding: 65px 25px;
+  text-align: center;
+}
+
+.horas-extras-empty span {
+  font-size: 42px;
+}
+
+.horas-extras-empty h3 {
+  margin: 10px 0 5px;
+}
+
+.horas-extras-empty p {
+  max-width: 520px;
+  margin: 0 auto;
+  color: #666;
+  line-height: 1.5;
+  font-size: 13px;
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+
+.horas-extras-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.horas-extras-modal {
+  width: min(850px, 100%);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+}
+
+.horas-extras-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.horas-extras-modal-header span {
+  color: #4f67c6;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.horas-extras-modal-header h2 {
+  margin: 4px 0;
+  font-size: 20px;
+}
+
+.horas-extras-modal-header p {
+  margin: 0;
+  color: #777;
+  font-size: 12px;
+}
+
+.horas-extras-modal-header button {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #666;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.horas-extras-modal-header button:hover {
+  background: #f3f4f8;
+}
+
+.horas-extras-modal-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  padding: 20px 24px;
+}
+
+.horas-extras-modal-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 13px;
+  border: 1px solid #e5e6eb;
+  border-radius: 9px;
+  background: #fafafa;
+}
+
+.horas-extras-modal-summary span {
+  color: #777;
+  font-size: 10px;
+}
+
+.horas-extras-modal-summary strong {
+  color: #222;
+  font-size: 16px;
+}
+
+.horas-extras-days {
+  overflow-y: auto;
+  padding: 0 24px 20px;
+}
+
+.horas-extras-day {
+  margin-bottom: 10px;
+  padding: 14px;
+  border: 1px solid #e5e6eb;
+  border-radius: 9px;
+}
+
+.horas-extras-day-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.horas-extras-day-header strong {
+  display: block;
+  color: #222;
+}
+
+.horas-extras-day-header span {
+  display: block;
+  margin-top: 3px;
+  color: #777;
+  font-size: 11px;
+}
+
+.horas-extras-day-info {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 13px;
+}
+
+.horas-extras-day-info > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.horas-extras-day-info span {
+  color: #888;
+  font-size: 10px;
+}
+
+.horas-extras-day-info strong {
+  color: #333;
+  font-size: 13px;
+}
+
+.horas-extras-punches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 13px;
+  padding-top: 11px;
+  border-top: 1px solid #eee;
+}
+
+.horas-extras-punches div {
+  display: flex;
+  gap: 7px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #f5f6f8;
+}
+
+.horas-extras-punches span {
+  color: #777;
+  font-size: 10px;
+}
+
+.horas-extras-punches strong {
+  color: #333;
+  font-size: 10px;
+}
+
+.horas-extras-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 24px;
+  border-top: 1px solid #eee;
+}
+
+.horas-extras-modal-footer button {
+  padding: 9px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #4f67c6;
+  color: white;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+/* ============================================================
+   RESPONSIVO
+   ============================================================ */
+
+@media (max-width: 1100px) {
+  .horas-extras-filters {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .horas-extras-clear-button {
+    width: 100%;
+  }
+
+  .horas-extras-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .horas-extras-page {
+    padding: 20px 15px 40px;
+  }
+
+  .horas-extras-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .horas-extras-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .horas-extras-card-header {
+    flex-direction: column;
+  }
+
+  .horas-extras-modal-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .horas-extras-day-info {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .horas-extras-modal-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .horas-extras-modal-overlay {
+    padding: 10px;
+  }
+
+  .horas-extras-modal-header,
+  .horas-extras-modal-footer {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .horas-extras-days {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+}
