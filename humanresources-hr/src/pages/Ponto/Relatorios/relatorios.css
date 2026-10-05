@@ -1,0 +1,520 @@
+.relatorios-page {
+  min-height: 100vh;
+  padding: 32px;
+  background: #f5f7fa;
+}
+
+.relatorios-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.relatorios-kicker {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #64748b;
+}
+
+.relatorios-header h1 {
+  margin: 0;
+  font-size: 32px;
+  color: #0f172a;
+}
+
+.relatorios-header p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.relatorios-print-button,
+.relatorios-clear-button {
+  border: 0;
+  border-radius: 8px;
+  padding: 11px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.relatorios-print-button {
+  background: #0f172a;
+  color: #fff;
+}
+
+.relatorios-print-button:hover {
+  opacity: 0.9;
+}
+
+/* ============================================================
+   FILTROS
+============================================================ */
+
+.relatorios-filters {
+  display: grid;
+  grid-template-columns:
+    repeat(5, minmax(150px, 1fr))
+    auto;
+  gap: 14px;
+  align-items: end;
+  padding: 20px;
+  margin-bottom: 22px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.relatorios-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.relatorios-filter label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #475569;
+}
+
+.relatorios-filter input,
+.relatorios-filter select {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  color: #0f172a;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.relatorios-filter input:focus,
+.relatorios-filter select:focus {
+  outline: none;
+  border-color: #64748b;
+}
+
+.relatorios-clear-button {
+  min-height: 40px;
+  background: #e2e8f0;
+  color: #334155;
+  white-space: nowrap;
+}
+
+.relatorios-clear-button:hover {
+  background: #cbd5e1;
+}
+
+/* ============================================================
+   RESUMO
+============================================================ */
+
+.relatorios-summary {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(140px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.relatorios-summary-card {
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.relatorios-summary-card span,
+.relatorios-summary-card small {
+  display: block;
+}
+
+.relatorios-summary-card span {
+  margin-bottom: 8px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.relatorios-summary-card strong {
+  display: block;
+  font-size: 24px;
+  color: #0f172a;
+}
+
+.relatorios-summary-card small {
+  margin-top: 5px;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.relatorios-summary-card.positive strong {
+  color: #15803d;
+}
+
+.relatorios-summary-card.negative strong {
+  color: #dc2626;
+}
+
+.relatorios-summary-card.warning strong {
+  color: #ca8a04;
+}
+
+/* ============================================================
+   CARD PRINCIPAL
+============================================================ */
+
+.relatorios-card {
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.relatorios-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.relatorios-card-header span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #64748b;
+}
+
+.relatorios-card-header h2 {
+  margin: 6px 0 5px;
+  font-size: 21px;
+  color: #0f172a;
+}
+
+.relatorios-card-header p {
+  margin: 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.relatorios-card-header > strong {
+  padding: 8px 12px;
+  border-radius: 20px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   TABELA
+============================================================ */
+
+.relatorios-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.relatorios-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 850px;
+}
+
+.relatorios-table th {
+  padding: 13px 16px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.relatorios-table td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.relatorios-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.relatorios-table td strong {
+  display: block;
+  color: #0f172a;
+}
+
+.relatorios-table td small {
+  display: block;
+  margin-top: 4px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.relatorios-positive {
+  color: #15803d !important;
+}
+
+.relatorios-negative {
+  color: #dc2626 !important;
+}
+
+.relatorios-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.relatorios-status.approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.relatorios-status.pending {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.relatorios-status.rejected {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.relatorios-status.cancelled {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.relatorios-status.neutral {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+/* ============================================================
+   VAZIO
+============================================================ */
+
+.relatorios-empty {
+  padding: 70px 24px;
+  text-align: center;
+}
+
+.relatorios-empty span {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 34px;
+}
+
+.relatorios-empty h3 {
+  margin: 0;
+  color: #334155;
+  font-size: 18px;
+}
+
+.relatorios-empty p {
+  margin: 8px 0 0;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* ============================================================
+   RESPONSIVIDADE
+============================================================ */
+
+@media (max-width: 1200px) {
+  .relatorios-filters {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .relatorios-summary {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .relatorios-page {
+    padding: 20px;
+  }
+
+  .relatorios-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .relatorios-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .relatorios-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .relatorios-card-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .relatorios-summary {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   IMPRESSÃO
+============================================================ */
+
+@media print {
+  .relatorios-page {
+    padding: 0;
+    background: #fff;
+  }
+
+  .relatorios-print-button,
+  .relatorios-filters,
+  .navbar,
+  .header,
+  .relatorios-clear-button {
+    display: none !important;
+  }
+
+  .relatorios-header {
+    margin-bottom: 20px;
+  }
+
+  .relatorios-card {
+    border: 0;
+  }
+
+  .relatorios-card-header {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .relatorios-table th,
+  .relatorios-table td {
+    padding: 8px;
+  }
+}
+
+/* ============================================================
+   IMPRESSÃO
+   ============================================================ */
+
+@media print {
+  body {
+    margin: 0;
+    background: #ffffff;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .relatorios-page,
+  .relatorios-page * {
+    visibility: visible;
+  }
+
+  .relatorios-page {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    padding: 20px;
+    margin: 0;
+    background: #ffffff;
+  }
+
+  .relatorios-print-button,
+  .relatorios-filters,
+  .relatorios-clear-button {
+    display: none !important;
+  }
+
+  .relatorios-header {
+    display: block;
+    margin-bottom: 20px;
+  }
+
+  .relatorios-header h1 {
+    margin-bottom: 5px;
+  }
+
+  .relatorios-summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .relatorios-summary-card {
+    border: 1px solid #ccc;
+    box-shadow: none;
+    break-inside: avoid;
+  }
+
+  .relatorios-card {
+    width: 100%;
+    border: none;
+    box-shadow: none;
+  }
+
+  .relatorios-card-header {
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 15px;
+  }
+
+  .relatorios-table-wrapper {
+    width: 100%;
+    overflow: visible !important;
+  }
+
+  .relatorios-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+  }
+
+  .relatorios-table th,
+  .relatorios-table td {
+    border: 1px solid #ccc;
+    padding: 6px;
+  }
+
+  .relatorios-table th {
+    background: #f2f2f2 !important;
+    color: #000 !important;
+  }
+
+  .relatorios-table tr {
+    break-inside: avoid;
+  }
+
+  .relatorios-positive,
+  .relatorios-negative {
+    color: #000 !important;
+  }
+
+  @page {
+    size: A4 landscape;
+    margin: 12mm;
+  }
+}
