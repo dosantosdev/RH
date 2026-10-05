@@ -56,6 +56,8 @@ import MeusTreinamentos from './pages/MeusTreinamentos/MeusTreinamentos'
 
 import JornadasEscalas from './pages/Ponto/JornadasEscalas/JornadasEscalas'
 
+import Avaliacoes from './pages/Avaliacoes/Avaliacoes'
+
 import Header from './components/layout/Header'
 
 function Layout({ children }) {
@@ -262,8 +264,19 @@ function App() {
       />
 
       {/* ======================================================
-          PONTO
-      ====================================================== */}
+    AVALIAÇÕES
+====================================================== */}
+
+      <Route
+        path="/avaliacoes"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Avaliacoes />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
 
       {/* ============================================================
           TERMINAL DE PONTO

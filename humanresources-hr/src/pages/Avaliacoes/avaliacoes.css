@@ -1,0 +1,619 @@
+.evaluations-page {
+  width: 100%;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   CABEÇALHO
+   ============================================================ */
+
+.evaluations-header {
+  margin-bottom: 28px;
+}
+
+.evaluations-kicker {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.evaluations-header h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 32px;
+  line-height: 1.2;
+}
+
+.evaluations-header p {
+  max-width: 760px;
+  margin: 10px 0 0;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   RESUMO
+   ============================================================ */
+
+.evaluations-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.evaluations-summary-card {
+  min-width: 0;
+  padding: 20px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.evaluations-summary-card span {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.evaluations-summary-card strong {
+  display: block;
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1;
+}
+
+.evaluations-summary-card small {
+  display: block;
+  margin-top: 8px;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.evaluations-summary-card.warning strong {
+  color: #b45309;
+}
+
+.evaluations-summary-card.positive strong {
+  color: #15803d;
+}
+
+/* ============================================================
+   CARD PRINCIPAL
+   ============================================================ */
+
+.evaluations-card {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.evaluations-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.evaluations-card-header span {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.evaluations-card-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+}
+
+.evaluations-card-header p {
+  max-width: 700px;
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.evaluations-card-header > strong {
+  color: #475569;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   FILTROS
+   ============================================================ */
+
+.evaluations-filters {
+  display: grid;
+  grid-template-columns:
+    minmax(220px, 1.5fr)
+    repeat(3, minmax(160px, 1fr))
+    auto;
+  gap: 14px;
+  padding: 20px 24px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.evaluations-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.evaluations-filter label {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.evaluations-filter input,
+.evaluations-filter select {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 11px;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+}
+
+.evaluations-filter input:focus,
+.evaluations-filter select:focus {
+  border-color: #64748b;
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.12);
+}
+
+.evaluations-clear-button {
+  align-self: end;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.evaluations-clear-button:hover {
+  background: #f1f5f9;
+}
+
+/* ============================================================
+   ESTADO VAZIO
+   ============================================================ */
+
+.evaluations-empty {
+  padding: 70px 24px;
+  text-align: center;
+}
+
+.evaluations-empty > span {
+  display: block;
+  margin-bottom: 12px;
+  color: #94a3b8;
+  font-size: 38px;
+}
+
+.evaluations-empty h3 {
+  margin: 0;
+  color: #334155;
+  font-size: 17px;
+}
+
+.evaluations-empty p {
+  max-width: 520px;
+  margin: 8px auto 0;
+  color: #94a3b8;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   TABELA
+   ============================================================ */
+
+.evaluations-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.evaluations-table {
+  width: 100%;
+  min-width: 850px;
+  border-collapse: collapse;
+}
+
+.evaluations-table th {
+  padding: 13px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.evaluations-table td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #475569;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.evaluations-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.evaluations-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+.evaluations-table td:first-child strong {
+  display: block;
+  color: #0f172a;
+}
+
+/* ============================================================
+   STATUS
+   ============================================================ */
+
+.evaluation-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.evaluation-status.draft {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.evaluation-status.pending {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.evaluation-status.in_progress {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.evaluation-status.completed {
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.evaluation-status.cancelled {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+/* ============================================================
+   RESPONSIVIDADE
+   ============================================================ */
+
+@media (max-width: 1200px) {
+  .evaluations-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .evaluations-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .evaluations-filter-search {
+    grid-column: 1 / -1;
+  }
+
+  .evaluations-clear-button {
+    align-self: end;
+    justify-self: start;
+  }
+}
+
+@media (max-width: 700px) {
+  .evaluations-page {
+    padding: 20px 14px 35px;
+  }
+
+  .evaluations-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .evaluations-card-header {
+    flex-direction: column;
+  }
+
+  .evaluations-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .evaluations-filter-search {
+    grid-column: auto;
+  }
+}
+
+/* ============================================================
+   BOTÃO NOVA AVALIAÇÃO
+   ============================================================ */
+
+.evaluations-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.evaluations-new-button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 8px;
+  background: #334155;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.evaluations-new-button:hover {
+  background: #1e293b;
+}
+
+/* ============================================================
+   MODAL
+   ============================================================ */
+
+.evaluations-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.5);
+}
+
+.evaluations-modal {
+  width: min(760px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+}
+
+.evaluations-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.evaluations-modal-header span {
+  display: block;
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.evaluations-modal-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+}
+
+.evaluations-modal-header p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.evaluations-modal-header > button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  border-radius: 7px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.evaluations-modal-header > button:hover {
+  background: #e2e8f0;
+}
+
+/* ============================================================
+   FORMULÁRIO
+   ============================================================ */
+
+.evaluations-form {
+  padding: 24px;
+}
+
+.evaluations-form-error {
+  margin-bottom: 18px;
+  padding: 11px 13px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+}
+
+.evaluations-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.evaluations-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.evaluations-form-field-full {
+  grid-column: 1 / -1;
+}
+
+.evaluations-form-field label {
+  color: #334155;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.evaluations-form-field input,
+.evaluations-form-field select,
+.evaluations-form-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.evaluations-form-field input,
+.evaluations-form-field select {
+  min-height: 40px;
+  padding: 0 11px;
+}
+
+.evaluations-form-field textarea {
+  padding: 10px 11px;
+  resize: vertical;
+}
+
+.evaluations-form-field input:focus,
+.evaluations-form-field select:focus,
+.evaluations-form-field textarea:focus {
+  border-color: #64748b;
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.12);
+}
+
+/* ============================================================
+   RODAPÉ DO FORMULÁRIO
+   ============================================================ */
+
+.evaluations-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.evaluations-cancel-button,
+.evaluations-save-button {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.evaluations-cancel-button {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+}
+
+.evaluations-cancel-button:hover {
+  background: #f8fafc;
+}
+
+.evaluations-save-button {
+  border: 1px solid #334155;
+  background: #334155;
+  color: #ffffff;
+}
+
+.evaluations-save-button:hover {
+  background: #1e293b;
+}
+
+/* ============================================================
+   RESPONSIVIDADE DO MODAL
+   ============================================================ */
+
+@media (max-width: 700px) {
+  .evaluations-header {
+    flex-direction: column;
+  }
+
+  .evaluations-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .evaluations-form-field-full {
+    grid-column: auto;
+  }
+
+  .evaluations-modal-overlay {
+    padding: 12px;
+  }
+
+  .evaluations-modal {
+    max-height: calc(100vh - 24px);
+  }
+
+  .evaluations-form-footer {
+    flex-direction: column-reverse;
+  }
+
+  .evaluations-cancel-button,
+  .evaluations-save-button {
+    width: 100%;
+  }
+}
