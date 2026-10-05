@@ -10,6 +10,7 @@ import useToast from '../../hooks/useToast'
 
 import { hasPermission } from '../../services/permissions'
 import { getAccessRoles } from '../../services/accessRoles'
+import { updateUser } from '../../services/auth'
 
 export default function Users() {
   const initialUser = {
@@ -21,24 +22,22 @@ export default function Users() {
      * ============================================================
      * PERFIL DE ACESSO
      * ============================================================
-     *
-     * O usuário agora recebe um PERFIL DE ACESSO.
-     *
-     * O perfil define o que ele pode fazer dentro do sistema.
      */
+
     accessRoleId: '',
     accessRoleName: '',
 
     /*
-     * Mantemos roleId e roleName por compatibilidade com usuários
-     * antigos que ainda possam possuir esses campos.
-     *
-     * Eles não serão mais utilizados para definir permissões.
+     * Mantidos por compatibilidade com usuários antigos.
      */
     roleId: '',
     roleName: '',
 
+    /*
+     * Funcionário vinculado ao usuário.
+     */
     employeeId: '',
+
     active: true
   }
 
@@ -46,9 +45,6 @@ export default function Users() {
 
   const [users, setUsers] = useState([])
 
-  /*
-   * Perfis de acesso disponíveis para associação ao usuário.
-   */
   const [accessRoles, setAccessRoles] = useState([])
 
   const [employees, setEmployees] = useState([])
@@ -61,15 +57,17 @@ export default function Users() {
 
   const { toast, showToast } = useToast()
 
+  /*
+   * ============================================================
+   * CARREGAMENTO
+   * ============================================================
+   */
+
   useEffect(() => {
     const storedUsers = JSON.parse(localStorage.getItem('users')) || []
 
     const storedEmployees = JSON.parse(localStorage.getItem('employees')) || []
 
-    /*
-     * Carrega os perfis de acesso através do serviço responsável
-     * por eles.
-     */
     const storedAccessRoles = getAccessRoles()
 
     setUsers(storedUsers)
@@ -79,7 +77,12 @@ export default function Users() {
     setEmployees(storedEmployees)
   }, [])
 
-  // 🔒 BLOQUEIA ACESSO À PÁGINA
+  /*
+   * ============================================================
+   * PERMISSÃO
+   * ============================================================
+   */
+
   if (!hasPermission('users_view')) {
     return <h2>Acesso negado</h2>
   }
@@ -105,6 +108,7 @@ export default function Users() {
 
     setUser({
       ...user,
+
       [name]: type === 'checkbox' ? checked : value
     })
   }
@@ -118,14 +122,20 @@ export default function Users() {
   function handleSubmit(e) {
     e.preventDefault()
 
-    // 🔒 BLOQUEIA CRIAÇÃO
+    /*
+     * 🔒 BLOQUEIA CRIAÇÃO
+     */
+
     if (!editingId && !hasPermission('users_create')) {
       showToast('Você não tem permissão para cadastrar usuários', 'warning')
 
       return
     }
 
-    // 🔒 BLOQUEIA EDIÇÃO
+    /*
+     * 🔒 BLOQUEIA EDIÇÃO
+     */
+
     if (editingId && !hasPermission('users_edit')) {
       showToast('Você não tem permissão para editar usuários', 'warning')
 
@@ -133,10 +143,9 @@ export default function Users() {
     }
 
     /*
-     * Não permitimos salvar um usuário sem perfil de acesso.
-     *
-     * O administrador do sistema também deve possuir um perfil.
+     * PERFIL DE ACESSO É OBRIGATÓRIO.
      */
+
     if (!user.accessRoleId) {
       showToast('Selecione um perfil de acesso para o usuário', 'warning')
 
@@ -145,33 +154,73 @@ export default function Users() {
 
     let updated
 
+    /*
+     * ==========================================================
+     * EDIÇÃO
+     * ==========================================================
+     */
+
     if (editingId) {
-      updated = users.map((u) =>
-        u.id === editingId
-          ? {
-              ...user,
-              id: editingId
-            }
-          : u
-      )
+      const updatedUser = {
+        ...user,
+
+        id: editingId
+      }
+
+      /*
+       * Usa o serviço centralizado.
+       *
+       * Além de atualizar "users", ele verifica se este é
+       * o usuário atualmente logado e atualiza a sessão.
+       */
+      updated = updateUser(updatedUser)
+
+      /*
+       * Verifica se o usuário alterado é o usuário atualmente
+       * logado.
+       */
+      const loggedUser = JSON.parse(localStorage.getItem('loggedUser'))
+
+      if (loggedUser && Number(loggedUser.id) === Number(editingId)) {
+        /*
+         * O vínculo de funcionário agora já está disponível
+         * imediatamente na sessão atual.
+         */
+        showToast(
+          'Usuário atualizado! O vínculo foi aplicado imediatamente.',
+          'success'
+        )
+      } else {
+        showToast('Usuário atualizado!', 'success')
+      }
     } else {
+      /*
+       * ========================================================
+       * NOVO USUÁRIO
+       * ========================================================
+       */
+
       const newUser = {
         ...user,
+
         id: Date.now()
       }
 
       updated = [...users, newUser]
+
+      localStorage.setItem('users', JSON.stringify(updated))
+
+      showToast('Usuário cadastrado!', 'success')
     }
 
-    localStorage.setItem('users', JSON.stringify(updated))
-
+    /*
+     * Atualiza a lista exibida na tela.
+     */
     setUsers(updated)
 
-    showToast(
-      editingId ? 'Usuário atualizado!' : 'Usuário cadastrado!',
-      'success'
-    )
-
+    /*
+     * Limpa o formulário.
+     */
     setUser(initialUser)
 
     setEditingId(null)
@@ -184,7 +233,10 @@ export default function Users() {
    */
 
   function handleEdit(u) {
-    // 🔒 BLOQUEIA EDIÇÃO
+    /*
+     * 🔒 BLOQUEIA EDIÇÃO
+     */
+
     if (!hasPermission('users_edit')) {
       showToast('Você não tem permissão para editar usuários', 'warning')
 
@@ -192,21 +244,23 @@ export default function Users() {
     }
 
     /*
-     * Copiamos os dados do usuário para o formulário.
+     * Copiamos todos os dados do usuário para o formulário.
      *
-     * Os campos antigos roleId/roleName continuam sendo
-     * preservados para compatibilidade.
+     * O employeeId é preservado.
      */
     setUser({
       ...initialUser,
+
       ...u,
 
       employeeId: u.employeeId || '',
 
       accessRoleId: u.accessRoleId || '',
+
       accessRoleName: u.accessRoleName || '',
 
       roleId: u.roleId || '',
+
       roleName: u.roleName || ''
     })
 
@@ -220,7 +274,10 @@ export default function Users() {
    */
 
   function handleDelete(id) {
-    // 🔒 BLOQUEIA EXCLUSÃO
+    /*
+     * 🔒 BLOQUEIA EXCLUSÃO
+     */
+
     if (!hasPermission('users_delete')) {
       showToast('Você não tem permissão para excluir usuários', 'warning')
 
@@ -240,6 +297,18 @@ export default function Users() {
     const updated = users.filter((u) => u.id !== deleteId)
 
     localStorage.setItem('users', JSON.stringify(updated))
+
+    /*
+     * Se por algum motivo o usuário excluído estiver logado,
+     * removemos também a sessão para evitar uma sessão inválida.
+     */
+    const loggedUser = JSON.parse(localStorage.getItem('loggedUser'))
+
+    if (loggedUser && Number(loggedUser.id) === Number(deleteId)) {
+      localStorage.removeItem('loggedUser')
+
+      localStorage.removeItem('currentUser')
+    }
 
     setUsers(updated)
 

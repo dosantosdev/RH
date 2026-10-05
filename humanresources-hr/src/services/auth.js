@@ -16,19 +16,8 @@ export function initializeSystem() {
    * ============================================================
    * PERFIS DE ACESSO
    * ============================================================
-   *
-   * Os perfis de acesso agora são independentes dos cargos.
-   *
-   * Cargo:
-   *   Vendedor
-   *   Motorista
-   *   Gerente
-   *
-   * Perfil de acesso:
-   *   Administrador
-   *   Gestão de RH
-   *   Funcionário
    */
+
   initializeAccessRoles()
 
   const accessRoles = getAccessRoles()
@@ -37,15 +26,6 @@ export function initializeSystem() {
    * ============================================================
    * CARGOS
    * ============================================================
-   *
-   * O sistema não cria mais admin, gestao_rh ou funcionario
-   * como cargos novos.
-   *
-   * Os registros antigos são preservados para não quebrar
-   * funcionários que ainda possam possuir roleId/roleName.
-   *
-   * A partir de agora, novos cargos são cadastrados pela tela
-   * de Cargos.
    */
 
   if (roles.length > 0) {
@@ -84,34 +64,20 @@ export function initializeSystem() {
    * ============================================================
    * MIGRAÇÃO DE USUÁRIOS ANTIGOS
    * ============================================================
-   *
-   * Usuários antigos utilizavam:
-   *
-   * roleId
-   * roleName
-   * role
-   *
-   * Agora o sistema utiliza:
-   *
-   * accessRoleId
-   * accessRoleName
-   *
-   * Os campos antigos não são removidos para evitar quebrar
-   * registros existentes.
    */
 
   users = users.map((user) => {
     /*
-     * Se o usuário já possui perfil de acesso, não precisamos
-     * descobrir novamente.
+     * Se o usuário já possui perfil de acesso,
+     * não precisamos descobrir novamente.
      */
     if (user.accessRoleId || user.accessRoleName) {
       return user
     }
 
     /*
-     * Tenta descobrir o perfil antigo através do nome utilizado
-     * anteriormente.
+     * Tenta descobrir o perfil antigo através
+     * do nome utilizado anteriormente.
      */
     const legacyRoleName = user.roleName || user.role || ''
 
@@ -125,7 +91,8 @@ export function initializeSystem() {
     }
 
     /*
-     * Caso não encontre pelo nome, tenta pelo roleId antigo.
+     * Caso não encontre pelo nome,
+     * tenta pelo roleId antigo.
      */
     if (!accessRole && user.roleId) {
       const legacyRole = roles.find(
@@ -138,8 +105,8 @@ export function initializeSystem() {
     }
 
     /*
-     * Se encontrou um perfil correspondente, adiciona os novos
-     * campos ao usuário.
+     * Se encontrou um perfil correspondente,
+     * adiciona os novos campos ao usuário.
      */
     if (accessRole) {
       return {
@@ -181,15 +148,13 @@ export function initializeSystem() {
     })
   } else {
     /*
-     * O usuário admin sempre deve utilizar o perfil admin.
+     * O usuário admin sempre deve utilizar
+     * o perfil admin.
      */
     adminUser.accessRoleId = adminAccessRole?.id || 1
 
     adminUser.accessRoleName = adminAccessRole?.name || 'admin'
 
-    /*
-     * Mantemos os campos antigos apenas para compatibilidade.
-     */
     if (adminUser.active === undefined) {
       adminUser.active = true
     }
@@ -202,9 +167,6 @@ export function initializeSystem() {
  * ============================================================
  * CARGOS
  * ============================================================
- *
- * Estas funções continuam existindo porque "roles" agora
- * representa CARGOS profissionais.
  */
 
 export function getRoles() {
@@ -235,6 +197,79 @@ export function register(user) {
   setStored('users', updatedUsers)
 
   return updatedUsers
+}
+
+/*
+ * ============================================================
+ * ATUALIZAÇÃO DO USUÁRIO
+ * ============================================================
+ *
+ * Atualiza o cadastro do usuário e, caso ele seja o usuário
+ * atualmente logado, atualiza também a sessão imediatamente.
+ *
+ * Isso evita a necessidade de logout/login quando, por exemplo,
+ * vinculamos um funcionário ao usuário.
+ */
+
+export function updateUser(updatedUser) {
+  const users = getStoredArray('users')
+
+  const updatedUsers = users.map((user) =>
+    Number(user.id) === Number(updatedUser.id) ? updatedUser : user
+  )
+
+  /*
+   * Salva a lista completa de usuários.
+   */
+  setStored('users', updatedUsers)
+
+  /*
+   * Verifica quem está logado neste momento.
+   */
+  const loggedUser = getCurrentUser()
+
+  /*
+   * Se o usuário alterado é justamente o usuário logado,
+   * atualizamos imediatamente a sessão.
+   */
+  if (loggedUser && Number(loggedUser.id) === Number(updatedUser.id)) {
+    localStorage.setItem('loggedUser', JSON.stringify(updatedUser))
+
+    localStorage.setItem('currentUser', JSON.stringify(updatedUser))
+  }
+
+  return updatedUsers
+}
+
+/*
+ * ============================================================
+ * SINCRONIZAÇÃO DO USUÁRIO LOGADO
+ * ============================================================
+ *
+ * Esta função pode ser utilizada quando alguma outra parte
+ * do sistema alterar dados de um usuário.
+ *
+ * Exemplo:
+ *
+ * - vínculo funcionário;
+ * - perfil de acesso;
+ * - status;
+ * - permissões;
+ * - outros dados do usuário.
+ */
+
+export function syncLoggedUser(updatedUser) {
+  const loggedUser = getCurrentUser()
+
+  if (!loggedUser || Number(loggedUser.id) !== Number(updatedUser.id)) {
+    return false
+  }
+
+  localStorage.setItem('loggedUser', JSON.stringify(updatedUser))
+
+  localStorage.setItem('currentUser', JSON.stringify(updatedUser))
+
+  return true
 }
 
 /*
@@ -271,7 +306,11 @@ export function login(username, password) {
  */
 
 export function getCurrentUser() {
-  return JSON.parse(localStorage.getItem('loggedUser'))
+  try {
+    return JSON.parse(localStorage.getItem('loggedUser'))
+  } catch {
+    return null
+  }
 }
 
 /*
@@ -282,5 +321,6 @@ export function getCurrentUser() {
 
 export function logout() {
   localStorage.removeItem('loggedUser')
+
   localStorage.removeItem('currentUser')
 }

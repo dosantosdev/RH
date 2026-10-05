@@ -24,29 +24,114 @@
   color: #666;
 }
 
+/* ============================================================
+   FILTROS
+============================================================ */
+
 .controle-ponto-toolbar {
-  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 30px;
 }
 
-.controle-ponto-toolbar input {
-  width: min(420px, 100%);
-  padding: 12px 14px;
+.controle-ponto-toolbar input,
+.controle-ponto-toolbar select {
+  height: 42px;
+  padding: 0 14px;
   border: 1px solid #d9dce3;
   border-radius: 9px;
   outline: none;
   box-sizing: border-box;
+  background: white;
+  color: #333;
 }
 
-.controle-ponto-toolbar input:focus {
+.controle-ponto-toolbar input {
+  width: min(420px, 100%);
+}
+
+.controle-ponto-toolbar select {
+  min-width: 220px;
+  cursor: pointer;
+}
+
+.controle-ponto-toolbar input:focus,
+.controle-ponto-toolbar select:focus {
   border-color: #4f67c6;
   box-shadow: 0 0 0 3px rgba(79, 103, 198, 0.1);
 }
+
+/* ============================================================
+   FILIAIS
+============================================================ */
+
+.controle-ponto-branches {
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+}
+
+.controle-ponto-branch-section {
+  min-width: 0;
+}
+
+.controle-ponto-branch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e1e3e8;
+}
+
+.controle-ponto-branch-header > div {
+  min-width: 0;
+}
+
+.controle-ponto-branch-kicker {
+  color: #4f67c6;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+}
+
+.controle-ponto-branch-header h2 {
+  margin: 3px 0 2px;
+  font-size: 19px;
+  color: #222;
+}
+
+.controle-ponto-branch-header p {
+  margin: 0;
+  color: #777;
+  font-size: 12px;
+}
+
+.controle-ponto-branch-count {
+  flex-shrink: 0;
+  padding: 6px 11px;
+  border-radius: 20px;
+  background: #f0f2fb;
+  color: #4f67c6;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   GRID
+============================================================ */
 
 .controle-ponto-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 18px;
 }
+
+/* ============================================================
+   CARD
+============================================================ */
 
 .controle-ponto-card {
   background: white;
@@ -97,6 +182,10 @@
   color: #9a631d;
 }
 
+/* ============================================================
+   INFORMAÇÕES
+============================================================ */
+
 .controle-ponto-info-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -122,6 +211,10 @@
   font-size: 14px;
 }
 
+/* ============================================================
+   ALERTA
+============================================================ */
+
 .controle-ponto-alert {
   margin-top: 15px;
   padding: 11px 12px;
@@ -131,6 +224,10 @@
   font-size: 12px;
   line-height: 1.5;
 }
+
+/* ============================================================
+   RODAPÉ DO CARD
+============================================================ */
 
 .controle-ponto-card-footer {
   display: flex;
@@ -163,6 +260,10 @@
   opacity: 0.9;
 }
 
+/* ============================================================
+   VAZIO
+============================================================ */
+
 .controle-ponto-empty {
   padding: 65px 25px;
   text-align: center;
@@ -185,6 +286,10 @@
   line-height: 1.5;
 }
 
+/* ============================================================
+   MODAL
+============================================================ */
+
 .controle-ponto-modal-overlay {
   position: fixed;
   inset: 0;
@@ -197,7 +302,7 @@
 }
 
 .controle-ponto-modal {
-  width: min(760px, 100%);
+  width: min(820px, 100%);
   max-height: 90vh;
   overflow: hidden;
   display: flex;
@@ -247,9 +352,13 @@
   padding: 24px;
 }
 
+/* ============================================================
+   RESUMO DO MODAL
+============================================================ */
+
 .controle-ponto-modal-summary {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
   margin-bottom: 22px;
 }
@@ -264,6 +373,10 @@
   border-radius: 9px;
   background: #fafafa;
 }
+
+/* ============================================================
+   JORNADA SEMANAL
+============================================================ */
 
 .controle-ponto-week-table {
   display: flex;
@@ -290,6 +403,10 @@
   font-size: 12px;
 }
 
+/* ============================================================
+   ESCALAS
+============================================================ */
+
 .controle-ponto-scale-description {
   padding: 18px;
   border: 1px solid #e5e6eb;
@@ -303,6 +420,10 @@
   line-height: 1.6;
 }
 
+/* ============================================================
+   RODAPÉ DO MODAL
+============================================================ */
+
 .controle-ponto-modal-footer {
   display: flex;
   justify-content: flex-end;
@@ -310,16 +431,33 @@
   border-top: 1px solid #eee;
 }
 
+/* ============================================================
+   RESPONSIVIDADE
+============================================================ */
+
 @media (max-width: 700px) {
   .controle-ponto-page {
     padding: 20px 15px 40px;
+  }
+
+  .controle-ponto-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .controle-ponto-toolbar input,
+  .controle-ponto-toolbar select {
+    width: 100%;
   }
 
   .controle-ponto-grid {
     grid-template-columns: 1fr;
   }
 
-  .controle-ponto-info-grid,
+  .controle-ponto-info-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
   .controle-ponto-modal-summary {
     grid-template-columns: 1fr 1fr;
   }
@@ -331,6 +469,11 @@
 }
 
 @media (max-width: 480px) {
+  .controle-ponto-branch-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
   .controle-ponto-card-header {
     flex-direction: column;
   }

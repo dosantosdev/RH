@@ -1,0 +1,700 @@
+.banco-horas-page {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 25px 30px 50px;
+}
+
+.banco-horas-header {
+  margin-bottom: 24px;
+}
+
+.banco-horas-kicker {
+  color: #4f67c6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+}
+
+.banco-horas-header h1 {
+  margin: 4px 0 6px;
+}
+
+.banco-horas-header p {
+  margin: 0;
+  color: #666;
+}
+
+/* ============================================================
+   FILTROS
+============================================================ */
+
+.banco-horas-filter-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  padding: 18px;
+  margin-bottom: 18px;
+  background: white;
+  border: 1px solid #e1e3e8;
+  border-radius: 13px;
+}
+
+.banco-horas-filter-period,
+.banco-horas-filter-search {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.banco-horas-filter-card label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.banco-horas-filter-card label span {
+  color: #777;
+  font-size: 11px;
+}
+
+.banco-horas-filter-card input,
+.banco-horas-filter-card select {
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid #d9dce3;
+  border-radius: 8px;
+  background: white;
+  color: #333;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.banco-horas-filter-card input:focus,
+.banco-horas-filter-card select:focus {
+  border-color: #4f67c6;
+  box-shadow: 0 0 0 3px rgba(79, 103, 198, 0.1);
+}
+
+.banco-horas-filter-search input {
+  width: min(320px, 100%);
+}
+
+.banco-horas-filter-search select {
+  min-width: 210px;
+}
+
+.banco-horas-filter-separator {
+  padding-bottom: 11px;
+  color: #777;
+  font-size: 12px;
+}
+
+.banco-horas-period-error {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #fff1df;
+  color: #8a5a1d;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   RESUMO
+============================================================ */
+
+.banco-horas-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 30px;
+}
+
+.banco-horas-summary-card {
+  padding: 17px 18px;
+  background: white;
+  border: 1px solid #e1e3e8;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+}
+
+.banco-horas-summary-card span {
+  display: block;
+  color: #777;
+  font-size: 11px;
+  margin-bottom: 7px;
+}
+
+.banco-horas-summary-card strong {
+  font-size: 24px;
+  color: #222;
+}
+
+.banco-horas-summary-card.positive strong,
+.banco-horas-entry-row strong.positive {
+  color: #2f7741;
+}
+
+.banco-horas-summary-card.negative strong,
+.banco-horas-entry-row strong.negative {
+  color: #a33c3c;
+}
+
+/* ============================================================
+   FILIAIS
+============================================================ */
+
+.banco-horas-branches {
+  display: flex;
+  flex-direction: column;
+  gap: 34px;
+}
+
+.banco-horas-branch-section {
+  min-width: 0;
+}
+
+.banco-horas-branch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 20px;
+  margin-bottom: 15px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e1e3e8;
+}
+
+.banco-horas-branch-header span:first-child {
+  color: #4f67c6;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.4px;
+}
+
+.banco-horas-branch-header h2 {
+  margin: 3px 0 2px;
+  font-size: 19px;
+}
+
+.banco-horas-branch-header p {
+  margin: 0;
+  color: #777;
+  font-size: 12px;
+}
+
+.banco-horas-branch-count {
+  flex-shrink: 0;
+  padding: 6px 11px;
+  border-radius: 20px;
+  background: #f0f2fb;
+  color: #4f67c6;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.banco-horas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(390px, 1fr));
+  gap: 18px;
+}
+
+/* ============================================================
+   CARD DO FUNCIONÁRIO
+============================================================ */
+
+.banco-horas-card {
+  background: white;
+  border: 1px solid #e1e3e8;
+  border-radius: 13px;
+  padding: 20px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.banco-horas-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.banco-horas-card-header > div {
+  min-width: 0;
+}
+
+.banco-horas-card-header span:first-child {
+  color: #777;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.banco-horas-card-header h3 {
+  margin: 4px 0 0;
+  font-size: 18px;
+}
+
+.banco-horas-balance-badge {
+  flex-shrink: 0;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.banco-horas-balance-badge.positive {
+  background: #e6f5ea;
+  color: #2f7741;
+}
+
+.banco-horas-balance-badge.negative {
+  background: #fdeaea;
+  color: #a33c3c;
+}
+
+.banco-horas-balance-badge.neutral {
+  background: #f1f2f5;
+  color: #666;
+}
+
+.banco-horas-card-main {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.banco-horas-card-main > div {
+  padding: 12px;
+  border: 1px solid #e7e8ec;
+  border-radius: 9px;
+  background: #fafafa;
+}
+
+.banco-horas-card-main span {
+  display: block;
+  color: #777;
+  font-size: 10px;
+  margin-bottom: 5px;
+}
+
+.banco-horas-card-main strong {
+  font-size: 15px;
+}
+
+.banco-horas-manual-note {
+  margin-top: 13px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #f3f5fc;
+  color: #4f5f9b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.banco-horas-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid #eee;
+}
+
+.banco-horas-card-footer > span {
+  color: #777;
+  font-size: 11px;
+}
+
+.banco-horas-card-footer > div {
+  display: flex;
+  gap: 7px;
+}
+
+.banco-horas-card-footer button,
+.banco-horas-detail-section-header button,
+.banco-horas-modal-footer button {
+  border: 1px solid #d9dce3;
+  border-radius: 8px;
+  background: white;
+  color: #4f67c6;
+  padding: 8px 11px;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.banco-horas-card-footer button.primary,
+.banco-horas-detail-section-header button,
+.banco-horas-modal-footer button.primary {
+  border-color: #4f67c6;
+  background: #4f67c6;
+  color: white;
+}
+
+.banco-horas-card-footer button:hover,
+.banco-horas-detail-section-header button:hover,
+.banco-horas-modal-footer button:hover {
+  opacity: 0.9;
+}
+
+/* ============================================================
+   VAZIO
+============================================================ */
+
+.banco-horas-empty {
+  padding: 65px 25px;
+  text-align: center;
+  border: 1px dashed #d5d8df;
+  border-radius: 12px;
+}
+
+.banco-horas-empty span {
+  font-size: 42px;
+}
+
+.banco-horas-empty h3 {
+  margin: 10px 0 5px;
+}
+
+.banco-horas-empty p {
+  margin: 0;
+  color: #666;
+}
+
+/* ============================================================
+   MODAIS
+============================================================ */
+
+.banco-horas-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.banco-horas-modal,
+.banco-horas-entry-modal {
+  width: min(900px, 100%);
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border-radius: 14px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.22);
+}
+
+.banco-horas-entry-modal {
+  width: min(600px, 100%);
+}
+
+.banco-horas-modal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 20px 24px;
+  border-bottom: 1px solid #eee;
+}
+
+.banco-horas-modal-header span {
+  color: #4f67c6;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.banco-horas-modal-header h2 {
+  margin: 4px 0 0;
+  font-size: 20px;
+}
+
+.banco-horas-modal-header p {
+  margin: 4px 0 0;
+  color: #777;
+  font-size: 12px;
+}
+
+.banco-horas-modal-header button {
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #666;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.banco-horas-modal-header button:hover {
+  background: #f3f4f8;
+}
+
+.banco-horas-modal-body {
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* ============================================================
+   RESUMO DO MODAL
+============================================================ */
+
+.banco-horas-detail-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.banco-horas-detail-summary > div {
+  padding: 12px;
+  border: 1px solid #e5e6eb;
+  border-radius: 9px;
+  background: #fafafa;
+}
+
+.banco-horas-detail-summary span {
+  display: block;
+  color: #777;
+  font-size: 10px;
+  margin-bottom: 5px;
+}
+
+.banco-horas-detail-summary strong {
+  font-size: 14px;
+}
+
+/* ============================================================
+   LANÇAMENTOS
+============================================================ */
+
+.banco-horas-detail-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 15px;
+  margin-bottom: 14px;
+}
+
+.banco-horas-detail-section-header h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.banco-horas-detail-section-header p {
+  margin: 0;
+  color: #777;
+  font-size: 12px;
+}
+
+.banco-horas-no-entries {
+  padding: 22px;
+  text-align: center;
+  border: 1px dashed #d5d8df;
+  border-radius: 9px;
+  color: #777;
+  font-size: 12px;
+}
+
+.banco-horas-entries-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.banco-horas-entry-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr auto auto;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid #e5e6eb;
+  border-radius: 9px;
+}
+
+.banco-horas-entry-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.banco-horas-entry-row span,
+.banco-horas-entry-row small {
+  color: #777;
+  font-size: 11px;
+}
+
+.banco-horas-entry-row > strong {
+  white-space: nowrap;
+}
+
+.banco-horas-delete-button {
+  border: none;
+  background: transparent;
+  color: #a33c3c;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+/* ============================================================
+   FORMULÁRIO
+============================================================ */
+
+.banco-horas-entry-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+  padding: 24px;
+}
+
+.banco-horas-entry-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.banco-horas-entry-form label > span {
+  color: #555;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.banco-horas-entry-form input,
+.banco-horas-entry-form select,
+.banco-horas-entry-form textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #d9dce3;
+  border-radius: 8px;
+  background: white;
+  color: #333;
+  outline: none;
+  font: inherit;
+  font-size: 12px;
+}
+
+.banco-horas-entry-form input:focus,
+.banco-horas-entry-form select:focus,
+.banco-horas-entry-form textarea:focus {
+  border-color: #4f67c6;
+  box-shadow: 0 0 0 3px rgba(79, 103, 198, 0.1);
+}
+
+.banco-horas-entry-form small {
+  color: #888;
+  font-size: 10px;
+}
+
+.banco-horas-entry-reason {
+  grid-column: 1 / -1;
+}
+
+.banco-horas-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 14px 24px;
+  border-top: 1px solid #eee;
+}
+
+/* ============================================================
+   RESPONSIVIDADE
+============================================================ */
+
+@media (max-width: 900px) {
+  .banco-horas-filter-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .banco-horas-filter-period,
+  .banco-horas-filter-search {
+    width: 100%;
+  }
+
+  .banco-horas-filter-search input {
+    flex: 1;
+  }
+
+  .banco-horas-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .banco-horas-detail-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .banco-horas-page {
+    padding: 20px 15px 40px;
+  }
+
+  .banco-horas-filter-period,
+  .banco-horas-filter-search {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .banco-horas-filter-search select,
+  .banco-horas-filter-search input {
+    width: 100%;
+  }
+
+  .banco-horas-filter-separator {
+    display: none;
+  }
+
+  .banco-horas-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .banco-horas-branch-header,
+  .banco-horas-detail-section-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .banco-horas-entry-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .banco-horas-entry-row > strong {
+    grid-column: 1;
+  }
+
+  .banco-horas-delete-button {
+    justify-self: end;
+  }
+}
+
+@media (max-width: 480px) {
+  .banco-horas-summary-grid,
+  .banco-horas-detail-summary,
+  .banco-horas-card-main,
+  .banco-horas-entry-form {
+    grid-template-columns: 1fr;
+  }
+
+  .banco-horas-entry-reason {
+    grid-column: auto;
+  }
+
+  .banco-horas-card-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .banco-horas-card-footer > div {
+    flex-direction: column;
+  }
+
+  .banco-horas-card-footer button {
+    width: 100%;
+  }
+}

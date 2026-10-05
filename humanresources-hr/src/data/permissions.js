@@ -138,56 +138,6 @@ export const permissions = [
   },
 
   {
-    category: 'Treinamentos',
-
-    items: [
-      {
-        key: 'trainings_view',
-        label: 'Gerenciar treinamentos'
-      },
-      {
-        key: 'trainings_create',
-        label: 'Cadastrar treinamentos'
-      },
-      {
-        key: 'trainings_edit',
-        label: 'Editar treinamentos'
-      },
-      {
-        key: 'trainings_delete',
-        label: 'Excluir treinamentos'
-      },
-      {
-        key: 'my_trainings_view',
-        label: 'Realizar meus treinamentos'
-      }
-    ]
-  },
-
-  {
-    category: 'Ponto',
-
-    items: [
-      {
-        key: 'work_schedules_view',
-        label: 'Visualizar jornadas e escalas'
-      },
-      {
-        key: 'work_schedules_create',
-        label: 'Cadastrar jornadas e escalas'
-      },
-      {
-        key: 'work_schedules_edit',
-        label: 'Editar jornadas e escalas'
-      },
-      {
-        key: 'work_schedules_delete',
-        label: 'Excluir jornadas e escalas'
-      }
-    ]
-  },
-
-  {
     category: 'Dashboard',
 
     items: [
@@ -217,6 +167,83 @@ export const permissions = [
       {
         key: 'password_change',
         label: 'Alterar própria senha'
+      }
+    ]
+  },
+
+  /*
+   * ============================================================
+   * PONTO
+   * ============================================================
+   */
+
+  {
+    category: 'Ponto',
+
+    items: [
+      {
+        key: 'ponto_bater',
+        label: 'Registrar próprio ponto'
+      },
+
+      {
+        key: 'ponto_espelho_view',
+        label: 'Visualizar próprio espelho de ponto'
+      },
+
+      {
+        key: 'ponto_controle_view',
+        label: 'Visualizar controle de ponto'
+      },
+
+      {
+        key: 'ponto_controle_edit',
+        label: 'Ajustar registros de ponto'
+      },
+
+      {
+        key: 'ponto_jornadas_view',
+        label: 'Visualizar jornadas e escalas'
+      },
+
+      {
+        key: 'ponto_jornadas_create',
+        label: 'Cadastrar jornadas e escalas'
+      },
+
+      {
+        key: 'ponto_jornadas_edit',
+        label: 'Editar jornadas e escalas'
+      },
+
+      {
+        key: 'ponto_jornadas_delete',
+        label: 'Excluir jornadas e escalas'
+      },
+
+      {
+        key: 'ponto_banco_horas_view',
+        label: 'Visualizar banco de horas'
+      },
+
+      {
+        key: 'ponto_horas_extras_view',
+        label: 'Visualizar horas extras'
+      },
+
+      {
+        key: 'ponto_faltas_view',
+        label: 'Visualizar faltas e atrasos'
+      },
+
+      {
+        key: 'ponto_fechamento_view',
+        label: 'Visualizar fechamento mensal'
+      },
+
+      {
+        key: 'ponto_relatorios_view',
+        label: 'Visualizar relatórios de ponto'
       }
     ]
   }

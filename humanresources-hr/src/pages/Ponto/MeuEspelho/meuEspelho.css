@@ -1,0 +1,455 @@
+.time-clock-page {
+  width: 100%;
+  min-height: 100%;
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+.time-clock-container {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.time-clock-page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.time-clock-page-header > div:first-child > span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  opacity: 0.65;
+}
+
+.time-clock-page-header h1 {
+  margin: 6px 0;
+  font-size: 32px;
+}
+
+.time-clock-page-header p {
+  margin: 0;
+  opacity: 0.7;
+}
+
+.time-clock-employee-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.time-clock-employee-summary > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.time-clock-employee-summary span {
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+.time-clock-avatar {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  background: #e9eef5;
+}
+
+.time-clock-card {
+  background: #fff;
+  border: 1px solid #e4e8ee;
+  border-radius: 14px;
+  padding: 24px;
+  box-sizing: border-box;
+}
+
+.time-clock-period-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.time-clock-period-navigation {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.time-clock-period {
+  min-width: 260px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: center;
+}
+
+.time-clock-period span {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  opacity: 0.6;
+}
+
+.time-clock-period strong {
+  font-size: 17px;
+}
+
+.time-clock-month-button {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #dce1e8;
+  border-radius: 8px;
+  background: #fff;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.time-clock-month-button:hover {
+  background: #f4f6f8;
+}
+
+.time-clock-date-fields {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+
+.time-clock-date-fields label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.time-clock-date-fields label span {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.time-clock-date-fields input {
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid #dce1e8;
+  border-radius: 7px;
+  font: inherit;
+}
+
+.time-clock-date-separator {
+  padding-bottom: 10px;
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.time-clock-period-error {
+  width: 100%;
+  margin-top: 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: #fff1f1;
+  color: #b42318;
+  font-size: 13px;
+}
+
+.time-clock-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.time-clock-summary-card {
+  min-height: 130px;
+  padding: 20px;
+  border: 1px solid #e4e8ee;
+  border-radius: 12px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  box-sizing: border-box;
+}
+
+.time-clock-summary-card > span {
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+.time-clock-summary-card > strong {
+  font-size: 25px;
+}
+
+.time-clock-summary-card > small {
+  font-size: 12px;
+  opacity: 0.6;
+}
+
+.time-clock-summary-card.positive > strong,
+.positive {
+  color: #16803c;
+}
+
+.time-clock-summary-card.negative > strong,
+.negative {
+  color: #c62828;
+}
+
+.time-clock-summary-card.neutral > strong {
+  color: inherit;
+}
+
+.time-clock-section-header {
+  margin-bottom: 20px;
+}
+
+.time-clock-section-header h2 {
+  margin: 0 0 5px;
+}
+
+.time-clock-section-header p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.65;
+}
+
+.time-clock-daily-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.time-clock-daily-row {
+  display: grid;
+  grid-template-columns: 100px 120px 1fr 2fr;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  border: 1px solid #e8ebef;
+  border-radius: 10px;
+}
+
+.time-clock-day-date {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.time-clock-day-date strong {
+  text-transform: capitalize;
+}
+
+.time-clock-day-date span {
+  font-size: 13px;
+  opacity: 0.6;
+}
+
+.time-clock-status-badge {
+  display: inline-flex;
+  width: fit-content;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-worked {
+  background: #e9f8ef;
+  color: #16803c;
+}
+
+.status-absence {
+  background: #fff0f0;
+  color: #c62828;
+}
+
+.status-off {
+  background: #f0f2f5;
+  color: #59636e;
+}
+
+.status-pending {
+  background: #fff7e6;
+  color: #a15c00;
+}
+
+.time-clock-day-hours {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.time-clock-day-hours > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.time-clock-day-hours span {
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+.time-clock-day-hours strong {
+  font-size: 14px;
+}
+
+.time-clock-day-punches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.time-clock-mini-punch {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 7px 10px;
+  border-radius: 7px;
+  background: #f5f7f9;
+}
+
+.time-clock-mini-punch strong {
+  font-size: 13px;
+}
+
+.time-clock-mini-punch span {
+  font-size: 10px;
+  opacity: 0.65;
+}
+
+.time-clock-no-punch {
+  font-size: 13px;
+  opacity: 0.55;
+}
+
+.time-clock-loading {
+  padding: 30px;
+  text-align: center;
+  opacity: 0.65;
+}
+
+.time-clock-empty {
+  padding: 50px 20px;
+  text-align: center;
+}
+
+.time-clock-empty span {
+  display: block;
+  font-size: 30px;
+  margin-bottom: 10px;
+}
+
+.time-clock-empty h3 {
+  margin: 0 0 8px;
+}
+
+.time-clock-empty p {
+  margin: 0;
+  opacity: 0.65;
+}
+
+.time-clock-warning {
+  padding: 20px;
+  border-radius: 10px;
+  background: #fff7e6;
+}
+
+.time-clock-warning strong {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.time-clock-warning p {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.time-clock-access-denied {
+  max-width: 600px;
+  margin: 80px auto;
+  padding: 30px;
+  text-align: center;
+  border: 1px solid #e4e8ee;
+  border-radius: 14px;
+  background: #fff;
+}
+
+@media (max-width: 1100px) {
+  .time-clock-period-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .time-clock-period-navigation {
+    justify-content: center;
+  }
+
+  .time-clock-date-fields {
+    justify-content: center;
+  }
+
+  .time-clock-summary-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .time-clock-daily-row {
+    grid-template-columns: 90px 110px 1fr;
+  }
+
+  .time-clock-day-punches {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 700px) {
+  .time-clock-page {
+    padding: 16px;
+  }
+
+  .time-clock-page-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .time-clock-period-navigation {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .time-clock-period {
+    min-width: 0;
+  }
+
+  .time-clock-date-fields {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .time-clock-date-separator {
+    display: none;
+  }
+
+  .time-clock-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .time-clock-daily-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .time-clock-day-hours {
+    gap: 8px;
+  }
+}

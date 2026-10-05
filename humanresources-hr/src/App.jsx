@@ -267,16 +267,20 @@ function App() {
           PONTO
       ====================================================== */}
 
-      <Route
-        path="/ponto/bater"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <BaterPonto />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
+      {/*
+       * ============================================================
+       * TERMINAL DE PONTO
+       * ============================================================
+       *
+       * Esta rota fica pública porque o terminal biométrico
+       * não deve exigir login.
+       *
+       * Quando o funcionário utilizar o modo remoto,
+       * a própria tela exigirá um usuário autenticado
+       * e vinculado a um funcionário.
+       */}
+
+      <Route path="/ponto/bater" element={<BaterPonto />} />
 
       <Route
         path="/ponto/jornadas"
