@@ -160,12 +160,22 @@ export default function Navbar() {
         )}
 
         {/* ======================================================
-            AVALIAÇÕES
-        ====================================================== */}
+    AVALIAÇÕES
+====================================================== */}
 
-        <Link to="/avaliacoes" className="nav-link">
-          Avaliações
-        </Link>
+        <div className="dropdown">
+          <button className="dropbtn">Avaliações</button>
+
+          <div className="dropdown-content">
+            <Link to="/avaliacoes">Avaliações de desempenho</Link>
+
+            <Link to="/avaliacoes/minhas">Minhas avaliações</Link>
+
+            <Link to="/avaliacoes/modelos">Modelos de avaliação</Link>
+
+            <Link to="/avaliacoes/historico">Histórico</Link>
+          </div>
+        </div>
 
         {/* ======================================================
             PONTO

@@ -1,10 +1,6 @@
-const STORAGE_KEY = 'evaluations'
+import { getStoredArray, setStored } from './storage'
 
-/*
- * ============================================================
- * TIPOS DE AVALIAÇÃO
- * ============================================================
- */
+const STORAGE_KEY = 'evaluations'
 
 export const EVALUATION_TYPES = [
   {
@@ -29,12 +25,6 @@ export const EVALUATION_TYPES = [
   }
 ]
 
-/*
- * ============================================================
- * STATUS
- * ============================================================
- */
-
 export const EVALUATION_STATUSES = [
   {
     value: 'draft',
@@ -58,60 +48,82 @@ export const EVALUATION_STATUSES = [
   }
 ]
 
-/*
- * ============================================================
- * UTILITÁRIOS
- * ============================================================
- */
-
 function generateId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 }
 
 /*
  * ============================================================
- * STORAGE
+ * CRITÉRIOS ANTIGOS
+ *
+ * Mantemos estas funções para compatibilidade com avaliações
+ * criadas anteriormente.
  * ============================================================
  */
 
-export function getEvaluations() {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY)
+export const DEFAULT_EVALUATION_CRITERIA = [
+  'Qualidade do trabalho',
+  'Produtividade',
+  'Trabalho em equipe',
+  'Pontualidade e assiduidade',
+  'Comunicação'
+]
 
-    if (!stored) {
-      return []
+export function createEvaluationCriteria(name = '') {
+  return {
+    id: generateId(),
+
+    name,
+
+    score: '',
+
+    comment: ''
+  }
+}
+
+export function calculateEvaluationResult(criteria = []) {
+  const scores = criteria
+    .map((item) => Number(item.score))
+    .filter((score) => Number.isFinite(score) && score >= 1 && score <= 10)
+
+  if (scores.length === 0) {
+    return {
+      average: null,
+      total: 0,
+      count: 0
     }
+  }
 
-    const parsed = JSON.parse(stored)
+  const total = scores.reduce((sum, score) => sum + score, 0)
 
-    return Array.isArray(parsed) ? parsed : []
-  } catch {
-    return []
+  return {
+    average: Math.round((total / scores.length) * 100) / 100,
+
+    total,
+
+    count: scores.length
   }
 }
 
 /*
  * ============================================================
- * BUSCAR POR ID
+ * BUSCAR
  * ============================================================
  */
 
+export function getEvaluations() {
+  return getStoredArray(STORAGE_KEY)
+}
+
 export function getEvaluationById(evaluationId) {
-  return (
-    getEvaluations().find((item) => String(item.id) === String(evaluationId)) ||
-    null
+  return getEvaluations().find(
+    (evaluation) => String(evaluation.id) === String(evaluationId)
   )
 }
 
-/*
- * ============================================================
- * BUSCAR POR FUNCIONÁRIO
- * ============================================================
- */
-
 export function getEmployeeEvaluations(employeeId) {
   return getEvaluations().filter(
-    (item) => Number(item.employeeId) === Number(employeeId)
+    (evaluation) => Number(evaluation.employeeId) === Number(employeeId)
   )
 }
 
@@ -125,9 +137,9 @@ export function addEvaluation(evaluation) {
   const evaluations = getEvaluations()
 
   const newEvaluation = {
-    ...evaluation,
-
     id: evaluation.id || generateId(),
+
+    ...evaluation,
 
     createdAt: evaluation.createdAt || new Date().toISOString(),
 
@@ -136,7 +148,7 @@ export function addEvaluation(evaluation) {
 
   const updated = [...evaluations, newEvaluation]
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+  setStored(STORAGE_KEY, updated)
 
   return newEvaluation
 }
@@ -150,19 +162,31 @@ export function addEvaluation(evaluation) {
 export function updateEvaluation(evaluation) {
   const evaluations = getEvaluations()
 
-  const updated = evaluations.map((item) =>
-    String(item.id) === String(evaluation.id)
-      ? {
-          ...item,
-          ...evaluation,
-          updatedAt: new Date().toISOString()
-        }
-      : item
+  const existing = evaluations.find(
+    (item) => String(item.id) === String(evaluation.id)
   )
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+  if (!existing) {
+    return null
+  }
 
-  return updated
+  const updatedEvaluation = {
+    ...existing,
+
+    ...evaluation,
+
+    createdAt: existing.createdAt,
+
+    updatedAt: new Date().toISOString()
+  }
+
+  const updated = evaluations.map((item) =>
+    String(item.id) === String(evaluation.id) ? updatedEvaluation : item
+  )
+
+  setStored(STORAGE_KEY, updated)
+
+  return updatedEvaluation
 }
 
 /*
@@ -175,25 +199,23 @@ export function deleteEvaluation(evaluationId) {
   const evaluations = getEvaluations()
 
   const updated = evaluations.filter(
-    (item) => String(item.id) !== String(evaluationId)
+    (evaluation) => String(evaluation.id) !== String(evaluationId)
   )
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+  setStored(STORAGE_KEY, updated)
 
   return updated
 }
 
 /*
  * ============================================================
- * UTILITÁRIOS DE EXIBIÇÃO
+ * LABELS
  * ============================================================
  */
 
 export function getEvaluationTypeLabel(type) {
   return (
-    EVALUATION_TYPES.find((item) => item.value === type)?.label ||
-    type ||
-    'Não informado'
+    EVALUATION_TYPES.find((item) => item.value === type)?.label || type || ''
   )
 }
 
@@ -201,6 +223,26 @@ export function getEvaluationStatusLabel(status) {
   return (
     EVALUATION_STATUSES.find((item) => item.value === status)?.label ||
     status ||
-    'Não informado'
+    ''
   )
+}
+
+/*
+ * ============================================================
+ * NOTA
+ * ============================================================
+ */
+
+export function formatEvaluationScore(score) {
+  if (score === null || score === undefined || score === '') {
+    return '-'
+  }
+
+  const value = Number(score)
+
+  if (!Number.isFinite(value)) {
+    return '-'
+  }
+
+  return value.toFixed(2).replace('.', ',')
 }

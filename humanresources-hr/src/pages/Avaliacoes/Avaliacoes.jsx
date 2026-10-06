@@ -1,439 +1,281 @@
 import { useMemo, useState } from 'react'
 
-import './avaliacoes.css'
-
 import { getEmployees } from '../../services/employee'
 
 import {
-  addEvaluation,
-  EVALUATION_STATUSES,
-  EVALUATION_TYPES,
-  getEvaluationStatusLabel,
-  getEvaluationTypeLabel,
-  getEvaluations
-} from '../../services/evaluations'
+  getEvaluationModelTypeLabel,
+  getActiveEvaluationModels
+} from '../../services/evaluationModels'
+
+import {
+  calculateEvaluationDuration,
+  calculateEvaluationProgress,
+  calculateStageDuration,
+  createEvaluationWorkflow,
+  getEvaluationWorkflows
+} from '../../services/evaluationWorkflow'
+
+import './avaliacoes.css'
+
+function formatDate(value) {
+  if (!value) {
+    return '-'
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return '-'
+  }
+
+  return date.toLocaleDateString('pt-BR')
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return '-'
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return '-'
+  }
+
+  return date.toLocaleString('pt-BR')
+}
+
+function formatDuration(duration) {
+  if (!duration) {
+    return '-'
+  }
+
+  if (duration.minutes < 60) {
+    return `${Math.round(duration.minutes)} min`
+  }
+
+  if (duration.hours < 24) {
+    return `${duration.hours.toFixed(1)} h`
+  }
+
+  return `${duration.days.toFixed(1)} dias`
+}
 
 export default function Avaliacoes() {
   const [employees] = useState(() =>
     getEmployees().filter((employee) => employee.active !== false)
   )
 
-  const [evaluations, setEvaluations] = useState(() => getEvaluations())
+  const [models] = useState(getActiveEvaluationModels)
 
-  const [selectedStatus, setSelectedStatus] = useState('all')
-
-  const [selectedType, setSelectedType] = useState('all')
-
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState('all')
+  const [workflows, setWorkflows] = useState(getEvaluationWorkflows)
 
   const [search, setSearch] = useState('')
 
+  const [statusFilter, setStatusFilter] = useState('all')
+
   const [showForm, setShowForm] = useState(false)
 
-  const [form, setForm] = useState(createInitialForm())
+  const [selectedWorkflow, setSelectedWorkflow] = useState(null)
 
-  const [formError, setFormError] = useState('')
+  const [form, setForm] = useState({
+    employeeId: '',
+    modelId: '',
+    startDate: '',
+    endDate: ''
+  })
 
-  /*
-   * ============================================================
-   * AVALIAÇÕES FILTRADAS
-   * ============================================================
-   */
+  const [error, setError] = useState('')
 
-  const filteredEvaluations = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase()
+  const filteredWorkflows = useMemo(() => {
+    const value = search.trim().toLowerCase()
 
-    return evaluations.filter((evaluation) => {
-      if (selectedStatus !== 'all' && evaluation.status !== selectedStatus) {
+    return workflows.filter((workflow) => {
+      if (statusFilter !== 'all' && workflow.status !== statusFilter) {
         return false
       }
 
-      if (selectedType !== 'all' && evaluation.type !== selectedType) {
-        return false
-      }
-
-      if (
-        selectedEmployeeId !== 'all' &&
-        Number(evaluation.employeeId) !== Number(selectedEmployeeId)
-      ) {
-        return false
-      }
-
-      if (!normalizedSearch) {
+      if (!value) {
         return true
       }
 
-      const employee = employees.find(
-        (item) => Number(item.id) === Number(evaluation.employeeId)
-      )
-
-      const employeeName = String(employee?.name || '').toLowerCase()
-
-      const evaluationTitle = String(evaluation.title || '').toLowerCase()
-
       return (
-        employeeName.includes(normalizedSearch) ||
-        evaluationTitle.includes(normalizedSearch)
+        workflow.employeeName?.toLowerCase().includes(value) ||
+        workflow.modelName?.toLowerCase().includes(value) ||
+        workflow.branchName?.toLowerCase().includes(value)
       )
     })
-  }, [
-    evaluations,
-    employees,
-    selectedStatus,
-    selectedType,
-    selectedEmployeeId,
-    search
-  ])
-
-  /*
-   * ============================================================
-   * RESUMO
-   * ============================================================
-   */
+  }, [workflows, search, statusFilter])
 
   const summary = useMemo(() => {
-    return evaluations.reduce(
-      (result, evaluation) => {
-        result.total += 1
+    return {
+      total: workflows.length,
 
-        if (evaluation.status === 'draft') {
-          result.drafts += 1
-        }
+      pending: workflows.filter((item) => item.status === 'in_progress').length,
 
-        if (
-          evaluation.status === 'pending' ||
-          evaluation.status === 'in_progress'
-        ) {
-          result.pending += 1
-        }
+      completed: workflows.filter((item) => item.status === 'completed').length,
 
-        if (evaluation.status === 'completed') {
-          result.completed += 1
-        }
-
-        return result
-      },
-      {
-        total: 0,
-        drafts: 0,
-        pending: 0,
-        completed: 0
-      }
-    )
-  }, [evaluations])
-
-  /*
-   * ============================================================
-   * FUNCIONÁRIO
-   * ============================================================
-   */
-
-  function getEmployeeName(employeeId) {
-    return (
-      employees.find((employee) => Number(employee.id) === Number(employeeId))
-        ?.name || 'Funcionário não informado'
-    )
-  }
-
-  /*
-   * ============================================================
-   * ALTERAÇÃO DO FORMULÁRIO
-   * ============================================================
-   */
+      cancelled: workflows.filter((item) => item.status === 'cancelled').length
+    }
+  }, [workflows])
 
   function handleFormChange(event) {
     const { name, value } = event.target
 
     setForm((previous) => ({
       ...previous,
+
       [name]: value
     }))
-
-    setFormError('')
   }
 
-  /*
-   * ============================================================
-   * ABRIR FORMULÁRIO
-   * ============================================================
-   */
+  function openCreate() {
+    setForm({
+      employeeId: '',
+      modelId: '',
+      startDate: '',
+      endDate: ''
+    })
 
-  function handleOpenForm() {
-    setForm(createInitialForm())
-
-    setFormError('')
+    setError('')
 
     setShowForm(true)
   }
 
-  /*
-   * ============================================================
-   * FECHAR FORMULÁRIO
-   * ============================================================
-   */
-
-  function handleCloseForm() {
+  function closeForm() {
     setShowForm(false)
 
-    setFormError('')
+    setError('')
   }
 
-  /*
-   * ============================================================
-   * SALVAR AVALIAÇÃO
-   * ============================================================
-   */
-
-  function handleSubmit(event) {
+  function handleCreate(event) {
     event.preventDefault()
 
-    if (!form.employeeId) {
-      setFormError('Selecione um funcionário.')
+    setError('')
+
+    const employee = employees.find(
+      (item) => String(item.id) === String(form.employeeId)
+    )
+
+    if (!employee) {
+      setError('Selecione um funcionário.')
 
       return
     }
 
-    if (!form.title.trim()) {
-      setFormError('Informe o título da avaliação.')
+    if (!form.modelId) {
+      setError('Selecione um modelo de avaliação.')
 
       return
     }
 
-    if (!form.type) {
-      setFormError('Selecione o tipo da avaliação.')
+    try {
+      createEvaluationWorkflow({
+        employeeId: employee.id,
 
-      return
+        employeeName: employee.name,
+
+        branchId: employee.branchId || employee.branch?.id || '',
+
+        branchName: employee.branchName || employee.branch?.name || '',
+
+        modelId: form.modelId,
+
+        startDate: form.startDate,
+
+        endDate: form.endDate,
+
+        createdBy: 'current-user',
+
+        createdByName: 'Usuário atual'
+      })
+
+      setWorkflows(getEvaluationWorkflows())
+
+      closeForm()
+    } catch (workflowError) {
+      setError(workflowError.message)
     }
-
-    if (!form.evaluator.trim()) {
-      setFormError('Informe o avaliador.')
-
-      return
-    }
-
-    if (form.startDate && form.endDate && form.startDate > form.endDate) {
-      setFormError('A data final não pode ser anterior à data inicial.')
-
-      return
-    }
-
-    const newEvaluation = addEvaluation({
-      employeeId: Number(form.employeeId),
-
-      title: form.title.trim(),
-
-      type: form.type,
-
-      status: form.status,
-
-      evaluator: form.evaluator.trim(),
-
-      startDate: form.startDate,
-
-      endDate: form.endDate,
-
-      notes: form.notes.trim()
-    })
-
-    setEvaluations((previous) => [...previous, newEvaluation])
-
-    setShowForm(false)
-
-    setForm(createInitialForm())
-
-    setFormError('')
   }
 
-  /*
-   * ============================================================
-   * LIMPAR FILTROS
-   * ============================================================
-   */
-
-  function clearFilters() {
-    setSelectedStatus('all')
-
-    setSelectedType('all')
-
-    setSelectedEmployeeId('all')
-
-    setSearch('')
+  function refresh() {
+    setWorkflows(getEvaluationWorkflows())
   }
 
   return (
     <div className="evaluations-page">
-      {/* ======================================================
-          CABEÇALHO
-      ====================================================== */}
-
       <header className="evaluations-header">
         <div>
-          <span className="evaluations-kicker">RECURSOS HUMANOS</span>
+          <span className="evaluations-eyebrow">RH</span>
 
-          <h1>Avaliações</h1>
+          <h1>Avaliações de desempenho</h1>
 
-          <p>
-            Acompanhe avaliações de desempenho e outros processos de avaliação
-            dos funcionários.
-          </p>
+          <p>Acompanhe avaliações, etapas, responsáveis, PDI e 180°.</p>
         </div>
 
         <button
           type="button"
-          className="evaluations-new-button"
-          onClick={handleOpenForm}
+          className="evaluations-primary-button"
+          onClick={openCreate}
         >
           + Nova avaliação
         </button>
       </header>
 
-      {/* ======================================================
-          RESUMO
-      ====================================================== */}
-
       <section className="evaluations-summary">
-        <SummaryCard
-          label="Total"
-          value={String(summary.total)}
-          description="Avaliações cadastradas"
-        />
+        <div className="evaluation-summary-card">
+          <span>Total</span>
 
-        <SummaryCard
-          label="Pendentes"
-          value={String(summary.pending)}
-          description="Aguardando ou em andamento"
-          variant="warning"
-        />
+          <strong>{summary.total}</strong>
+        </div>
 
-        <SummaryCard
-          label="Concluídas"
-          value={String(summary.completed)}
-          description="Avaliações finalizadas"
-          variant="positive"
-        />
+        <div className="evaluation-summary-card">
+          <span>Em andamento</span>
 
-        <SummaryCard
-          label="Rascunhos"
-          value={String(summary.drafts)}
-          description="Ainda não iniciadas"
-          variant="neutral"
-        />
+          <strong>{summary.pending}</strong>
+        </div>
+
+        <div className="evaluation-summary-card">
+          <span>Concluídas</span>
+
+          <strong>{summary.completed}</strong>
+        </div>
+
+        <div className="evaluation-summary-card">
+          <span>Canceladas</span>
+
+          <strong>{summary.cancelled}</strong>
+        </div>
       </section>
 
-      {/* ======================================================
-          CARD PRINCIPAL
-      ====================================================== */}
-
       <section className="evaluations-card">
-        <div className="evaluations-card-header">
-          <div>
-            <span>AVALIAÇÕES</span>
+        <div className="evaluations-toolbar">
+          <input
+            type="text"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Buscar funcionário, modelo ou filial..."
+          />
 
-            <h2>Lista de avaliações</h2>
-
-            <p>
-              Consulte as avaliações cadastradas e acompanhe o status de cada
-              processo.
-            </p>
-          </div>
-
-          <strong>{filteredEvaluations.length} resultado(s)</strong>
-        </div>
-
-        {/* ====================================================
-            FILTROS
-        ==================================================== */}
-
-        <div className="evaluations-filters">
-          <div className="evaluations-filter evaluations-filter-search">
-            <label htmlFor="evaluations-search">Buscar</label>
-
-            <input
-              id="evaluations-search"
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Funcionário ou avaliação"
-            />
-          </div>
-
-          <div className="evaluations-filter">
-            <label htmlFor="evaluations-status">Status</label>
-
-            <select
-              id="evaluations-status"
-              value={selectedStatus}
-              onChange={(event) => setSelectedStatus(event.target.value)}
-            >
-              <option value="all">Todos</option>
-
-              {EVALUATION_STATUSES.map((status) => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="evaluations-filter">
-            <label htmlFor="evaluations-type">Tipo</label>
-
-            <select
-              id="evaluations-type"
-              value={selectedType}
-              onChange={(event) => setSelectedType(event.target.value)}
-            >
-              <option value="all">Todos</option>
-
-              {EVALUATION_TYPES.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="evaluations-filter">
-            <label htmlFor="evaluations-employee">Funcionário</label>
-
-            <select
-              id="evaluations-employee"
-              value={selectedEmployeeId}
-              onChange={(event) => setSelectedEmployeeId(event.target.value)}
-            >
-              <option value="all">Todos os funcionários</option>
-
-              {employees.map((employee) => (
-                <option key={employee.id} value={employee.id}>
-                  {employee.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <button
-            type="button"
-            className="evaluations-clear-button"
-            onClick={clearFilters}
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value)}
           >
-            Limpar filtros
-          </button>
+            <option value="all">Todos os status</option>
+
+            <option value="in_progress">Em andamento</option>
+
+            <option value="completed">Concluídas</option>
+
+            <option value="cancelled">Canceladas</option>
+          </select>
         </div>
 
-        {/* ====================================================
-            LISTAGEM
-        ==================================================== */}
-
-        {filteredEvaluations.length === 0 ? (
+        {filteredWorkflows.length === 0 ? (
           <div className="evaluations-empty">
-            <span>◎</span>
+            <strong>Nenhuma avaliação encontrada.</strong>
 
-            <h3>Nenhuma avaliação cadastrada</h3>
-
-            <p>
-              Clique em "Nova avaliação" para cadastrar o primeiro processo de
-              avaliação.
-            </p>
+            <p>Crie uma nova avaliação para começar.</p>
           </div>
         ) : (
           <div className="evaluations-table-wrapper">
@@ -442,229 +284,210 @@ export default function Avaliacoes() {
                 <tr>
                   <th>Funcionário</th>
 
-                  <th>Avaliação</th>
+                  <th>Modelo</th>
 
-                  <th>Tipo</th>
+                  <th>Período</th>
 
-                  <th>Avaliador</th>
+                  <th>Progresso</th>
 
                   <th>Status</th>
 
-                  <th>Período</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
 
               <tbody>
-                {filteredEvaluations.map((evaluation) => (
-                  <tr key={evaluation.id}>
-                    <td>
-                      <strong>{getEmployeeName(evaluation.employeeId)}</strong>
-                    </td>
+                {filteredWorkflows.map((workflow) => {
+                  const progress = calculateEvaluationProgress(workflow)
 
-                    <td>{evaluation.title || 'Não informado'}</td>
+                  return (
+                    <tr key={workflow.id}>
+                      <td>
+                        <strong>{workflow.employeeName}</strong>
 
-                    <td>{getEvaluationTypeLabel(evaluation.type)}</td>
+                        <small>
+                          {workflow.branchName || 'Filial não informada'}
+                        </small>
+                      </td>
 
-                    <td>{evaluation.evaluator || 'Não informado'}</td>
+                      <td>
+                        <strong>{workflow.modelName}</strong>
 
-                    <td>
-                      <span
-                        className={`evaluation-status ${
-                          evaluation.status || 'neutral'
-                        }`}
-                      >
-                        {getEvaluationStatusLabel(evaluation.status)}
-                      </span>
-                    </td>
+                        <small>
+                          {getEvaluationModelTypeLabel(workflow.modelType)}
+                        </small>
+                      </td>
 
-                    <td>
-                      {formatDisplayDate(evaluation.startDate)}
+                      <td>
+                        {formatDate(workflow.startDate)} até{' '}
+                        {formatDate(workflow.endDate)}
+                      </td>
 
-                      {' até '}
+                      <td>
+                        <div className="evaluation-progress">
+                          <div className="evaluation-progress-bar">
+                            <span
+                              style={{
+                                width: `${progress.percentage}%`
+                              }}
+                            />
+                          </div>
 
-                      {formatDisplayDate(evaluation.endDate)}
-                    </td>
-                  </tr>
-                ))}
+                          <small>
+                            {progress.completedStages} de {progress.totalStages}{' '}
+                            etapas
+                          </small>
+                        </div>
+                      </td>
+
+                      <td>
+                        <span
+                          className={`evaluation-status ${workflow.status}`}
+                        >
+                          {workflow.status === 'in_progress'
+                            ? 'Em andamento'
+                            : workflow.status === 'completed'
+                              ? 'Concluída'
+                              : workflow.status === 'cancelled'
+                                ? 'Cancelada'
+                                : 'Rascunho'}
+                        </span>
+                      </td>
+
+                      <td>
+                        <button
+                          type="button"
+                          className="table-action-button"
+                          onClick={() => setSelectedWorkflow(workflow)}
+                        >
+                          Acompanhar
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
         )}
       </section>
 
-      {/* ======================================================
-          MODAL DE NOVA AVALIAÇÃO
-      ====================================================== */}
-
       {showForm && (
-        <div
-          className="evaluations-modal-overlay"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              handleCloseForm()
-            }
-          }}
-        >
+        <div className="evaluations-modal-overlay">
           <div className="evaluations-modal">
-            <header className="evaluations-modal-header">
-              <div>
-                <span>NOVA AVALIAÇÃO</span>
+            <form onSubmit={handleCreate}>
+              <header className="evaluations-modal-header">
+                <div>
+                  <span className="evaluations-eyebrow">NOVA AVALIAÇÃO</span>
 
-                <h2>Cadastrar avaliação</h2>
-
-                <p>Preencha as informações básicas da avaliação.</p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleCloseForm}
-                aria-label="Fechar"
-              >
-                ×
-              </button>
-            </header>
-
-            <form className="evaluations-form" onSubmit={handleSubmit}>
-              {formError && (
-                <div className="evaluations-form-error">{formError}</div>
-              )}
-
-              <div className="evaluations-form-grid">
-                <div className="evaluations-form-field evaluations-form-field-full">
-                  <label htmlFor="evaluation-employee">Funcionário *</label>
-
-                  <select
-                    id="evaluation-employee"
-                    name="employeeId"
-                    value={form.employeeId}
-                    onChange={handleFormChange}
-                  >
-                    <option value="">Selecione o funcionário</option>
-
-                    {employees.map((employee) => (
-                      <option key={employee.id} value={employee.id}>
-                        {employee.name}
-                      </option>
-                    ))}
-                  </select>
+                  <h2>Criar avaliação</h2>
                 </div>
 
-                <div className="evaluations-form-field">
-                  <label htmlFor="evaluation-title">Título *</label>
-
-                  <input
-                    id="evaluation-title"
-                    name="title"
-                    type="text"
-                    value={form.title}
-                    onChange={handleFormChange}
-                    placeholder="Ex.: Avaliação de desempenho"
-                  />
-                </div>
-
-                <div className="evaluations-form-field">
-                  <label htmlFor="evaluation-type">Tipo *</label>
-
-                  <select
-                    id="evaluation-type"
-                    name="type"
-                    value={form.type}
-                    onChange={handleFormChange}
-                  >
-                    <option value="">Selecione o tipo</option>
-
-                    {EVALUATION_TYPES.map((type) => (
-                      <option key={type.value} value={type.value}>
-                        {type.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="evaluations-form-field">
-                  <label htmlFor="evaluation-evaluator">Avaliador *</label>
-
-                  <input
-                    id="evaluation-evaluator"
-                    name="evaluator"
-                    type="text"
-                    value={form.evaluator}
-                    onChange={handleFormChange}
-                    placeholder="Nome do avaliador"
-                  />
-                </div>
-
-                <div className="evaluations-form-field">
-                  <label htmlFor="evaluation-status">Status</label>
-
-                  <select
-                    id="evaluation-status"
-                    name="status"
-                    value={form.status}
-                    onChange={handleFormChange}
-                  >
-                    {EVALUATION_STATUSES.map((status) => (
-                      <option key={status.value} value={status.value}>
-                        {status.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="evaluations-form-field">
-                  <label htmlFor="evaluation-start-date">Data inicial</label>
-
-                  <input
-                    id="evaluation-start-date"
-                    name="startDate"
-                    type="date"
-                    value={form.startDate}
-                    onChange={handleFormChange}
-                  />
-                </div>
-
-                <div className="evaluations-form-field">
-                  <label htmlFor="evaluation-end-date">Data final</label>
-
-                  <input
-                    id="evaluation-end-date"
-                    name="endDate"
-                    type="date"
-                    value={form.endDate}
-                    onChange={handleFormChange}
-                  />
-                </div>
-
-                <div className="evaluations-form-field evaluations-form-field-full">
-                  <label htmlFor="evaluation-notes">Observações</label>
-
-                  <textarea
-                    id="evaluation-notes"
-                    name="notes"
-                    value={form.notes}
-                    onChange={handleFormChange}
-                    rows="4"
-                    placeholder="Observações gerais sobre a avaliação"
-                  />
-                </div>
-              </div>
-
-              <footer className="evaluations-form-footer">
                 <button
                   type="button"
-                  className="evaluations-cancel-button"
-                  onClick={handleCloseForm}
+                  className="evaluations-modal-close"
+                  onClick={closeForm}
+                >
+                  ×
+                </button>
+              </header>
+
+              <div className="evaluations-modal-body">
+                {error && <div className="evaluations-error">{error}</div>}
+
+                <div className="evaluations-form-grid">
+                  <div className="evaluations-form-field evaluations-form-field-full">
+                    <label>Funcionário *</label>
+
+                    <select
+                      name="employeeId"
+                      value={form.employeeId}
+                      onChange={handleFormChange}
+                    >
+                      <option value="">Selecione...</option>
+
+                      {employees.map((employee) => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="evaluations-form-field evaluations-form-field-full">
+                    <label>Modelo *</label>
+
+                    <select
+                      name="modelId"
+                      value={form.modelId}
+                      onChange={handleFormChange}
+                    >
+                      <option value="">Selecione o modelo...</option>
+
+                      {models.map((model) => (
+                        <option key={model.id} value={model.id}>
+                          {model.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="evaluations-form-field">
+                    <label>Data inicial</label>
+
+                    <input
+                      type="date"
+                      name="startDate"
+                      value={form.startDate}
+                      onChange={handleFormChange}
+                    />
+                  </div>
+
+                  <div className="evaluations-form-field">
+                    <label>Data final</label>
+
+                    <input
+                      type="date"
+                      name="endDate"
+                      value={form.endDate}
+                      onChange={handleFormChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <footer className="evaluations-modal-footer">
+                <button
+                  type="button"
+                  className="evaluations-secondary-button"
+                  onClick={closeForm}
                 >
                   Cancelar
                 </button>
 
-                <button type="submit" className="evaluations-save-button">
-                  Salvar avaliação
+                <button type="submit" className="evaluations-primary-button">
+                  Criar avaliação
                 </button>
               </footer>
             </form>
           </div>
         </div>
+      )}
+
+      {selectedWorkflow && (
+        <EvaluationDetails
+          workflow={selectedWorkflow}
+          onClose={() => setSelectedWorkflow(null)}
+          onRefresh={() => {
+            refresh()
+
+            const updated = getEvaluationWorkflows().find(
+              (item) => String(item.id) === String(selectedWorkflow.id)
+            )
+
+            setSelectedWorkflow(updated || null)
+          }}
+        />
       )}
     </div>
   )
@@ -672,57 +495,187 @@ export default function Avaliacoes() {
 
 /*
  * ============================================================
- * FORMULÁRIO INICIAL
+ * DETALHES DA AVALIAÇÃO
  * ============================================================
  */
 
-function createInitialForm() {
-  return {
-    employeeId: '',
-    title: '',
-    type: '',
-    status: 'draft',
-    evaluator: '',
-    startDate: '',
-    endDate: '',
-    notes: ''
-  }
-}
+function EvaluationDetails({ workflow, onClose, onRefresh }) {
+  const progress = calculateEvaluationProgress(workflow)
 
-/*
- * ============================================================
- * CARD DE RESUMO
- * ============================================================
- */
-
-function SummaryCard({ label, value, description, variant = 'neutral' }) {
-  return (
-    <article className={`evaluations-summary-card ${variant}`}>
-      <span>{label}</span>
-
-      <strong>{value}</strong>
-
-      <small>{description}</small>
-    </article>
+  const currentStage = workflow.stages?.find(
+    (stage) => stage.status === 'pending' || stage.status === 'in_progress'
   )
-}
 
-/*
- * ============================================================
- * DATA
- * ============================================================
- */
+  return (
+    <div className="evaluations-modal-overlay">
+      <div className="evaluations-modal evaluations-modal-large">
+        <header className="evaluations-modal-header">
+          <div>
+            <span className="evaluations-eyebrow">ACOMPANHAMENTO</span>
 
-function formatDisplayDate(value) {
-  if (!value) {
-    return '—'
-  }
+            <h2>{workflow.modelName}</h2>
 
-  const [year, month, day] = value.split('-')
+            <p>{workflow.employeeName}</p>
+          </div>
 
-  if (!year || !month || !day) {
-    return '—'
-  }
+          <button
+            type="button"
+            className="evaluations-modal-close"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </header>
 
-  return `${day}/${month}/${year}`
+        <div className="evaluations-modal-body">
+          <div className="evaluation-detail-progress">
+            <div>
+              <strong>Progresso das etapas</strong>
+
+              <span>{progress.percentage}%</span>
+            </div>
+
+            <div className="evaluation-progress-bar large">
+              <span
+                style={{
+                  width: `${progress.percentage}%`
+                }}
+              />
+            </div>
+          </div>
+
+          <section className="evaluation-detail-section">
+            <h3>Etapas</h3>
+
+            <div className="evaluation-workflow">
+              {workflow.stages.map((stage) => {
+                const duration = calculateStageDuration(stage)
+
+                return (
+                  <div
+                    key={stage.id}
+                    className={`evaluation-workflow-stage ${stage.status}`}
+                  >
+                    <div className="evaluation-workflow-number">
+                      {stage.order}
+                    </div>
+
+                    <div className="evaluation-workflow-content">
+                      <div className="evaluation-workflow-top">
+                        <div>
+                          <strong>{stage.name}</strong>
+
+                          <span>
+                            {stage.responsibleUserName || stage.responsibleType}
+                          </span>
+                        </div>
+
+                        <span className={`evaluation-status ${stage.status}`}>
+                          {stage.status === 'locked'
+                            ? 'Bloqueada'
+                            : stage.status === 'pending'
+                              ? 'Pendente'
+                              : stage.status === 'in_progress'
+                                ? 'Em andamento'
+                                : 'Concluída'}
+                        </span>
+                      </div>
+
+                      {stage.startedAt && (
+                        <small>Início: {formatDateTime(stage.startedAt)}</small>
+                      )}
+
+                      {stage.completedAt && (
+                        <small>
+                          Conclusão: {formatDateTime(stage.completedAt)}
+                        </small>
+                      )}
+
+                      {duration && (
+                        <small>Tempo: {formatDuration(duration)}</small>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+
+          <section className="evaluation-detail-section">
+            <h3>PDI</h3>
+
+            <div className="evaluation-detail-box">
+              <span className={`evaluation-status ${workflow.pdi?.status}`}>
+                {workflow.pdi?.status === 'completed'
+                  ? 'Concluído'
+                  : workflow.pdi?.status === 'pending'
+                    ? 'Pendente'
+                    : 'Bloqueado'}
+              </span>
+
+              <p>
+                Responsável:{' '}
+                {workflow.pdi?.responsibleUserName ||
+                  'Gerente ou supervisor do setor'}
+              </p>
+            </div>
+          </section>
+
+          <section className="evaluation-detail-section">
+            <h3>Avaliação 180°</h3>
+
+            <div className="evaluation-detail-box">
+              {!workflow.evaluation180?.enabled ? (
+                <p>A avaliação 180° não foi ativada neste modelo.</p>
+              ) : (
+                <>
+                  <span
+                    className={`evaluation-status ${workflow.evaluation180.status}`}
+                  >
+                    {workflow.evaluation180.status === 'completed'
+                      ? 'Concluída'
+                      : workflow.evaluation180.status === 'pending'
+                        ? 'Pendente'
+                        : 'Bloqueada'}
+                  </span>
+
+                  <p>Esta etapa será preenchida pelo funcionário após o PDI.</p>
+                </>
+              )}
+            </div>
+          </section>
+
+          <section className="evaluation-detail-section">
+            <h3>Tempo total</h3>
+
+            <p>{formatDuration(calculateEvaluationDuration(workflow))}</p>
+
+            {currentStage && (
+              <p>
+                Etapa atual: <strong>{currentStage.name}</strong>
+              </p>
+            )}
+          </section>
+        </div>
+
+        <footer className="evaluations-modal-footer">
+          <button
+            type="button"
+            className="evaluations-secondary-button"
+            onClick={onClose}
+          >
+            Fechar
+          </button>
+
+          <button
+            type="button"
+            className="evaluations-primary-button"
+            onClick={onRefresh}
+          >
+            Atualizar
+          </button>
+        </footer>
+      </div>
+    </div>
+  )
 }
