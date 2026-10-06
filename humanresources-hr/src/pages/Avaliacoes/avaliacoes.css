@@ -1,12 +1,12 @@
 /* ============================================================
-   PÁGINA
+   PÁGINA DE AVALIAÇÕES
    ============================================================ */
 
 .evaluations-page {
   width: 100%;
   max-width: 1500px;
   margin: 0 auto;
-  padding: 32px;
+  padding: 30px 24px 50px;
   box-sizing: border-box;
 }
 
@@ -14,61 +14,143 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
-  margin-bottom: 28px;
-}
-
-.evaluations-header h1 {
-  margin: 5px 0 8px;
-  color: #0f172a;
-  font-size: 28px;
-}
-
-.evaluations-header p {
-  margin: 0;
-  color: #64748b;
-  font-size: 14px;
+  gap: 20px;
+  margin-bottom: 24px;
 }
 
 .evaluations-eyebrow {
-  display: inline-block;
+  display: block;
+  margin-bottom: 6px;
   color: #64748b;
   font-size: 10px;
   font-weight: 800;
-  letter-spacing: 1px;
+  letter-spacing: 1.5px;
 }
 
-/* ============================================================
-   BOTÕES
-   ============================================================ */
+.evaluations-header h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.evaluations-header p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.evaluations-card {
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
 
 .evaluations-primary-button,
 .evaluations-secondary-button {
-  min-height: 40px;
-  padding: 0 16px;
-  border: none;
+  min-height: 38px;
+  padding: 0 14px;
   border-radius: 8px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
 }
 
 .evaluations-primary-button {
+  border: 1px solid #2563eb;
   background: #2563eb;
   color: #fff;
 }
 
 .evaluations-primary-button:hover {
   background: #1d4ed8;
+  border-color: #1d4ed8;
 }
 
 .evaluations-secondary-button {
-  background: #f1f5f9;
-  color: #334155;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #475569;
 }
 
 .evaluations-secondary-button:hover {
-  background: #e2e8f0;
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.evaluations-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.evaluations-toolbar input {
+  width: 100%;
+  max-width: 420px;
+}
+
+.evaluations-page input,
+.evaluations-page select,
+.evaluations-page textarea {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.evaluations-page input,
+.evaluations-page select {
+  min-height: 38px;
+  padding: 0 11px;
+}
+
+.evaluations-page textarea {
+  min-height: 80px;
+  padding: 10px 11px;
+  resize: vertical;
+}
+
+.evaluations-page input:focus,
+.evaluations-page select:focus,
+.evaluations-page textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.evaluations-empty {
+  padding: 50px 20px;
+  text-align: center;
+}
+
+.evaluations-empty strong {
+  display: block;
+  color: #334155;
+  font-size: 14px;
+}
+
+.evaluations-empty p {
+  margin: 7px 0 0;
+  color: #94a3b8;
+  font-size: 12px;
 }
 
 /* ============================================================
@@ -77,93 +159,34 @@
 
 .evaluations-summary {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
   margin-bottom: 20px;
 }
 
 .evaluation-summary-card {
-  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 18px;
   border: 1px solid #e2e8f0;
   border-radius: 12px;
   background: #fff;
 }
 
 .evaluation-summary-card span {
-  display: block;
-  margin-bottom: 8px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px;
+  font-weight: 700;
 }
 
 .evaluation-summary-card strong {
   color: #0f172a;
-  font-size: 26px;
+  font-size: 25px;
 }
 
 /* ============================================================
-   CARD
-   ============================================================ */
-
-.evaluations-card {
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #fff;
-}
-
-.evaluations-toolbar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 18px;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.evaluations-toolbar input,
-.evaluations-toolbar select {
-  min-height: 40px;
-  padding: 0 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  outline: none;
-  background: #fff;
-  color: #334155;
-}
-
-.evaluations-toolbar input {
-  flex: 1;
-}
-
-.evaluations-toolbar input:focus,
-.evaluations-toolbar select:focus {
-  border-color: #2563eb;
-}
-
-/* ============================================================
-   VAZIO
-   ============================================================ */
-
-.evaluations-empty {
-  padding: 60px 30px;
-  text-align: center;
-}
-
-.evaluations-empty.small {
-  padding: 30px;
-}
-
-.evaluations-empty strong {
-  color: #334155;
-}
-
-.evaluations-empty p {
-  margin: 8px 0 0;
-  color: #64748b;
-}
-
-/* ============================================================
-   TABELA
+   TABELAS
    ============================================================ */
 
 .evaluations-table-wrapper {
@@ -173,53 +196,44 @@
 
 .evaluations-table {
   width: 100%;
-  min-width: 950px;
   border-collapse: collapse;
 }
 
-.evaluations-table th {
-  padding: 13px 16px;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 800;
-  text-align: left;
-  white-space: nowrap;
-}
-
+.evaluations-table th,
 .evaluations-table td {
-  padding: 15px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #475569;
-  font-size: 13px;
+  padding: 13px 15px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
   vertical-align: middle;
 }
 
-.evaluations-table tbody tr:hover {
+.evaluations-table th {
   background: #f8fafc;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.evaluations-table td {
+  color: #475569;
+  font-size: 12px;
 }
 
 .evaluations-table td strong {
-  display: block;
   color: #0f172a;
 }
 
-.evaluations-table td small {
-  display: block;
-  margin-top: 4px;
-  color: #94a3b8;
-}
-
 .table-action-button {
-  min-height: 34px;
-  padding: 0 12px;
+  min-height: 30px;
+  padding: 0 9px;
   border: 1px solid #cbd5e1;
   border-radius: 7px;
   background: #fff;
-  color: #334155;
+  color: #475569;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -235,77 +249,117 @@
 .evaluation-status {
   display: inline-flex;
   align-items: center;
-  min-height: 25px;
-  padding: 0 9px;
+  justify-content: center;
+  min-height: 24px;
+  padding: 0 8px;
   border-radius: 999px;
-  background: #f1f5f9;
-  color: #475569;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  white-space: nowrap;
-}
-
-.evaluation-status.pending {
-  background: #fff7ed;
-  color: #c2410c;
-}
-
-.evaluation-status.in_progress {
-  background: #eff6ff;
-  color: #1d4ed8;
 }
 
 .evaluation-status.completed {
-  background: #f0fdf4;
+  background: #dcfce7;
   color: #15803d;
 }
 
-.evaluation-status.locked {
-  background: #f1f5f9;
-  color: #94a3b8;
+.evaluation-status.pending {
+  background: #fef3c7;
+  color: #a16207;
+}
+
+.evaluation-status.in_progress {
+  background: #dbeafe;
+  color: #1d4ed8;
 }
 
 .evaluation-status.cancelled {
-  background: #fef2f2;
+  background: #fee2e2;
   color: #b91c1c;
 }
 
-.evaluation-status.disabled {
+.evaluation-status.draft {
   background: #f1f5f9;
-  color: #94a3b8;
+  color: #475569;
 }
 
 /* ============================================================
-   PROGRESSO
+   FORMULÁRIO
    ============================================================ */
 
-.evaluation-progress {
-  min-width: 130px;
+.evaluations-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
 }
 
-.evaluation-progress-bar {
-  width: 100%;
-  height: 7px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: #e2e8f0;
+.evaluations-form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.evaluation-progress-bar span {
-  display: block;
-  height: 100%;
-  border-radius: inherit;
-  background: #2563eb;
+.evaluations-form-field-full {
+  grid-column: 1 / -1;
 }
 
-.evaluation-progress-bar.large {
-  height: 10px;
+.evaluation-form-section {
+  margin-bottom: 26px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
 }
 
-.evaluation-progress small {
-  display: block;
-  margin-top: 5px;
+.evaluation-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.evaluation-section-heading > div > span {
   color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.evaluation-section-heading h3 {
+  margin: 4px 0 0;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.evaluation-section-heading h4 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+}
+
+.evaluation-section-heading p {
+  margin: 6px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   ERRO
+   ============================================================ */
+
+.evaluation-error {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 12px;
+  line-height: 1.5;
 }
 
 /* ============================================================
@@ -314,27 +368,26 @@
 
 .evaluations-modal-overlay {
   position: fixed;
-  inset: 0;
   z-index: 1000;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 20px;
   background: rgba(15, 23, 42, 0.55);
 }
 
 .evaluations-modal {
-  width: 100%;
-  max-width: 650px;
-  max-height: calc(100vh - 48px);
-  overflow: hidden;
+  width: min(650px, 100%);
+  max-height: calc(100vh - 40px);
   border-radius: 14px;
   background: #fff;
-  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+  overflow: hidden;
 }
 
 .evaluations-modal-large {
-  max-width: 1000px;
+  width: min(1100px, 100%);
 }
 
 .evaluations-modal-header {
@@ -342,169 +395,65 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 20px;
-  padding: 22px 24px;
+  padding: 20px;
   border-bottom: 1px solid #e2e8f0;
 }
 
 .evaluations-modal-header h2 {
-  margin: 5px 0;
+  margin: 4px 0 0;
   color: #0f172a;
   font-size: 20px;
 }
 
 .evaluations-modal-header p {
-  margin: 0;
+  margin: 5px 0 0;
   color: #64748b;
+  font-size: 12px;
 }
 
 .evaluations-modal-close {
-  width: 34px;
-  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: 7px;
   background: #f1f5f9;
   color: #475569;
   cursor: pointer;
   font-size: 22px;
+  line-height: 1;
+}
+
+.evaluations-modal-close:hover {
+  background: #e2e8f0;
 }
 
 .evaluations-modal-body {
   max-height: calc(100vh - 180px);
+  padding: 20px;
   overflow-y: auto;
-  padding: 24px;
 }
 
 .evaluations-modal-footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
   gap: 10px;
-  padding: 16px 24px;
+  padding: 15px 20px;
   border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
 }
 
 /* ============================================================
-   FORMULÁRIOS
+   LISTA DE ETAPAS
    ============================================================ */
 
-.evaluations-form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.evaluation-stage-list {
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-}
-
-.evaluations-form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-
-.evaluations-form-field-full {
-  grid-column: 1 / -1;
-}
-
-.evaluations-form-field label {
-  color: #334155;
-  font-size: 12px;
-  font-weight: 800;
-}
-
-.evaluations-form-field input,
-.evaluations-form-field select,
-.evaluations-form-field textarea,
-.evaluation-question-fields input,
-.evaluation-question-fields select,
-.evaluation-answer-card select,
-.evaluation-answer-card textarea {
-  width: 100%;
-  box-sizing: border-box;
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  outline: none;
-  background: #fff;
-  color: #334155;
-  font-family: inherit;
-  font-size: 13px;
-}
-
-.evaluations-form-field textarea,
-.evaluation-answer-card textarea {
-  resize: vertical;
-}
-
-.evaluations-form-field input:focus,
-.evaluations-form-field select:focus,
-.evaluations-form-field textarea:focus,
-.evaluation-question-fields input:focus,
-.evaluation-question-fields select:focus,
-.evaluation-answer-card select:focus,
-.evaluation-answer-card textarea:focus {
-  border-color: #2563eb;
-}
-
-/* ============================================================
-   ERRO / SUCESSO
-   ============================================================ */
-
-.evaluations-error,
-.evaluations-success {
-  margin-bottom: 18px;
-  padding: 12px 14px;
-  border-radius: 8px;
-  font-size: 13px;
-}
-
-.evaluations-error {
-  background: #fef2f2;
-  color: #b91c1c;
-}
-
-.evaluations-success {
-  background: #f0fdf4;
-  color: #15803d;
-}
-
-/* ============================================================
-   CONSTRUTOR DE MODELO
-   ============================================================ */
-
-.evaluation-builder-section {
-  margin-bottom: 26px;
-  padding: 20px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-}
-
-.evaluation-builder-section h3 {
-  margin: 0 0 6px;
-  color: #0f172a;
-  font-size: 16px;
-}
-
-.evaluation-builder-section h4 {
-  margin: 0;
-  color: #334155;
-  font-size: 14px;
-}
-
-.evaluation-builder-section p {
-  margin: 0;
-  color: #64748b;
-  font-size: 12px;
-}
-
-.evaluation-section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 15px;
-  margin-bottom: 18px;
-}
-
-.evaluation-stages-builder {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
 }
 
 .evaluation-stage-builder {
@@ -770,22 +719,6 @@
   flex: 1;
 }
 
-.evaluation-my-current {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 12px;
-  border-radius: 8px;
-  background: #f8fafc;
-  color: #475569;
-  font-size: 12px;
-}
-
-.evaluation-my-current span {
-  color: #0f172a;
-  font-weight: 700;
-}
-
 /* ============================================================
    RESPOSTAS
    ============================================================ */
@@ -974,6 +907,23 @@
   white-space: pre-wrap;
 }
 
+.evaluation-history-answer small {
+  display: block;
+  margin-top: 8px;
+  color: #94a3b8;
+}
+
+/* ============================================================
+   MÉTRICAS DO HISTÓRICO
+   ============================================================ */
+
+.evaluation-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
 /* ============================================================
    RESPONSIVO
    ============================================================ */
@@ -988,6 +938,12 @@
   }
 
   .evaluation-my-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 900px) {
+  .evaluation-metrics-grid {
     grid-template-columns: 1fr;
   }
 }

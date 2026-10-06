@@ -13,11 +13,18 @@ import {
   saveEvaluation180Answer,
   saveEvaluationAnswer,
   saveEvaluationPdiAnswer,
+  startEvaluation180,
   startEvaluationPdi,
   startEvaluationStage
 } from '../../services/evaluationWorkflow'
 
 import './avaliacoes.css'
+
+/*
+ * ============================================================
+ * COMPONENTE PRINCIPAL
+ * ============================================================
+ */
 
 export default function MinhasAvaliacoes() {
   const employees = getEmployees()
@@ -27,6 +34,12 @@ export default function MinhasAvaliacoes() {
   const [selectedWorkflow, setSelectedWorkflow] = useState(null)
 
   const [message, setMessage] = useState('')
+
+  /*
+   * ==========================================================
+   * ATUALIZAR DADOS
+   * ==========================================================
+   */
 
   function refresh() {
     const updated = getEvaluationWorkflows()
@@ -43,14 +56,25 @@ export default function MinhasAvaliacoes() {
   }
 
   /*
-   * Neste primeiro momento mostramos avaliações
-   * relacionadas ao usuário atual ou, enquanto a autenticação
-   * ainda não estiver ligada a este módulo, todas as avaliações.
+   * ==========================================================
+   * AVALIAÇÕES DISPONÍVEIS
+   * ==========================================================
+   *
+   * Neste momento, enquanto a autenticação específica
+   * do responsável ainda não está conectada ao módulo,
+   * mostramos todas as avaliações que não foram canceladas.
    */
+
   const availableWorkflows = useMemo(
     () => workflows.filter((workflow) => workflow.status !== 'cancelled'),
     [workflows]
   )
+
+  /*
+   * ==========================================================
+   * NOME DO FUNCIONÁRIO
+   * ==========================================================
+   */
 
   function getEmployeeName(employeeId) {
     return (
@@ -59,11 +83,17 @@ export default function MinhasAvaliacoes() {
     )
   }
 
+  /*
+   * ==========================================================
+   * RENDER
+   * ==========================================================
+   */
+
   return (
     <div className="evaluations-page">
       <header className="evaluations-header">
         <div>
-          <span className="evaluations-eyebrow">AVALIAÇÕES</span>
+          <span className="evaluations-eyebrow">MINHAS AVALIAÇÕES</span>
 
           <h1>Minhas avaliações</h1>
 
@@ -168,6 +198,12 @@ export default function MinhasAvaliacoes() {
   )
 }
 
+/*
+ * ============================================================
+ * MODAL DE RESPOSTA
+ * ============================================================
+ */
+
 function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
   const currentStage = workflow.stages?.find(
     (stage) => stage.status === 'pending' || stage.status === 'in_progress'
@@ -179,19 +215,32 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
 
   const [error, setError] = useState('')
 
+  /*
+   * ==========================================================
+   * ALTERAR RESPOSTA
+   * ==========================================================
+   */
+
   function handleAnswer(questionId, value) {
     setAnswers((previous) => ({
       ...previous,
-
       [questionId]: value
     }))
   }
+
+  /*
+   * ==========================================================
+   * INICIAR ETAPA
+   * ==========================================================
+   */
 
   function handleStartStage(stage) {
     const result = startEvaluationStage(workflow.id, stage.id)
 
     if (!result.success) {
-      setError(result.error)
+      setError(
+        result.error || result.message || 'Não foi possível iniciar a etapa.'
+      )
 
       return
     }
@@ -202,6 +251,12 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
 
     onRefresh()
   }
+
+  /*
+   * ==========================================================
+   * CONCLUIR ETAPA
+   * ==========================================================
+   */
 
   function handleSaveStage(stage) {
     const stageAnswers = answers
@@ -223,7 +278,9 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
     const result = completeEvaluationStage(workflow.id, stage.id)
 
     if (!result.success) {
-      setError(result.error)
+      setError(
+        result.error || result.message || 'Não foi possível concluir a etapa.'
+      )
 
       return
     }
@@ -237,17 +294,33 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
     onClose()
   }
 
+  /*
+   * ==========================================================
+   * INICIAR PDI
+   * ==========================================================
+   */
+
   function handlePdi() {
     const result = startEvaluationPdi(workflow.id)
 
     if (!result.success) {
-      setError(result.error)
+      setError(
+        result.error || result.message || 'Não foi possível iniciar o PDI.'
+      )
 
       return
     }
 
+    setError('')
+
     onRefresh()
   }
+
+  /*
+   * ==========================================================
+   * CONCLUIR PDI
+   * ==========================================================
+   */
 
   function handleSavePdi() {
     const pdiQuestions = workflow.pdi?.questions || []
@@ -269,10 +342,14 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
     const result = completeEvaluationPdi(workflow.id)
 
     if (!result.success) {
-      setError(result.error)
+      setError(
+        result.error || result.message || 'Não foi possível concluir o PDI.'
+      )
 
       return
     }
+
+    setError('')
 
     setMessage('PDI concluído com sucesso.')
 
@@ -280,6 +357,36 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
 
     onClose()
   }
+
+  /*
+   * ==========================================================
+   * INICIAR 180°
+   * ==========================================================
+   */
+
+  function handleStart180() {
+    const result = startEvaluation180(workflow.id)
+
+    if (!result.success) {
+      setError(
+        result.error ||
+          result.message ||
+          'Não foi possível iniciar a avaliação 180°.'
+      )
+
+      return
+    }
+
+    setError('')
+
+    onRefresh()
+  }
+
+  /*
+   * ==========================================================
+   * CONCLUIR 180°
+   * ==========================================================
+   */
 
   function handleSave180() {
     const questions = workflow.evaluation180?.questions || []
@@ -301,10 +408,16 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
     const result = completeEvaluation180(workflow.id)
 
     if (!result.success) {
-      setError(result.error)
+      setError(
+        result.error ||
+          result.message ||
+          'Não foi possível concluir a avaliação 180°.'
+      )
 
       return
     }
+
+    setError('')
 
     setMessage('Avaliação 180° concluída.')
 
@@ -313,20 +426,34 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
     onClose()
   }
 
+  /*
+   * ==========================================================
+   * ESTADOS
+   * ==========================================================
+   */
+
   const stage = workflow.stages?.find((item) => item.id === activeStage)
 
   const pdiUnlocked = isPdiUnlocked(workflow)
 
   const evaluation180Unlocked = isEvaluation180Unlocked(workflow)
 
+  /*
+   * ==========================================================
+   * RENDER MODAL
+   * ==========================================================
+   */
+
   return (
     <div className="evaluations-modal-overlay">
       <div className="evaluations-modal evaluations-modal-large">
         <header className="evaluations-modal-header">
           <div>
-            <span className="evaluations-eyebrow">RESPONDER</span>
+            <span className="evaluations-eyebrow">MINHAS AVALIAÇÕES</span>
 
             <h2>{workflow.modelName}</h2>
+
+            <p>{workflow.employeeName}</p>
           </div>
 
           <button
@@ -339,7 +466,11 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
         </header>
 
         <div className="evaluations-modal-body">
-          {error && <div className="evaluations-error">{error}</div>}
+          {error && <div className="evaluation-error">{error}</div>}
+
+          {/* ==================================================
+              ETAPA
+          ================================================== */}
 
           {stage && (
             <section className="evaluation-response-section">
@@ -352,7 +483,7 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
                   <p>{stage.description}</p>
                 </div>
 
-                {stage.status === 'pending' ? (
+                {stage.status === 'pending' && (
                   <button
                     type="button"
                     className="evaluations-primary-button"
@@ -360,7 +491,7 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
                   >
                     Iniciar etapa
                   </button>
-                ) : null}
+                )}
               </div>
 
               {stage.status === 'in_progress' && (
@@ -389,6 +520,10 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
             </section>
           )}
 
+          {/* ==================================================
+              PDI
+          ================================================== */}
+
           {pdiUnlocked && (
             <section className="evaluation-response-section">
               <div className="evaluation-response-heading">
@@ -400,19 +535,20 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
                   <p>Preenchido pelo gerente ou supervisor do setor.</p>
                 </div>
 
-                {workflow.pdi?.startedAt === null && (
-                  <button
-                    type="button"
-                    className="evaluations-primary-button"
-                    onClick={handlePdi}
-                  >
-                    Iniciar PDI
-                  </button>
-                )}
+                {workflow.pdi?.status !== 'completed' &&
+                  workflow.pdi?.status !== 'in_progress' && (
+                    <button
+                      type="button"
+                      className="evaluations-primary-button"
+                      onClick={handlePdi}
+                    >
+                      Iniciar PDI
+                    </button>
+                  )}
               </div>
 
               {workflow.pdi?.status !== 'completed' &&
-                workflow.pdi?.startedAt && (
+                workflow.pdi?.status === 'in_progress' && (
                   <div className="evaluation-answer-list">
                     {workflow.pdi.questions.map((question, index) => (
                       <div
@@ -421,6 +557,7 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
                       >
                         <label>
                           {index + 1} — {question.questionText}
+                          {question.required && <span> *</span>}
                         </label>
 
                         <textarea
@@ -450,37 +587,55 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
             </section>
           )}
 
+          {/* ==================================================
+              180°
+          ================================================== */}
+
           {evaluation180Unlocked && (
             <section className="evaluation-response-section">
-              <div>
-                <span>180°</span>
+              <div className="evaluation-response-heading">
+                <div>
+                  <span>180°</span>
 
-                <h3>Avaliação do supervisor</h3>
+                  <h3>Avaliação do supervisor</h3>
 
-                <p>Esta etapa é respondida pelo funcionário.</p>
+                  <p>Esta etapa é respondida pelo funcionário.</p>
+                </div>
+
+                {workflow.evaluation180?.status === 'pending' && (
+                  <button
+                    type="button"
+                    className="evaluations-primary-button"
+                    onClick={handleStart180}
+                  >
+                    Iniciar 180°
+                  </button>
+                )}
               </div>
 
-              <div className="evaluation-answer-list">
-                {workflow.evaluation180.questions.map((question, index) => (
-                  <QuestionAnswer
-                    key={question.questionId}
-                    question={question}
-                    index={index}
-                    value={answers[question.questionId] ?? question.answer}
-                    onChange={(value) =>
-                      handleAnswer(question.questionId, value)
-                    }
-                  />
-                ))}
+              {workflow.evaluation180?.status === 'in_progress' && (
+                <div className="evaluation-answer-list">
+                  {workflow.evaluation180.questions.map((question, index) => (
+                    <QuestionAnswer
+                      key={question.questionId}
+                      question={question}
+                      index={index}
+                      value={answers[question.questionId] ?? question.answer}
+                      onChange={(value) =>
+                        handleAnswer(question.questionId, value)
+                      }
+                    />
+                  ))}
 
-                <button
-                  type="button"
-                  className="evaluations-primary-button"
-                  onClick={handleSave180}
-                >
-                  Concluir 180°
-                </button>
-              </div>
+                  <button
+                    type="button"
+                    className="evaluations-primary-button"
+                    onClick={handleSave180}
+                  >
+                    Concluir 180°
+                  </button>
+                </div>
+              )}
             </section>
           )}
         </div>
@@ -498,6 +653,12 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
     </div>
   )
 }
+
+/*
+ * ============================================================
+ * COMPONENTE DE PERGUNTA
+ * ============================================================
+ */
 
 function QuestionAnswer({ question, index, value, onChange }) {
   return (

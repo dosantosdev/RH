@@ -407,8 +407,11 @@ export function duplicateEvaluationModel(modelId) {
 
   const duplicated = createEvaluationModel({
     name: `${model.name} - Cópia`,
+
     description: model.description,
+
     type: model.type,
+
     active: false,
 
     stages: model.stages.map((stage) => ({
@@ -418,6 +421,7 @@ export function duplicateEvaluationModel(modelId) {
 
       questions: stage.questions.map((question) => ({
         ...question,
+
         id: undefined
       }))
     })),
@@ -427,6 +431,7 @@ export function duplicateEvaluationModel(modelId) {
     evaluation180Questions: (model.evaluation180?.questions || []).map(
       (question) => ({
         ...question,
+
         id: undefined
       })
     )
@@ -482,23 +487,43 @@ export function validateEvaluationModel(model) {
     errors.push('Informe o nome do modelo.')
   }
 
-  if (!Array.isArray(model?.stages) || model.stages.length === 0) {
-    errors.push('Adicione pelo menos uma etapa.')
+  if (!model?.type) {
+    errors.push('Selecione o tipo da avaliação.')
   }
 
-  ;(model?.stages || []).forEach((stage, index) => {
+  if (!Array.isArray(model?.stages) || model.stages.length === 0) {
+    errors.push('Adicione pelo menos uma etapa ao modelo.')
+  }
+
+  ;(model?.stages || []).forEach((stage, stageIndex) => {
     if (!String(stage.name || '').trim()) {
-      errors.push(`Informe o nome da etapa ${index + 1}.`)
+      errors.push(`Informe o nome da etapa ${stageIndex + 1}.`)
+    }
+
+    if (!stage.responsibleType) {
+      errors.push(`Informe o responsável pela etapa ${stageIndex + 1}.`)
+    }
+
+    if (stage.responsibleType === 'specific_user' && !stage.responsibleUserId) {
+      errors.push(
+        `Selecione o usuário responsável pela etapa ${stageIndex + 1}.`
+      )
     }
 
     if (!Array.isArray(stage.questions) || stage.questions.length === 0) {
-      errors.push(`A etapa ${index + 1} precisa ter pelo menos uma pergunta.`)
+      errors.push(`Adicione pelo menos uma pergunta à etapa ${stageIndex + 1}.`)
     }
 
     ;(stage.questions || []).forEach((question, questionIndex) => {
       if (!String(question.text || '').trim()) {
         errors.push(
-          `Informe o texto da pergunta ${questionIndex + 1} da etapa ${index + 1}.`
+          `Informe o texto da pergunta ${questionIndex + 1} da etapa ${stageIndex + 1}.`
+        )
+      }
+
+      if (!question.type) {
+        errors.push(
+          `Informe o tipo da pergunta ${questionIndex + 1} da etapa ${stageIndex + 1}.`
         )
       }
     })
@@ -509,15 +534,28 @@ export function validateEvaluationModel(model) {
       !Array.isArray(model.evaluation180.questions) ||
       model.evaluation180.questions.length === 0
     ) {
-      errors.push(
-        'A avaliação 180° está ativada e precisa ter pelo menos uma pergunta.'
-      )
+      errors.push('Adicione pelo menos uma pergunta para a avaliação 180°.')
     }
+
+    ;(model.evaluation180.questions || []).forEach(
+      (question, questionIndex) => {
+        if (!String(question.text || '').trim()) {
+          errors.push(
+            `Informe o texto da pergunta ${questionIndex + 1} da avaliação 180°.`
+          )
+        }
+
+        if (!question.type) {
+          errors.push(
+            `Informe o tipo da pergunta ${questionIndex + 1} da avaliação 180°.`
+          )
+        }
+      }
+    )
   }
 
   return {
     valid: errors.length === 0,
-
     errors
   }
 }

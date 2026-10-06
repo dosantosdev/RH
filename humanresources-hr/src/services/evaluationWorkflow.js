@@ -1,45 +1,20 @@
 import { getStoredArray, setStored } from './storage'
-
 import { getEvaluationModelById } from './evaluationModels'
 
 const STORAGE_KEY = 'evaluationWorkflows'
 
 export const EVALUATION_WORKFLOW_STATUSES = [
-  {
-    value: 'draft',
-    label: 'Rascunho'
-  },
-  {
-    value: 'in_progress',
-    label: 'Em andamento'
-  },
-  {
-    value: 'completed',
-    label: 'Concluída'
-  },
-  {
-    value: 'cancelled',
-    label: 'Cancelada'
-  }
+  { value: 'draft', label: 'Rascunho' },
+  { value: 'in_progress', label: 'Em andamento' },
+  { value: 'completed', label: 'Concluída' },
+  { value: 'cancelled', label: 'Cancelada' }
 ]
 
 export const EVALUATION_STAGE_STATUSES = [
-  {
-    value: 'locked',
-    label: 'Bloqueada'
-  },
-  {
-    value: 'pending',
-    label: 'Pendente'
-  },
-  {
-    value: 'in_progress',
-    label: 'Em andamento'
-  },
-  {
-    value: 'completed',
-    label: 'Concluída'
-  }
+  { value: 'locked', label: 'Bloqueada' },
+  { value: 'pending', label: 'Pendente' },
+  { value: 'in_progress', label: 'Em andamento' },
+  { value: 'completed', label: 'Concluída' }
 ]
 
 function generateId(prefix = 'evaluation') {
@@ -50,122 +25,77 @@ function getNow() {
   return new Date().toISOString()
 }
 
-/*
- * ============================================================
- * BUSCAR
- * ============================================================
- */
+function normalizeUser(userId, userName) {
+  return {
+    id: userId || '',
+    name: userName || ''
+  }
+}
 
 export function getEvaluationWorkflows() {
   return getStoredArray(STORAGE_KEY)
 }
 
 export function getEvaluationWorkflowById(workflowId) {
-  return getEvaluationWorkflows().find(
-    (workflow) => String(workflow.id) === String(workflowId)
-  )
+  return getEvaluationWorkflows().find((workflow) => workflow.id === workflowId)
 }
 
 export function getEmployeeEvaluationWorkflows(employeeId) {
   return getEvaluationWorkflows().filter(
-    (workflow) => Number(workflow.employeeId) === Number(employeeId)
+    (workflow) => workflow.employeeId === employeeId
   )
 }
-
-/*
- * ============================================================
- * CRIAR RESPOSTA
- * ============================================================
- */
 
 function createQuestionAnswer(question) {
   return {
     questionId: question.id,
-
-    questionText: question.text || '',
-
-    questionType: question.type || 'scale',
-
+    questionText: question.text,
+    questionType: question.type,
     required: question.required !== false,
-
     answer: '',
-
     comment: '',
-
     answeredAt: null
   }
 }
 
-/*
- * ============================================================
- * CRIAR ETAPA
- * ============================================================
- */
-
 function createWorkflowStage(modelStage, index) {
   return {
-    id: generateId('workflow-stage'),
-
+    id: generateId('stage'),
     modelStageId: modelStage.id,
-
     order: index + 1,
-
-    name: modelStage.name || `Etapa ${index + 1}`,
-
+    name: modelStage.name,
     description: modelStage.description || '',
-
-    responsibleType: modelStage.responsibleType || 'specific_user',
-
+    responsibleType: modelStage.responsibleType || '',
     responsibleUserId: modelStage.responsibleUserId || '',
-
     responsibleUserName: modelStage.responsibleUserName || '',
-
     status: index === 0 ? 'pending' : 'locked',
-
     startedAt: null,
-
     completedAt: null,
-
-    questions: (modelStage.questions || []).map(createQuestionAnswer)
+    startedById: '',
+    startedByName: '',
+    completedById: '',
+    completedByName: '',
+    questions: Array.isArray(modelStage.questions)
+      ? modelStage.questions.map(createQuestionAnswer)
+      : []
   }
 }
-
-/*
- * ============================================================
- * CRIAR PDI
- * ============================================================
- */
 
 function createWorkflowPdi(model) {
   return {
     status: 'locked',
-
     startedAt: null,
-
     completedAt: null,
-
-    /*
-     * O sistema restringe o PDI a:
-     * gerente da filial OU supervisor do setor.
-     */
+    startedById: '',
+    startedByName: '',
+    completedById: '',
+    completedByName: '',
     responsibleType: 'manager_or_supervisor',
-
     responsibleUserId: '',
-
     responsibleUserName: '',
-
-    questions: (model.pdiQuestions || []).map((question) => ({
-      questionId: question.id,
-
-      questionText: question.text || '',
-
-      required: question.required !== false,
-
-      answer: '',
-
-      answeredAt: null
-    })),
-
+    questions: Array.isArray(model.pdiQuestions)
+      ? model.pdiQuestions.map(createQuestionAnswer)
+      : [],
     employeeFeedback: {
       positivePoints: '',
       negativePoints: '',
@@ -175,90 +105,84 @@ function createWorkflowPdi(model) {
   }
 }
 
-/*
- * ============================================================
- * CRIAR 180°
- * ============================================================
- */
-
 function createWorkflow180(model) {
   const enabled = model.evaluation180?.enabled === true
 
   return {
     enabled,
-
     status: enabled ? 'locked' : 'disabled',
-
     startedAt: null,
-
     completedAt: null,
-
+    startedById: '',
+    startedByName: '',
+    completedById: '',
+    completedByName: '',
     responsibleType: 'employee',
-
-    questions: (model.evaluation180?.questions || []).map(createQuestionAnswer)
+    questions: Array.isArray(model.evaluation180?.questions)
+      ? model.evaluation180.questions.map(createQuestionAnswer)
+      : []
   }
 }
 
-/*
- * ============================================================
- * CRIAR WORKFLOW
- * ============================================================
- */
-
 export function createEvaluationWorkflow({
   employeeId,
-  employeeName = '',
-  branchId = '',
-  branchName = '',
+  employeeName,
+  branchId,
+  branchName,
   modelId,
-  startDate = '',
-  endDate = '',
-  createdBy = '',
-  createdByName = ''
-} = {}) {
+  startDate,
+  endDate,
+  createdBy,
+  createdByName
+}) {
   const model = getEvaluationModelById(modelId)
 
   if (!model) {
-    throw new Error('Modelo de avaliação não encontrado.')
+    return {
+      success: false,
+      message: 'Modelo de avaliação não encontrado.'
+    }
   }
 
   if (!employeeId) {
-    throw new Error('Selecione um funcionário.')
+    return {
+      success: false,
+      message: 'Funcionário não informado.'
+    }
   }
 
   if (!modelId) {
-    throw new Error('Selecione um modelo de avaliação.')
+    return {
+      success: false,
+      message: 'Modelo de avaliação não informado.'
+    }
   }
 
   if (!Array.isArray(model.stages) || model.stages.length === 0) {
-    throw new Error('O modelo não possui etapas configuradas.')
+    return {
+      success: false,
+      message: 'O modelo precisa possuir pelo menos uma etapa.'
+    }
   }
 
   const now = getNow()
 
   const workflow = {
-    id: generateId('evaluation'),
-
+    id: generateId('workflow'),
     modelId: model.id,
-
     modelName: model.name,
-
     modelType: model.type,
 
     employeeId,
-
     employeeName,
 
-    branchId,
+    branchId: branchId || '',
+    branchName: branchName || '',
 
-    branchName,
-
-    startDate,
-
-    endDate,
+    startDate: startDate || '',
+    endDate: endDate || '',
 
     status: 'in_progress',
-
     currentStageOrder: 1,
 
     stages: model.stages.map(createWorkflowStage),
@@ -267,14 +191,10 @@ export function createEvaluationWorkflow({
 
     evaluation180: createWorkflow180(model),
 
-    createdBy,
-
-    createdByName,
-
+    createdBy: createdBy || '',
+    createdByName: createdByName || '',
     createdAt: now,
-
     updatedAt: now,
-
     completedAt: null
   }
 
@@ -282,43 +202,32 @@ export function createEvaluationWorkflow({
 
   setStored(STORAGE_KEY, [...workflows, workflow])
 
-  return workflow
+  return {
+    success: true,
+    workflow
+  }
 }
 
-/*
- * ============================================================
- * ETAPA ATUAL
- * ============================================================
- */
-
 export function getCurrentEvaluationStage(workflow) {
-  if (!workflow) {
+  if (!workflow || !Array.isArray(workflow.stages)) {
     return null
   }
 
   return (
-    workflow.stages?.find(
+    workflow.stages.find(
       (stage) => stage.status === 'pending' || stage.status === 'in_progress'
     ) || null
   )
 }
 
-/*
- * ============================================================
- * VERIFICAR ETAPA
- * ============================================================
- */
-
 export function isEvaluationStageUnlocked(workflow, stageId) {
-  if (!workflow) {
+  if (!workflow || !Array.isArray(workflow.stages)) {
     return false
   }
 
-  const stageIndex = workflow.stages?.findIndex(
-    (stage) => String(stage.id) === String(stageId)
-  )
+  const stageIndex = workflow.stages.findIndex((stage) => stage.id === stageId)
 
-  if (stageIndex === undefined || stageIndex < 0) {
+  if (stageIndex === -1) {
     return false
   }
 
@@ -331,71 +240,70 @@ export function isEvaluationStageUnlocked(workflow, stageId) {
   return previousStage?.status === 'completed'
 }
 
-/*
- * ============================================================
- * INICIAR ETAPA
- * ============================================================
- */
-
-export function startEvaluationStage(workflowId, stageId) {
-  const workflows = getEvaluationWorkflows()
-
-  const workflow = workflows.find(
-    (item) => String(item.id) === String(workflowId)
-  )
+export function startEvaluationStage(
+  workflowId,
+  stageId,
+  startedById = '',
+  startedByName = ''
+) {
+  const workflow = getEvaluationWorkflowById(workflowId)
 
   if (!workflow) {
     return {
       success: false,
-      error: 'Avaliação não encontrada.'
+      message: 'Avaliação não encontrada.'
     }
   }
 
   if (!isEvaluationStageUnlocked(workflow, stageId)) {
     return {
       success: false,
-      error:
-        'Esta etapa está bloqueada. A etapa anterior precisa ser concluída primeiro.'
+      message: 'Esta etapa ainda está bloqueada.'
     }
   }
 
-  const stage = workflow.stages.find(
-    (item) => String(item.id) === String(stageId)
-  )
+  const stageIndex = workflow.stages.findIndex((stage) => stage.id === stageId)
 
-  if (!stage) {
+  if (stageIndex === -1) {
     return {
       success: false,
-      error: 'Etapa não encontrada.'
+      message: 'Etapa não encontrada.'
     }
   }
+
+  const stage = workflow.stages[stageIndex]
 
   if (stage.status === 'completed') {
     return {
       success: false,
-      error: 'Esta etapa já foi concluída.'
+      message: 'Esta etapa já foi concluída.'
     }
   }
+
+  const user = normalizeUser(
+    startedById || stage.responsibleUserId,
+    startedByName || stage.responsibleUserName
+  )
 
   const now = getNow()
 
   const updatedStage = {
     ...stage,
-
     status: 'in_progress',
-
-    startedAt: stage.startedAt || now
+    startedAt: stage.startedAt || now,
+    startedById: stage.startedById || user.id,
+    startedByName: stage.startedByName || user.name
   }
+
+  const updatedStages = workflow.stages.map((item) =>
+    item.id === stageId ? updatedStage : item
+  )
 
   const updatedWorkflow = {
     ...workflow,
-
     status: 'in_progress',
-
-    stages: workflow.stages.map((item) =>
-      String(item.id) === String(stageId) ? updatedStage : item
-    ),
-
+    currentStageOrder: stage.order,
+    stages: updatedStages,
     updatedAt: now
   }
 
@@ -403,18 +311,10 @@ export function startEvaluationStage(workflowId, stageId) {
 
   return {
     success: true,
-
     workflow: updatedWorkflow,
-
     stage: updatedStage
   }
 }
-
-/*
- * ============================================================
- * SALVAR RESPOSTA
- * ============================================================
- */
 
 export function saveEvaluationAnswer({
   workflowId,
@@ -422,90 +322,94 @@ export function saveEvaluationAnswer({
   questionId,
   answer,
   comment = ''
-} = {}) {
+}) {
   const workflow = getEvaluationWorkflowById(workflowId)
 
   if (!workflow) {
     return {
       success: false,
-      error: 'Avaliação não encontrada.'
+      message: 'Avaliação não encontrada.'
     }
   }
 
-  const stage = workflow.stages?.find(
-    (item) => String(item.id) === String(stageId)
-  )
+  const stage = workflow.stages.find((item) => item.id === stageId)
 
   if (!stage) {
     return {
       success: false,
-      error: 'Etapa não encontrada.'
+      message: 'Etapa não encontrada.'
     }
   }
 
   if (stage.status === 'locked') {
     return {
       success: false,
-      error: 'Esta etapa ainda está bloqueada.'
+      message: 'Esta etapa ainda está bloqueada.'
     }
   }
 
   if (stage.status === 'completed') {
     return {
       success: false,
-      error: 'Esta etapa já foi concluída.'
+      message: 'Esta etapa já foi concluída.'
     }
   }
 
-  const now = getNow()
+  const question = stage.questions.find(
+    (item) => item.questionId === questionId
+  )
+
+  if (!question) {
+    return {
+      success: false,
+      message: 'Pergunta não encontrada.'
+    }
+  }
+
+  const updatedQuestions = stage.questions.map((item) =>
+    item.questionId === questionId
+      ? {
+          ...item,
+          answer,
+          comment,
+          answeredAt: getNow()
+        }
+      : item
+  )
 
   const updatedStage = {
     ...stage,
-
-    questions: stage.questions.map((question) =>
-      String(question.questionId) === String(questionId)
-        ? {
-            ...question,
-
-            answer,
-
-            comment,
-
-            answeredAt: now
-          }
-        : question
-    )
+    questions: updatedQuestions
   }
 
   const updatedWorkflow = {
     ...workflow,
-
     stages: workflow.stages.map((item) =>
-      String(item.id) === String(stageId) ? updatedStage : item
+      item.id === stageId ? updatedStage : item
     ),
-
-    updatedAt: now
+    updatedAt: getNow()
   }
 
   saveWorkflow(updatedWorkflow)
 
   return {
     success: true,
-
-    workflow: updatedWorkflow
+    workflow: updatedWorkflow,
+    stage: updatedStage
   }
 }
 
-/*
- * ============================================================
- * VALIDAR ETAPA
- * ============================================================
- */
-
 export function validateEvaluationStage(stage) {
-  const unanswered = (stage?.questions || []).filter(
+  if (!stage) {
+    return {
+      valid: false,
+      unanswered: []
+    }
+  }
+
+  const unanswered = stage.questions.filter(
     (question) =>
-      question.required !== false &&
+      question.required &&
       (question.answer === '' ||
         question.answer === null ||
         question.answer === undefined)
@@ -513,44 +417,38 @@ export function validateEvaluationStage(stage) {
 
   return {
     valid: unanswered.length === 0,
-
     unanswered
   }
 }
 
-/*
- * ============================================================
- * CONCLUIR ETAPA
- * ============================================================
- */
-
-export function completeEvaluationStage(workflowId, stageId) {
+export function completeEvaluationStage(
+  workflowId,
+  stageId,
+  completedById = '',
+  completedByName = ''
+) {
   const workflow = getEvaluationWorkflowById(workflowId)
 
   if (!workflow) {
     return {
       success: false,
-      error: 'Avaliação não encontrada.'
+      message: 'Avaliação não encontrada.'
     }
   }
 
-  const stageIndex = workflow.stages.findIndex(
-    (stage) => String(stage.id) === String(stageId)
-  )
+  const stage = workflow.stages.find((item) => item.id === stageId)
 
-  if (stageIndex < 0) {
+  if (!stage) {
     return {
       success: false,
-      error: 'Etapa não encontrada.'
+      message: 'Etapa não encontrada.'
     }
   }
-
-  const stage = workflow.stages[stageIndex]
 
   if (stage.status !== 'in_progress') {
     return {
       success: false,
-      error: 'A etapa precisa estar em andamento para ser concluída.'
+      message: 'A etapa precisa estar em andamento para ser concluída.'
     }
   }
 
@@ -559,164 +457,204 @@ export function completeEvaluationStage(workflowId, stageId) {
   if (!validation.valid) {
     return {
       success: false,
-
-      error: 'Existem perguntas obrigatórias sem resposta.',
-
+      message: 'Existem perguntas obrigatórias sem resposta.',
       unanswered: validation.unanswered
     }
   }
 
+  const user = normalizeUser(
+    completedById || stage.startedById || stage.responsibleUserId,
+    completedByName || stage.startedByName || stage.responsibleUserName
+  )
+
   const now = getNow()
 
-  const updatedStages = workflow.stages.map((item, index) => {
-    if (index === stageIndex) {
-      return {
-        ...item,
+  const updatedStage = {
+    ...stage,
+    status: 'completed',
+    completedAt: now,
+    completedById: user.id,
+    completedByName: user.name
+  }
 
-        status: 'completed',
+  const updatedStages = workflow.stages.map((item) =>
+    item.id === stageId ? updatedStage : item
+  )
 
-        completedAt: now
-      }
-    }
+  const nextStage = updatedStages.find((item) => item.status === 'locked')
 
-    if (index === stageIndex + 1 && item.status === 'locked') {
-      return {
-        ...item,
+  let finalStages = updatedStages
 
-        status: 'pending'
-      }
-    }
+  if (nextStage) {
+    finalStages = updatedStages.map((item) =>
+      item.id === nextStage.id
+        ? {
+            ...item,
+            status: 'pending'
+          }
+        : item
+    )
+  }
 
-    return item
-  })
-
-  const allStagesCompleted = updatedStages.every(
+  const allStagesCompleted = finalStages.every(
     (item) => item.status === 'completed'
   )
 
-  const nextStage = updatedStages[stageIndex + 1]
-
   const updatedWorkflow = {
     ...workflow,
-
-    stages: updatedStages,
-
+    stages: finalStages,
     currentStageOrder: nextStage ? nextStage.order : workflow.currentStageOrder,
-
-    updatedAt: now
-  }
-
-  if (allStagesCompleted) {
-    updatedWorkflow.pdi = {
-      ...updatedWorkflow.pdi,
-
-      status: 'pending'
-    }
+    updatedAt: now,
+    pdi: allStagesCompleted
+      ? {
+          ...workflow.pdi,
+          status:
+            workflow.pdi.status === 'locked' ? 'pending' : workflow.pdi.status
+        }
+      : workflow.pdi
   }
 
   saveWorkflow(updatedWorkflow)
 
   return {
     success: true,
-
     workflow: updatedWorkflow,
-
     nextStage: nextStage || null,
-
     pdiUnlocked: allStagesCompleted
   }
 }
 
-/*
- * ============================================================
- * PDI
- * ============================================================
- */
-
 export function isPdiUnlocked(workflow) {
+  if (!workflow?.pdi) {
+    return false
+  }
+
   return (
-    workflow?.pdi?.status === 'pending' || workflow?.pdi?.status === 'completed'
+    workflow.pdi.status === 'pending' ||
+    workflow.pdi.status === 'in_progress' ||
+    workflow.pdi.status === 'completed'
   )
 }
 
-export function startEvaluationPdi(workflowId) {
+export function startEvaluationPdi(
+  workflowId,
+  startedById = '',
+  startedByName = ''
+) {
   const workflow = getEvaluationWorkflowById(workflowId)
 
   if (!workflow) {
     return {
       success: false,
-      error: 'Avaliação não encontrada.'
+      message: 'Avaliação não encontrada.'
     }
   }
 
   if (!isPdiUnlocked(workflow)) {
     return {
       success: false,
-      error: 'O PDI ainda está bloqueado.'
+      message: 'O PDI ainda está bloqueado.'
     }
+  }
+
+  if (workflow.pdi.status === 'completed') {
+    return {
+      success: false,
+      message: 'O PDI já foi concluído.'
+    }
+  }
+
+  const now = getNow()
+
+  const user = normalizeUser(
+    startedById || workflow.pdi.responsibleUserId,
+    startedByName || workflow.pdi.responsibleUserName
+  )
+
+  const updatedPdi = {
+    ...workflow.pdi,
+    status: 'in_progress',
+    startedAt: workflow.pdi.startedAt || now,
+    startedById: workflow.pdi.startedById || user.id,
+    startedByName: workflow.pdi.startedByName || user.name
   }
 
   const updatedWorkflow = {
     ...workflow,
-
-    pdi: {
-      ...workflow.pdi,
-
-      startedAt: workflow.pdi.startedAt || getNow()
-    },
-
-    updatedAt: getNow()
+    pdi: updatedPdi,
+    updatedAt: now
   }
 
   saveWorkflow(updatedWorkflow)
 
   return {
     success: true,
-
-    workflow: updatedWorkflow
+    workflow: updatedWorkflow,
+    pdi: updatedPdi
   }
 }
 
 export function saveEvaluationPdiAnswer({
   workflowId,
   questionId,
-  answer
-} = {}) {
+  answer,
+  comment = ''
+}) {
   const workflow = getEvaluationWorkflowById(workflowId)
 
   if (!workflow) {
     return {
       success: false,
-      error: 'Avaliação não encontrada.'
+      message: 'Avaliação não encontrada.'
     }
   }
 
   if (!isPdiUnlocked(workflow)) {
     return {
       success: false,
-      error: 'O PDI ainda está bloqueado.'
+      message: 'O PDI ainda está bloqueado.'
     }
+  }
+
+  if (workflow.pdi.status === 'completed') {
+    return {
+      success: false,
+      message: 'O PDI já foi concluído.'
+    }
+  }
+
+  const question = workflow.pdi.questions.find(
+    (item) => item.questionId === questionId
+  )
+
+  if (!question) {
+    return {
+      success: false,
+      message: 'Pergunta do PDI não encontrada.'
+    }
+  }
+
+  const updatedQuestions = workflow.pdi.questions.map((item) =>
+    item.questionId === questionId
+      ? {
+          ...item,
+          answer,
+          comment,
+          answeredAt: getNow()
+        }
+      : item
+  )
+
+  const updatedPdi = {
+    ...workflow.pdi,
+    questions: updatedQuestions,
+    status:
+      workflow.pdi.status === 'pending' ? 'in_progress' : workflow.pdi.status
   }
 
   const updatedWorkflow = {
     ...workflow,
-
-    pdi: {
-      ...workflow.pdi,
-
-      questions: workflow.pdi.questions.map((question) =>
-        String(question.questionId) === String(questionId)
-          ? {
-              ...question,
-
-              answer,
-
-              answeredAt: getNow()
-            }
-          : question
-      )
-    },
-
+    pdi: updatedPdi,
     updatedAt: getNow()
   }
 
@@ -724,94 +662,191 @@ export function saveEvaluationPdiAnswer({
 
   return {
     success: true,
-
-    workflow: updatedWorkflow
+    workflow: updatedWorkflow,
+    pdi: updatedPdi
   }
 }
 
-export function completeEvaluationPdi(workflowId) {
+export function validateEvaluationPdi(pdi) {
+  if (!pdi) {
+    return {
+      valid: false,
+      unanswered: []
+    }
+  }
+
+  const unanswered = pdi.questions.filter(
+    (question) =>
+      question.required &&
+      (question.answer === '' ||
+        question.answer === null ||
+        question.answer === undefined)
+  )
+
+  return {
+    valid: unanswered.length === 0,
+    unanswered
+  }
+}
+
+export function completeEvaluationPdi(
+  workflowId,
+  completedById = '',
+  completedByName = ''
+) {
   const workflow = getEvaluationWorkflowById(workflowId)
 
   if (!workflow) {
     return {
       success: false,
-      error: 'Avaliação não encontrada.'
+      message: 'Avaliação não encontrada.'
     }
   }
 
   if (!isPdiUnlocked(workflow)) {
     return {
       success: false,
-      error: 'O PDI ainda está bloqueado.'
+      message: 'O PDI ainda está bloqueado.'
     }
   }
 
-  const unanswered = (workflow.pdi?.questions || []).filter(
-    (question) =>
-      question.required !== false && !String(question.answer || '').trim()
-  )
-
-  if (unanswered.length > 0) {
+  if (workflow.pdi.status !== 'in_progress') {
     return {
       success: false,
+      message: 'O PDI precisa estar em andamento para ser concluído.'
+    }
+  }
 
-      error: 'Existem perguntas do PDI sem resposta.',
+  const validation = validateEvaluationPdi(workflow.pdi)
 
-      unanswered
+  if (!validation.valid) {
+    return {
+      success: false,
+      message: 'Existem perguntas obrigatórias do PDI sem resposta.',
+      unanswered: validation.unanswered
     }
   }
 
   const now = getNow()
 
-  const updatedWorkflow = {
-    ...workflow,
+  const user = normalizeUser(
+    completedById || workflow.pdi.startedById || workflow.pdi.responsibleUserId,
+    completedByName ||
+      workflow.pdi.startedByName ||
+      workflow.pdi.responsibleUserName
+  )
 
-    pdi: {
-      ...workflow.pdi,
-
-      status: 'completed',
-
-      completedAt: now
-    },
-
-    updatedAt: now
+  const updatedPdi = {
+    ...workflow.pdi,
+    status: 'completed',
+    completedAt: now,
+    completedById: user.id,
+    completedByName: user.name
   }
 
-  /*
-   * Depois do PDI, libera o 180° caso esteja ativado.
-   */
-  if (updatedWorkflow.evaluation180?.enabled) {
-    updatedWorkflow.evaluation180 = {
-      ...updatedWorkflow.evaluation180,
+  let updated180 = workflow.evaluation180
+  let workflowStatus = workflow.status
+  let completedAt = workflow.completedAt
 
+  if (workflow.evaluation180?.enabled) {
+    updated180 = {
+      ...workflow.evaluation180,
       status: 'pending'
     }
   } else {
-    updatedWorkflow.status = 'completed'
+    workflowStatus = 'completed'
+    completedAt = now
+  }
 
-    updatedWorkflow.completedAt = now
+  const updatedWorkflow = {
+    ...workflow,
+    status: workflowStatus,
+    completedAt,
+    pdi: updatedPdi,
+    evaluation180: updated180,
+    updatedAt: now
   }
 
   saveWorkflow(updatedWorkflow)
 
   return {
     success: true,
-
-    workflow: updatedWorkflow
+    workflow: updatedWorkflow,
+    evaluation180Unlocked: workflow.evaluation180?.enabled === true
   }
 }
-
-/*
- * ============================================================
- * 180°
- * ============================================================
- */
 
 export function isEvaluation180Unlocked(workflow) {
   return (
     workflow?.evaluation180?.enabled === true &&
-    workflow?.evaluation180?.status === 'pending'
+    (workflow.evaluation180.status === 'pending' ||
+      workflow.evaluation180.status === 'in_progress' ||
+      workflow.evaluation180.status === 'completed')
   )
+}
+
+export function startEvaluation180(
+  workflowId,
+  startedById = '',
+  startedByName = ''
+) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return {
+      success: false,
+      message: 'Avaliação não encontrada.'
+    }
+  }
+
+  if (!workflow.evaluation180?.enabled) {
+    return {
+      success: false,
+      message: 'A avaliação 180° não está habilitada.'
+    }
+  }
+
+  if (!isEvaluation180Unlocked(workflow)) {
+    return {
+      success: false,
+      message: 'A avaliação 180° ainda está bloqueada.'
+    }
+  }
+
+  if (workflow.evaluation180.status === 'completed') {
+    return {
+      success: false,
+      message: 'A avaliação 180° já foi concluída.'
+    }
+  }
+
+  const now = getNow()
+
+  const updated180 = {
+    ...workflow.evaluation180,
+    status: 'in_progress',
+    startedAt: workflow.evaluation180.startedAt || now,
+    startedById:
+      workflow.evaluation180.startedById || startedById || workflow.employeeId,
+    startedByName:
+      workflow.evaluation180.startedByName ||
+      startedByName ||
+      workflow.employeeName
+  }
+
+  const updatedWorkflow = {
+    ...workflow,
+    evaluation180: updated180,
+    updatedAt: now
+  }
+
+  saveWorkflow(updatedWorkflow)
+
+  return {
+    success: true,
+    workflow: updatedWorkflow,
+    evaluation180: updated180
+  }
 }
 
 export function saveEvaluation180Answer({
@@ -819,44 +854,67 @@ export function saveEvaluation180Answer({
   questionId,
   answer,
   comment = ''
-} = {}) {
+}) {
   const workflow = getEvaluationWorkflowById(workflowId)
 
   if (!workflow) {
     return {
       success: false,
-      error: 'Avaliação não encontrada.'
+      message: 'Avaliação não encontrada.'
     }
   }
 
   if (!isEvaluation180Unlocked(workflow)) {
     return {
       success: false,
-      error: 'A avaliação 180° ainda está bloqueada.'
+      message: 'A avaliação 180° ainda está bloqueada.'
     }
+  }
+
+  if (workflow.evaluation180.status === 'completed') {
+    return {
+      success: false,
+      message: 'A avaliação 180° já foi concluída.'
+    }
+  }
+
+  const question = workflow.evaluation180.questions.find(
+    (item) => item.questionId === questionId
+  )
+
+  if (!question) {
+    return {
+      success: false,
+      message: 'Pergunta da avaliação 180° não encontrada.'
+    }
+  }
+
+  const updatedQuestions = workflow.evaluation180.questions.map((item) =>
+    item.questionId === questionId
+      ? {
+          ...item,
+          answer,
+          comment,
+          answeredAt: getNow()
+        }
+      : item
+  )
+
+  const updated180 = {
+    ...workflow.evaluation180,
+    questions: updatedQuestions,
+    status:
+      workflow.evaluation180.status === 'pending'
+        ? 'in_progress'
+        : workflow.evaluation180.status,
+    startedAt: workflow.evaluation180.startedAt || getNow(),
+    startedById: workflow.evaluation180.startedById || workflow.employeeId,
+    startedByName: workflow.evaluation180.startedByName || workflow.employeeName
   }
 
   const updatedWorkflow = {
     ...workflow,
-
-    evaluation180: {
-      ...workflow.evaluation180,
-
-      questions: workflow.evaluation180.questions.map((question) =>
-        String(question.questionId) === String(questionId)
-          ? {
-              ...question,
-
-              answer,
-
-              comment,
-
-              answeredAt: getNow()
-            }
-          : question
-      )
-    },
-
+    evaluation180: updated180,
     updatedAt: getNow()
   }
 
@@ -864,63 +922,99 @@ export function saveEvaluation180Answer({
 
   return {
     success: true,
-
-    workflow: updatedWorkflow
+    workflow: updatedWorkflow,
+    evaluation180: updated180
   }
 }
 
-export function completeEvaluation180(workflowId) {
+export function validateEvaluation180(evaluation180) {
+  if (!evaluation180) {
+    return {
+      valid: false,
+      unanswered: []
+    }
+  }
+
+  const unanswered = evaluation180.questions.filter(
+    (question) =>
+      question.required &&
+      (question.answer === '' ||
+        question.answer === null ||
+        question.answer === undefined)
+  )
+
+  return {
+    valid: unanswered.length === 0,
+    unanswered
+  }
+}
+
+export function completeEvaluation180(
+  workflowId,
+  completedById = '',
+  completedByName = ''
+) {
   const workflow = getEvaluationWorkflowById(workflowId)
 
   if (!workflow) {
     return {
       success: false,
-      error: 'Avaliação não encontrada.'
+      message: 'Avaliação não encontrada.'
+    }
+  }
+
+  if (!workflow.evaluation180?.enabled) {
+    return {
+      success: false,
+      message: 'A avaliação 180° não está habilitada.'
     }
   }
 
   if (!isEvaluation180Unlocked(workflow)) {
     return {
       success: false,
-      error: 'A avaliação 180° ainda está bloqueada.'
+      message: 'A avaliação 180° ainda está bloqueada.'
     }
   }
 
-  const unanswered = (workflow.evaluation180?.questions || []).filter(
-    (question) =>
-      question.required !== false &&
-      (question.answer === '' ||
-        question.answer === null ||
-        question.answer === undefined)
-  )
-
-  if (unanswered.length > 0) {
+  if (workflow.evaluation180.status !== 'in_progress') {
     return {
       success: false,
+      message: 'A avaliação 180° precisa estar em andamento para ser concluída.'
+    }
+  }
 
-      error: 'Existem perguntas obrigatórias sem resposta.',
+  const validation = validateEvaluation180(workflow.evaluation180)
 
-      unanswered
+  if (!validation.valid) {
+    return {
+      success: false,
+      message: 'Existem perguntas obrigatórias da avaliação 180° sem resposta.',
+      unanswered: validation.unanswered
     }
   }
 
   const now = getNow()
 
+  const updated180 = {
+    ...workflow.evaluation180,
+    status: 'completed',
+    completedAt: now,
+    completedById:
+      completedById ||
+      workflow.evaluation180.startedById ||
+      workflow.employeeId,
+    completedByName:
+      completedByName ||
+      workflow.evaluation180.startedByName ||
+      workflow.employeeName
+  }
+
   const updatedWorkflow = {
     ...workflow,
-
-    evaluation180: {
-      ...workflow.evaluation180,
-
-      status: 'completed',
-
-      completedAt: now
-    },
-
     status: 'completed',
-
     completedAt: now,
-
+    evaluation180: updated180,
     updatedAt: now
   }
 
@@ -928,16 +1022,10 @@ export function completeEvaluation180(workflowId) {
 
   return {
     success: true,
-
-    workflow: updatedWorkflow
+    workflow: updatedWorkflow,
+    evaluation180: updated180
   }
 }
-
-/*
- * ============================================================
- * FEEDBACK DO PDI
- * ============================================================
- */
 
 export function sendPdiEmployeeFeedback(workflowId) {
   const workflow = getEvaluationWorkflowById(workflowId)
@@ -945,14 +1033,14 @@ export function sendPdiEmployeeFeedback(workflowId) {
   if (!workflow) {
     return {
       success: false,
-      error: 'Avaliação não encontrada.'
+      message: 'Avaliação não encontrada.'
     }
   }
 
   if (workflow.pdi?.status !== 'completed') {
     return {
       success: false,
-      error: 'O PDI ainda não foi concluído.'
+      message: 'O PDI precisa estar concluído antes do envio.'
     }
   }
 
@@ -964,125 +1052,120 @@ export function sendPdiEmployeeFeedback(workflowId) {
     (question) => question.questionId === 'pdi-negative'
   )
 
-  const now = getNow()
+  const employeeFeedback = {
+    positivePoints: positiveQuestion?.answer || '',
+    negativePoints: negativeQuestion?.answer || '',
+    sent: true,
+    sentAt: getNow()
+  }
 
   const updatedWorkflow = {
     ...workflow,
-
     pdi: {
       ...workflow.pdi,
-
-      employeeFeedback: {
-        positivePoints: positiveQuestion?.answer || '',
-
-        negativePoints: negativeQuestion?.answer || '',
-
-        sent: true,
-
-        sentAt: now
-      }
+      employeeFeedback
     },
-
-    updatedAt: now
+    updatedAt: getNow()
   }
 
   saveWorkflow(updatedWorkflow)
 
   return {
     success: true,
-
-    workflow: updatedWorkflow
+    workflow: updatedWorkflow,
+    employeeFeedback
   }
 }
-
-/*
- * ============================================================
- * CANCELAR
- * ============================================================
- */
 
 export function cancelEvaluationWorkflow(workflowId) {
   const workflow = getEvaluationWorkflowById(workflowId)
 
   if (!workflow) {
-    return null
+    return {
+      success: false,
+      message: 'Avaliação não encontrada.'
+    }
+  }
+
+  if (workflow.status === 'completed') {
+    return {
+      success: false,
+      message: 'Uma avaliação concluída não pode ser cancelada.'
+    }
   }
 
   const updatedWorkflow = {
     ...workflow,
-
     status: 'cancelled',
-
     updatedAt: getNow()
   }
 
   saveWorkflow(updatedWorkflow)
 
-  return updatedWorkflow
-}
-
-/*
- * ============================================================
- * PROGRESSO
- * ============================================================
- */
-
-export function calculateEvaluationProgress(workflow) {
-  const totalStages = workflow?.stages?.length || 0
-
-  const completedStages =
-    workflow?.stages?.filter((stage) => stage.status === 'completed').length ||
-    0
-
   return {
-    completedStages,
-
-    totalStages,
-
-    percentage:
-      totalStages === 0 ? 0 : Math.round((completedStages / totalStages) * 100)
+    success: true,
+    workflow: updatedWorkflow
   }
 }
 
-/*
- * ============================================================
- * DURAÇÃO DA ETAPA
- * ============================================================
- */
+export function calculateEvaluationProgress(workflow) {
+  if (!workflow || !Array.isArray(workflow.stages)) {
+    return {
+      completedStages: 0,
+      totalStages: 0,
+      percentage: 0
+    }
+  }
+
+  const totalStages = workflow.stages.length
+
+  const completedStages = workflow.stages.filter(
+    (stage) => stage.status === 'completed'
+  ).length
+
+  const percentage =
+    totalStages > 0 ? Math.round((completedStages / totalStages) * 100) : 0
+
+  return {
+    completedStages,
+    totalStages,
+    percentage
+  }
+}
 
 export function calculateStageDuration(stage) {
-  if (!stage?.startedAt || !stage?.completedAt) {
-    return null
+  if (!stage?.startedAt) {
+    return {
+      minutes: 0,
+      hours: 0,
+      days: 0
+    }
   }
 
   const start = new Date(stage.startedAt).getTime()
 
-  const end = new Date(stage.completedAt).getTime()
+  const end = stage.completedAt
+    ? new Date(stage.completedAt).getTime()
+    : Date.now()
 
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
-    return null
-  }
+  const milliseconds = Math.max(0, end - start)
 
-  const minutes = (end - start) / (1000 * 60)
+  const minutes = Math.floor(milliseconds / 60000)
 
   return {
     minutes,
-
-    hours: minutes / 60,
-
-    days: minutes / 1440
+    hours: Number((minutes / 60).toFixed(2)),
+    days: Number((minutes / 1440).toFixed(2))
   }
 }
 
-/*
- * ============================================================
- * DURAÇÃO TOTAL
- * ============================================================
- */
-
 export function calculateEvaluationDuration(workflow) {
   if (!workflow?.createdAt) {
-    return null
+    return {
+      minutes: 0,
+      hours: 0,
+      days: 0
+    }
   }
 
   const start = new Date(workflow.createdAt).getTime()
@@ -1091,41 +1174,131 @@ export function calculateEvaluationDuration(workflow) {
     ? new Date(workflow.completedAt).getTime()
     : Date.now()
 
-  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) {
-    return null
-  }
+  const milliseconds = Math.max(0, end - start)
 
-  const minutes = (end - start) / (1000 * 60)
+  const minutes = Math.floor(milliseconds / 60000)
 
   return {
     minutes,
-
-    hours: minutes / 60,
-
-    days: minutes / 1440
+    hours: Number((minutes / 60).toFixed(2)),
+    days: Number((minutes / 1440).toFixed(2))
   }
 }
 
-/*
- * ============================================================
- * SALVAR
- * ============================================================
- */
-
-function saveWorkflow(workflow) {
-  const workflows = getEvaluationWorkflows()
-
-  const exists = workflows.some(
-    (item) => String(item.id) === String(workflow.id)
+export function calculateEvaluationMetrics(workflows = []) {
+  const completedWorkflows = workflows.filter(
+    (workflow) => workflow.status === 'completed'
   )
 
-  const updatedWorkflows = exists
-    ? workflows.map((item) =>
-        String(item.id) === String(workflow.id) ? workflow : item
-      )
-    : [...workflows, workflow]
+  const totalEvaluations = workflows.length
+  const completedEvaluations = completedWorkflows.length
+
+  let totalDurationMinutes = 0
+
+  completedWorkflows.forEach((workflow) => {
+    totalDurationMinutes += calculateEvaluationDuration(workflow).minutes
+  })
+
+  const averageDurationMinutes =
+    completedEvaluations > 0 ? totalDurationMinutes / completedEvaluations : 0
+
+  const responsibleMap = {}
+  const branchMap = {}
+
+  workflows.forEach((workflow) => {
+    const branchKey =
+      workflow.branchId || workflow.branchName || 'without-branch'
+
+    if (!branchMap[branchKey]) {
+      branchMap[branchKey] = {
+        branchId: workflow.branchId || '',
+        branchName: workflow.branchName || 'Sem filial',
+        stages: 0,
+        completedStages: 0,
+        totalMinutes: 0
+      }
+    }
+
+    workflow.stages?.forEach((stage) => {
+      const responsibleKey =
+        stage.responsibleUserId ||
+        stage.responsibleUserName ||
+        stage.responsibleType ||
+        'without-responsible'
+
+      const responsibleName =
+        stage.responsibleUserName ||
+        stage.responsibleType ||
+        'Responsável não informado'
+
+      if (!responsibleMap[responsibleKey]) {
+        responsibleMap[responsibleKey] = {
+          responsibleId: stage.responsibleUserId || '',
+          responsibleName,
+          stages: 0,
+          completedStages: 0,
+          totalMinutes: 0
+        }
+      }
+
+      responsibleMap[responsibleKey].stages += 1
+      branchMap[branchKey].stages += 1
+
+      if (stage.status === 'completed') {
+        const duration = calculateStageDuration(stage)
+
+        responsibleMap[responsibleKey].completedStages += 1
+        responsibleMap[responsibleKey].totalMinutes += duration.minutes
+
+        branchMap[branchKey].completedStages += 1
+        branchMap[branchKey].totalMinutes += duration.minutes
+      }
+    })
+  })
+
+  const byResponsible = Object.values(responsibleMap).map((item) => ({
+    ...item,
+    averageMinutes:
+      item.completedStages > 0
+        ? Number((item.totalMinutes / item.completedStages).toFixed(2))
+        : 0
+  }))
+
+  const byBranch = Object.values(branchMap).map((item) => ({
+    ...item,
+    averageMinutes:
+      item.completedStages > 0
+        ? Number((item.totalMinutes / item.completedStages).toFixed(2))
+        : 0
+  }))
+
+  return {
+    totalEvaluations,
+    completedEvaluations,
+    averageDurationMinutes: Number(averageDurationMinutes.toFixed(2)),
+    byResponsible,
+    byBranch
+  }
+}
+
+export function saveWorkflow(workflow) {
+  const workflows = getEvaluationWorkflows()
+
+  const existingIndex = workflows.findIndex((item) => item.id === workflow.id)
+
+  if (existingIndex === -1) {
+    setStored(STORAGE_KEY, [...workflows, workflow])
+    return workflow
+  }
+
+  const updatedWorkflows = [...workflows]
+
+  updatedWorkflows[existingIndex] = {
+    ...workflow,
+    updatedAt: getNow()
+  }
 
   setStored(STORAGE_KEY, updatedWorkflows)
 
-  return workflow
+  return updatedWorkflows[existingIndex]
 }

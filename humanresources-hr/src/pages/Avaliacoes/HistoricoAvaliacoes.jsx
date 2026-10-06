@@ -2,11 +2,18 @@ import { useMemo, useState } from 'react'
 
 import {
   calculateEvaluationDuration,
+  calculateEvaluationMetrics,
   calculateStageDuration,
   getEvaluationWorkflows
 } from '../../services/evaluationWorkflow'
 
 import './avaliacoes.css'
+
+/*
+ * ============================================================
+ * FORMATAÇÃO DE DATA
+ * ============================================================
+ */
 
 function formatDate(value) {
   if (!value) {
@@ -22,23 +29,48 @@ function formatDate(value) {
   return date.toLocaleDateString('pt-BR')
 }
 
+/*
+ * ============================================================
+ * FORMATAÇÃO DE DURAÇÃO
+ * ============================================================
+ */
+
 function formatDuration(duration) {
   if (!duration) {
     return '-'
   }
 
-  if (duration.minutes < 60) {
-    return `${Math.round(duration.minutes)} min`
+  const minutes = Number(duration.minutes)
+
+  if (!Number.isFinite(minutes)) {
+    return '-'
   }
 
-  if (duration.hours < 24) {
-    return `${duration.hours.toFixed(1)} h`
+  if (minutes < 60) {
+    return `${Math.round(minutes)} min`
   }
 
-  return `${duration.days.toFixed(1)} dias`
+  const hours = minutes / 60
+
+  if (hours < 24) {
+    return `${hours.toFixed(1)} h`
+  }
+
+  const days = minutes / 1440
+
+  return `${days.toFixed(1)} dias`
 }
 
+/*
+ * ============================================================
+ * COMPONENTE
+ * ============================================================
+ */
+
 export default function HistoricoAvaliacoes() {
+  /*
+   * Busca somente avaliações concluídas.
+   */
   const [workflows] = useState(() =>
     getEvaluationWorkflows().filter(
       (workflow) => workflow.status === 'completed'
@@ -48,6 +80,60 @@ export default function HistoricoAvaliacoes() {
   const [search, setSearch] = useState('')
 
   const [selectedWorkflow, setSelectedWorkflow] = useState(null)
+
+  /*
+   * ==========================================================
+   * MÉTRICAS
+   * ==========================================================
+   */
+
+  const metrics = useMemo(() => {
+    const result = calculateEvaluationMetrics(workflows)
+
+    /*
+     * Compatibilidade com versões anteriores do serviço.
+     *
+     * Algumas versões utilizavam:
+     * averageEvaluationMinutes
+     *
+     * Outras utilizavam:
+     * averageDurationMinutes
+     *
+     * Aqui aceitamos as duas para evitar que a tela
+     * apresente NaN.
+     */
+
+    const averageEvaluationMinutes = Number(
+      result?.averageEvaluationMinutes ?? result?.averageDurationMinutes ?? 0
+    )
+
+    const totalCompleted = Number(
+      result?.totalCompleted ??
+        result?.completedEvaluations ??
+        workflows.length ??
+        0
+    )
+
+    return {
+      totalCompleted: Number.isFinite(totalCompleted) ? totalCompleted : 0,
+
+      averageEvaluationMinutes: Number.isFinite(averageEvaluationMinutes)
+        ? averageEvaluationMinutes
+        : 0,
+
+      byResponsible: Array.isArray(result?.byResponsible)
+        ? result.byResponsible
+        : [],
+
+      byBranch: Array.isArray(result?.byBranch) ? result.byBranch : []
+    }
+  }, [workflows])
+
+  /*
+   * ==========================================================
+   * FILTRO
+   * ==========================================================
+   */
 
   const filtered = useMemo(() => {
     const value = search.trim().toLowerCase()
@@ -64,17 +150,33 @@ export default function HistoricoAvaliacoes() {
     )
   }, [workflows, search])
 
+  /*
+   * ==========================================================
+   * RENDER
+   * ==========================================================
+   */
+
   return (
     <div className="evaluations-page">
+      {/* ======================================================
+          CABEÇALHO
+      ====================================================== */}
+
       <header className="evaluations-header">
         <div>
-          <span className="evaluations-eyebrow">AVALIAÇÕES</span>
+          <span className="evaluations-eyebrow">HISTÓRICO</span>
 
           <h1>Histórico</h1>
 
-          <p>Avaliações já concluídas e seus resultados.</p>
+          <p>
+            Consulte as avaliações concluídas e os resultados de cada processo.
+          </p>
         </div>
       </header>
+
+      {/* ======================================================
+          BUSCA E HISTÓRICO
+      ====================================================== */}
 
       <section className="evaluations-card">
         <div className="evaluations-toolbar">
@@ -145,8 +247,163 @@ export default function HistoricoAvaliacoes() {
         )}
       </section>
 
+      {/* ======================================================
+          RESUMO
+      ====================================================== */}
+
+      <section className="evaluations-summary">
+        <div className="evaluation-summary-card">
+          <span>Avaliações concluídas</span>
+
+          <strong>{metrics.totalCompleted}</strong>
+        </div>
+
+        <div className="evaluation-summary-card">
+          <span>Tempo médio total</span>
+
+          <strong>
+            {formatDuration({
+              minutes: metrics.averageEvaluationMinutes
+            })}
+          </strong>
+        </div>
+
+        <div className="evaluation-summary-card">
+          <span>Responsáveis avaliados</span>
+
+          <strong>{metrics.byResponsible.length}</strong>
+        </div>
+
+        <div className="evaluation-summary-card">
+          <span>Filiais avaliadas</span>
+
+          <strong>{metrics.byBranch.length}</strong>
+        </div>
+      </section>
+
+      {/* ======================================================
+          MÉTRICAS
+      ====================================================== */}
+
+      <section className="evaluation-metrics-grid">
+        {/* ====================================================
+            RESPONSÁVEIS
+        ==================================================== */}
+
+        <div className="evaluations-card">
+          <div className="evaluation-section-heading">
+            <div>
+              <h3>Tempo médio por responsável</h3>
+
+              <p>
+                Quem está levando mais ou menos tempo para concluir as etapas.
+              </p>
+            </div>
+          </div>
+
+          {metrics.byResponsible.length === 0 ? (
+            <p className="evaluation-muted">Ainda não há dados suficientes.</p>
+          ) : (
+            <div className="evaluations-table-wrapper">
+              <table className="evaluations-table">
+                <thead>
+                  <tr>
+                    <th>Responsável</th>
+
+                    <th>Etapas</th>
+
+                    <th>Tempo médio</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {metrics.byResponsible.map((item) => (
+                    <tr key={item.id}>
+                      <td>
+                        <strong>
+                          {item.name || 'Responsável não informado'}
+                        </strong>
+                      </td>
+
+                      <td>{item.stages ?? item.count ?? 0}</td>
+
+                      <td>
+                        {formatDuration({
+                          minutes: Number(item.averageMinutes) || 0
+                        })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* ====================================================
+            FILIAIS
+        ==================================================== */}
+
+        <div className="evaluations-card">
+          <div className="evaluation-section-heading">
+            <div>
+              <h3>Tempo médio por filial</h3>
+
+              <p>Comparativo das etapas concluídas em cada filial.</p>
+            </div>
+          </div>
+
+          {metrics.byBranch.length === 0 ? (
+            <p className="evaluation-muted">Ainda não há dados suficientes.</p>
+          ) : (
+            <div className="evaluations-table-wrapper">
+              <table className="evaluations-table">
+                <thead>
+                  <tr>
+                    <th>Filial</th>
+
+                    <th>Etapas</th>
+
+                    <th>Tempo médio</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {metrics.byBranch.map((item) => (
+                    <tr key={item.id}>
+                      <td>
+                        <strong>{item.name || 'Filial não informada'}</strong>
+                      </td>
+
+                      <td>{item.count ?? item.stages ?? 0}</td>
+
+                      <td>
+                        {formatDuration({
+                          minutes: Number(item.averageMinutes) || 0
+                        })}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* ======================================================
+          MODAL DE DETALHES
+      ====================================================== */}
+
       {selectedWorkflow && (
-        <div className="evaluations-modal-overlay">
+        <div
+          className="evaluations-modal-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              setSelectedWorkflow(null)
+            }
+          }}
+        >
           <div className="evaluations-modal evaluations-modal-large">
             <header className="evaluations-modal-header">
               <div>
@@ -167,11 +424,15 @@ export default function HistoricoAvaliacoes() {
             </header>
 
             <div className="evaluations-modal-body">
+              {/* ==================================================
+                  ETAPAS
+              ================================================== */}
+
               <section className="evaluation-detail-section">
                 <h3>Etapas</h3>
 
                 <div className="evaluation-workflow">
-                  {selectedWorkflow.stages.map((stage) => (
+                  {selectedWorkflow.stages?.map((stage) => (
                     <div
                       className="evaluation-workflow-stage completed"
                       key={stage.id}
@@ -186,8 +447,10 @@ export default function HistoricoAvaliacoes() {
                             <strong>{stage.name}</strong>
 
                             <span>
-                              {stage.responsibleUserName ||
-                                stage.responsibleType}
+                              {stage.completedByName ||
+                                stage.responsibleUserName ||
+                                stage.responsibleType ||
+                                'Responsável não informado'}
                             </span>
                           </div>
 
@@ -199,47 +462,84 @@ export default function HistoricoAvaliacoes() {
                         <small>
                           Tempo: {formatDuration(calculateStageDuration(stage))}
                         </small>
+
+                        {stage.completedByName && (
+                          <small>Concluída por: {stage.completedByName}</small>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               </section>
 
+              {/* ==================================================
+                  PDI
+              ================================================== */}
+
               <section className="evaluation-detail-section">
                 <h3>PDI</h3>
 
-                {selectedWorkflow.pdi?.questions?.map((question, index) => (
-                  <div
-                    className="evaluation-history-answer"
-                    key={question.questionId}
-                  >
-                    <strong>
-                      {index + 1}. {question.questionText}
-                    </strong>
+                <div className="evaluation-detail-box">
+                  <p>
+                    Responsável:{' '}
+                    {selectedWorkflow.pdi?.completedByName ||
+                      selectedWorkflow.pdi?.responsibleUserName ||
+                      'Gerente/Supervisor'}
+                  </p>
 
-                    <p>{question.answer || '-'}</p>
-                  </div>
-                ))}
+                  {selectedWorkflow.pdi?.questions?.map((question, index) => (
+                    <div
+                      className="evaluation-history-answer"
+                      key={question.questionId}
+                    >
+                      <strong>
+                        {index + 1}. {question.questionText}
+                      </strong>
+
+                      <p>{question.answer || '-'}</p>
+
+                      {question.comment && (
+                        <small>Comentário: {question.comment}</small>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </section>
+
+              {/* ==================================================
+                  180°
+              ================================================== */}
 
               {selectedWorkflow.evaluation180?.enabled && (
                 <section className="evaluation-detail-section">
                   <h3>Avaliação 180°</h3>
 
-                  {selectedWorkflow.evaluation180.questions.map(
-                    (question, index) => (
-                      <div
-                        className="evaluation-history-answer"
-                        key={question.questionId}
-                      >
-                        <strong>
-                          {index + 1}. {question.questionText}
-                        </strong>
+                  <div className="evaluation-detail-box">
+                    <p>
+                      Avaliado por:{' '}
+                      {selectedWorkflow.evaluation180?.completedByName ||
+                        selectedWorkflow.employeeName}
+                    </p>
 
-                        <p>{question.answer || '-'}</p>
-                      </div>
-                    )
-                  )}
+                    {selectedWorkflow.evaluation180.questions?.map(
+                      (question, index) => (
+                        <div
+                          className="evaluation-history-answer"
+                          key={question.questionId}
+                        >
+                          <strong>
+                            {index + 1}. {question.questionText}
+                          </strong>
+
+                          <p>{question.answer || '-'}</p>
+
+                          {question.comment && (
+                            <small>Comentário: {question.comment}</small>
+                          )}
+                        </div>
+                      )
+                    )}
+                  </div>
                 </section>
               )}
             </div>
