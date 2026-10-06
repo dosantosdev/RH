@@ -173,6 +173,83 @@ export const permissions = [
 
   /*
    * ============================================================
+   * AVALIAÇÕES
+   * ============================================================
+   */
+
+  {
+    category: 'Avaliações',
+
+    items: [
+      {
+        key: 'evaluations_view',
+        label: 'Visualizar avaliações'
+      },
+
+      {
+        key: 'evaluations_create',
+        label: 'Criar avaliações'
+      },
+
+      {
+        key: 'evaluations_edit',
+        label: 'Editar avaliações'
+      },
+
+      {
+        key: 'evaluations_delete',
+        label: 'Excluir avaliações'
+      },
+
+      {
+        key: 'evaluation_models_view',
+        label: 'Visualizar modelos de avaliação'
+      },
+
+      {
+        key: 'evaluation_models_create',
+        label: 'Criar modelos de avaliação'
+      },
+
+      {
+        key: 'evaluation_models_edit',
+        label: 'Editar modelos de avaliação'
+      },
+
+      {
+        key: 'evaluation_models_delete',
+        label: 'Excluir modelos de avaliação'
+      },
+
+      {
+        key: 'evaluations_history_view',
+        label: 'Visualizar histórico de avaliações'
+      },
+
+      {
+        key: 'evaluations_results_view',
+        label: 'Visualizar resultados das avaliações'
+      },
+
+      {
+        key: 'evaluations_180_view',
+        label: 'Visualizar resultados do 180°'
+      },
+
+      {
+        key: 'my_evaluations_view',
+        label: 'Visualizar minhas avaliações'
+      },
+
+      {
+        key: 'my_evaluations_answer',
+        label: 'Responder minhas avaliações'
+      }
+    ]
+  },
+
+  /*
+   * ============================================================
    * PONTO
    * ============================================================
    */

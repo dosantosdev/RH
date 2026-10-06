@@ -1,88 +1,180 @@
 import { getStoredArray, setStored } from './storage'
 
 /*
- * Perfis de acesso padrão do sistema.
+ * ============================================================
+ * PERFIS DE ACESSO PADRÃO
+ * ============================================================
  *
  * IMPORTANTE:
- * Esses perfis NÃO representam cargos profissionais.
  *
- * Cargo profissional:
- *   Vendedor
+ * Esses perfis representam permissões dentro do sistema.
+ *
+ * Eles não representam cargos profissionais.
+ *
+ * Cargo:
  *   Motorista
  *   Gerente
+ *   Mecânico
  *
  * Perfil de acesso:
  *   Administrador
  *   Gestão de RH
  *   Funcionário
+ * ============================================================
  */
 
 export const defaultAccessRoles = [
+  /*
+   * ==========================================================
+   * ADMINISTRADOR
+   * ==========================================================
+   */
+
   {
     id: 1,
+
     name: 'admin',
+
     displayName: 'Administrador',
+
     description: 'Administrador do sistema',
+
     active: true,
+
     permissions: ['all']
   },
 
+  /*
+   * ==========================================================
+   * GESTÃO DE RH
+   * ==========================================================
+   */
+
   {
     id: 2,
+
     name: 'gestao_rh',
+
     displayName: 'Gestão de RH',
+
     description: 'Gestão de Recursos Humanos',
+
     active: true,
+
     permissions: [
+      /*
+       * Funcionários
+       */
       'employees_view',
       'employees_create',
       'employees_edit',
+
+      /*
+       * Treinamentos
+       */
       'trainings_view',
       'trainings_create',
       'trainings_edit',
       'trainings_delete',
+
+      /*
+       * Jornadas
+       */
       'work_schedules_view',
       'work_schedules_create',
       'work_schedules_edit',
-      'work_schedules_delete'
+      'work_schedules_delete',
+
+      /*
+       * Avaliações
+       */
+      'evaluations_view',
+      'evaluations_create',
+      'evaluations_edit',
+      'evaluations_delete',
+
+      'evaluation_models_view',
+      'evaluation_models_create',
+      'evaluation_models_edit',
+      'evaluation_models_delete',
+
+      'evaluations_history_view',
+      'evaluations_results_view',
+      'evaluations_180_view',
+
+      'my_evaluations_view',
+      'my_evaluations_answer'
     ]
   },
 
+  /*
+   * ==========================================================
+   * FUNCIONÁRIO
+   * ==========================================================
+   */
+
   {
     id: 3,
+
     name: 'funcionario',
+
     displayName: 'Funcionário',
+
     description: 'Usuário funcionário',
+
     active: true,
-    permissions: ['employees_view', 'my_trainings_view']
+
+    permissions: [
+      'employees_view',
+
+      'my_trainings_view',
+
+      /*
+       * Avaliações próprias.
+       *
+       * O serviço evaluationAccess.js ainda faz a segunda
+       * validação verificando se a avaliação realmente
+       * pertence ao funcionário.
+       */
+      'my_evaluations_view',
+      'my_evaluations_answer'
+    ]
   }
 ]
 
 /*
- * Recupera os perfis de acesso armazenados.
+ * ============================================================
+ * BUSCAR PERFIS
+ * ============================================================
  */
+
 export function getAccessRoles() {
   return getStoredArray('accessRoles')
 }
 
 /*
- * Inicializa os perfis de acesso.
- *
- * Se já existirem, não sobrescreve os dados.
+ * ============================================================
+ * INICIALIZAR PERFIS
+ * ============================================================
  */
+
 export function initializeAccessRoles() {
   const storedAccessRoles = getAccessRoles()
 
+  /*
+   * Se já existem perfis armazenados,
+   * preservamos os dados existentes.
+   */
   if (storedAccessRoles.length > 0) {
     return storedAccessRoles
   }
 
   /*
-   * Tenta aproveitar os antigos perfis que estavam
-   * armazenados junto com "roles".
-   *
-   * Isso evita perder os dados da estrutura anterior.
+   * ==========================================================
+   * COMPATIBILIDADE COM ESTRUTURA ANTIGA
+   * ==========================================================
    */
+
   const oldRoles = getStoredArray('roles')
 
   const legacyAccessRoles = oldRoles.filter((role) =>
@@ -101,9 +193,17 @@ export function initializeAccessRoles() {
         return defaultRole
       }
 
+      /*
+       * Mantém o ID antigo.
+       *
+       * Porém, caso o perfil antigo não possua permissões,
+       * utiliza as permissões atuais do perfil padrão.
+       */
       return {
         ...defaultRole,
+
         id: legacyRole.id,
+
         permissions:
           Array.isArray(legacyRole.permissions) &&
           legacyRole.permissions.length > 0
@@ -121,8 +221,11 @@ export function initializeAccessRoles() {
 }
 
 /*
- * Busca um perfil de acesso pelo ID.
+ * ============================================================
+ * BUSCAR POR ID
+ * ============================================================
  */
+
 export function getAccessRoleById(id) {
   const accessRoles = getAccessRoles()
 
@@ -130,8 +233,11 @@ export function getAccessRoleById(id) {
 }
 
 /*
- * Busca um perfil de acesso pelo nome interno.
+ * ============================================================
+ * BUSCAR POR NOME
+ * ============================================================
  */
+
 export function getAccessRoleByName(name) {
   const accessRoles = getAccessRoles()
 
@@ -139,8 +245,11 @@ export function getAccessRoleByName(name) {
 }
 
 /*
- * Adiciona um novo perfil de acesso.
+ * ============================================================
+ * ADICIONAR
+ * ============================================================
  */
+
 export function addAccessRole(accessRole) {
   const accessRoles = getAccessRoles()
 
@@ -152,8 +261,11 @@ export function addAccessRole(accessRole) {
 }
 
 /*
- * Atualiza um perfil de acesso.
+ * ============================================================
+ * ATUALIZAR
+ * ============================================================
  */
+
 export function updateAccessRole(updatedAccessRole) {
   const accessRoles = getAccessRoles()
 
@@ -167,8 +279,11 @@ export function updateAccessRole(updatedAccessRole) {
 }
 
 /*
- * Remove um perfil de acesso.
+ * ============================================================
+ * EXCLUIR
+ * ============================================================
  */
+
 export function deleteAccessRole(id) {
   const accessRoles = getAccessRoles()
 

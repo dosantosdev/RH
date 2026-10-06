@@ -57,11 +57,23 @@ import MeusTreinamentos from './pages/MeusTreinamentos/MeusTreinamentos'
 import JornadasEscalas from './pages/Ponto/JornadasEscalas/JornadasEscalas'
 
 import Avaliacoes from './pages/Avaliacoes/Avaliacoes'
+
 import ModelosAvaliacao from './pages/Avaliacoes/ModelosAvaliacao'
+
 import MinhasAvaliacoes from './pages/Avaliacoes/MinhasAvaliacoes'
+
 import HistoricoAvaliacoes from './pages/Avaliacoes/HistoricoAvaliacoes'
 
 import Header from './components/layout/Header'
+
+/*
+ * ============================================================
+ * LAYOUT PRINCIPAL
+ * ============================================================
+ *
+ * Mantemos o Header e o Navbar em todas as páginas protegidas.
+ *
+ */
 
 function Layout({ children }) {
   return (
@@ -74,6 +86,12 @@ function Layout({ children }) {
     </>
   )
 }
+
+/*
+ * ============================================================
+ * APLICAÇÃO
+ * ============================================================
+ */
 
 function App() {
   return (
@@ -267,8 +285,25 @@ function App() {
       />
 
       {/* ======================================================
-    AVALIAÇÕES
-====================================================== */}
+          AVALIAÇÕES
+      ======================================================
+      
+      IMPORTANTE:
+      Cada rota existe apenas UMA vez.
+
+      /avaliacoes
+        → Avaliações de desempenho
+
+      /avaliacoes/minhas
+        → Minhas avaliações
+
+      /avaliacoes/modelos
+        → Modelos de avaliação
+
+      /avaliacoes/historico
+        → Histórico
+
+      ====================================================== */}
 
       <Route
         path="/avaliacoes"
@@ -281,8 +316,41 @@ function App() {
         }
       />
 
+      <Route
+        path="/avaliacoes/minhas"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <MinhasAvaliacoes />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/avaliacoes/modelos"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <ModelosAvaliacao />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/avaliacoes/historico"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <HistoricoAvaliacoes />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
       {/* ============================================================
-          TERMINAL DE PONTO
+          PONTO
       ============================================================ */}
 
       <Route path="/ponto/bater" element={<BaterPonto />} />
@@ -381,52 +449,6 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <Relatorios />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-
-      {/* AVALIAÇÕES */}
-
-      <Route
-        path="/avaliacoes"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Avaliacoes />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/avaliacoes/minhas"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <MinhasAvaliacoes />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/avaliacoes/modelos"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <ModelosAvaliacao />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-
-      <Route
-        path="/avaliacoes/historico"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <HistoricoAvaliacoes />
             </Layout>
           </ProtectedRoute>
         }
