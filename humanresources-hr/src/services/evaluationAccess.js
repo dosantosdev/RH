@@ -24,6 +24,10 @@ function getUserId(user) {
   return normalizeId(user?.id || user?.userId)
 }
 
+function getEmployeeId(user) {
+  return normalizeId(user?.employeeId)
+}
+
 function getUserName(user) {
   return user?.name || user?.username || user?.userName || ''
 }
@@ -70,7 +74,7 @@ function findUserByName(userName) {
 
 /*
  * ============================================================
- * CARGO / FUNÇÃO DO USUÁRIO
+ * PERFIL DE ACESSO
  * ============================================================
  */
 
@@ -130,6 +134,23 @@ export function canManageEvaluations(user) {
  * ============================================================
  * FUNCIONÁRIO AVALIADO
  * ============================================================
+ *
+ * ATENÇÃO:
+ *
+ * O workflow guarda o ID do FUNCIONÁRIO.
+ *
+ * O usuário logado possui:
+ *
+ * user.id
+ * user.employeeId
+ *
+ * Portanto:
+ *
+ * workflow.employeeId === user.employeeId
+ *
+ * e NÃO:
+ *
+ * workflow.employeeId === user.id
  */
 
 export function isEvaluationEmployee(workflow, user) {
@@ -137,9 +158,14 @@ export function isEvaluationEmployee(workflow, user) {
     return false
   }
 
+  const workflowEmployeeId = normalizeId(workflow.employeeId)
+
+  const userEmployeeId = getEmployeeId(user)
+
   return (
-    normalizeId(workflow.employeeId) !== '' &&
-    normalizeId(workflow.employeeId) === getUserId(user)
+    workflowEmployeeId !== '' &&
+    userEmployeeId !== '' &&
+    workflowEmployeeId === userEmployeeId
   )
 }
 
@@ -169,18 +195,17 @@ export function findResponsibleUser({
 
     return {
       userId: user ? getUserId(user) : normalizeId(responsibleUserId),
+
       userName: user
         ? getUserName(user)
         : responsibleUserName || 'Responsável não encontrado',
+
       resolved: Boolean(user)
     }
   }
 
   /*
    * Gerente da filial.
-   *
-   * Tentamos encontrar usuários que tenham a função de gerente
-   * e pertençam à mesma filial.
    */
   if (responsibleType === 'branch_manager') {
     const branchId = normalizeId(employee?.branchId)
@@ -202,7 +227,9 @@ export function findResponsibleUser({
 
     return {
       userId: user ? getUserId(user) : '',
+
       userName: user ? getUserName(user) : '',
+
       resolved: Boolean(user)
     }
   }
@@ -230,7 +257,9 @@ export function findResponsibleUser({
 
     return {
       userId: user ? getUserId(user) : '',
+
       userName: user ? getUserName(user) : '',
+
       resolved: Boolean(user)
     }
   }
@@ -247,7 +276,9 @@ export function findResponsibleUser({
 
     return {
       userId: user ? getUserId(user) : '',
+
       userName: user ? getUserName(user) : '',
+
       resolved: Boolean(user)
     }
   }
@@ -276,9 +307,6 @@ export function isEvaluationStageResponsible(workflow, stage, user) {
     return false
   }
 
-  /*
-   * Usuário específico / responsável já resolvido.
-   */
   if (
     stage.responsibleUserId &&
     normalizeId(stage.responsibleUserId) === userId
@@ -286,12 +314,9 @@ export function isEvaluationStageResponsible(workflow, stage, user) {
     return true
   }
 
-  /*
-   * Caso o responsável ainda não tenha sido resolvido,
-   * tentamos resolver novamente com os dados da avaliação.
-   */
   const responsible = findResponsibleUser({
     responsibleType: stage.responsibleType,
+
     employee: {
       id: workflow.employeeId,
       name: workflow.employeeName,
@@ -300,7 +325,9 @@ export function isEvaluationStageResponsible(workflow, stage, user) {
       departmentId: workflow.departmentId,
       departmentName: workflow.departmentName
     },
+
     responsibleUserId: stage.responsibleUserId,
+
     responsibleUserName: stage.responsibleUserName
   })
 
@@ -324,17 +351,10 @@ export function canRespondToPdi(pdi, user) {
     return false
   }
 
-  /*
-   * Responsável definido diretamente.
-   */
   if (pdi.responsibleUserId && normalizeId(pdi.responsibleUserId) === userId) {
     return true
   }
 
-  /*
-   * Quando o PDI ainda não conseguiu resolver o responsável,
-   * permitimos gerente/supervisor como fallback.
-   */
   const role = getUserRoleNormalized(user)
 
   return (
@@ -350,9 +370,6 @@ export function canRespondToPdi(pdi, user) {
  * ============================================================
  * 180°
  * ============================================================
- *
- * Regra:
- * SOMENTE o funcionário avaliado pode responder.
  */
 
 export function canRespondTo180(workflow, user) {
@@ -371,12 +388,6 @@ export function canRespondTo180(workflow, user) {
  * ============================================================
  * VISUALIZAÇÃO DO 180°
  * ============================================================
- *
- * O supervisor não pode visualizar respostas/média do 180°.
- * RH/Admin pode.
- * O funcionário avaliado pode acessar a própria parte de resposta,
- * mas não recebe permissão para visualizar o resultado confidencial
- * do 180° depois da conclusão.
  */
 
 export function canViewEvaluation180(workflow, user) {
@@ -393,7 +404,7 @@ export function canViewEvaluation180(workflow, user) {
 
 /*
  * ============================================================
- * VISUALIZAÇÃO DAS ETAPAS NORMAIS
+ * VISUALIZAÇÃO DAS ETAPAS
  * ============================================================
  */
 
@@ -501,10 +512,6 @@ export function canRespondToStage(stage, user) {
     return true
   }
 
-  /*
-   * Fallback para usuários que tenham sido armazenados
-   * somente pelo nome.
-   */
   if (stage.responsibleUserName) {
     const responsibleUser = findUserByName(stage.responsibleUserName)
 
@@ -518,15 +525,11 @@ export function canRespondToStage(stage, user) {
 
 /*
  * ============================================================
- * ALIASES UTILIZADOS PELA INTERFACE
+ * ALIASES
  * ============================================================
  */
 
 export function canAnswerEvaluationStage(workflow, stage) {
-  /*
-   * Admin/RH podem administrar a avaliação, mas a resposta
-   * continua pertencendo ao responsável da etapa.
-   */
   return isEvaluationStageResponsible(workflow, stage, getCurrentUserFallback())
 }
 
@@ -546,8 +549,6 @@ export function isEvaluation180Respondent(workflow, user) {
  * ============================================================
  * USUÁRIO ATUAL
  * ============================================================
- *
- * Não importamos auth.js aqui para evitar dependência circular.
  */
 
 function getCurrentUserFallback() {

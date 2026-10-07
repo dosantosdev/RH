@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import './navbar.css'
 
@@ -8,39 +8,49 @@ import { hasPermission } from '../../services/permissions'
 
 export default function Navbar() {
   const navigate = useNavigate()
-  const location = useLocation()
 
   const [profileOpen, setProfileOpen] = useState(false)
-  const [currentUser, setCurrentUser] = useState(null)
-  const [employee, setEmployee] = useState(null)
 
   const profileRef = useRef(null)
 
-  useEffect(() => {
-    const loggedUser = JSON.parse(localStorage.getItem('loggedUser'))
+  /*
+   * ============================================================
+   * USUÁRIO LOGADO
+   * ============================================================
+   */
 
-    setCurrentUser(loggedUser)
+  const currentUser = useMemo(() => {
+    try {
+      return JSON.parse(localStorage.getItem('loggedUser'))
+    } catch {
+      return null
+    }
+  }, [])
 
-    if (!loggedUser) {
-      setEmployee(null)
-      return
+  /*
+   * ============================================================
+   * FUNCIONÁRIO VINCULADO
+   * ============================================================
+   */
+
+  const employee = useMemo(() => {
+    if (!currentUser) {
+      return null
     }
 
     const employees = JSON.parse(localStorage.getItem('employees')) || []
 
-    const linkedEmployee = employees.find(
-      (item) => item.id === Number(loggedUser.employeeId)
+    return (
+      employees.find((item) => item.id === Number(currentUser.employeeId)) ||
+      null
     )
+  }, [currentUser])
 
-    setEmployee(linkedEmployee || null)
-  }, [location.pathname])
-
-  function handleLogout() {
-    localStorage.removeItem('loggedUser')
-    localStorage.removeItem('currentUser')
-
-    navigate('/')
-  }
+  /*
+   * ============================================================
+   * FECHAR MENU DE PERFIL
+   * ============================================================
+   */
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -56,6 +66,14 @@ export default function Navbar() {
     }
   }, [])
 
+  function handleLogout() {
+    localStorage.removeItem('loggedUser')
+
+    localStorage.removeItem('currentUser')
+
+    navigate('/')
+  }
+
   function handleProfileClick() {
     setProfileOpen((prev) => !prev)
   }
@@ -70,8 +88,6 @@ export default function Navbar() {
 
   const userPhoto = employee?.photo || currentUser.photo || null
 
-  const roleName = currentUser.roleName || currentUser.role || 'Usuário'
-
   /*
    * ============================================================
    * PERMISSÕES DE TREINAMENTOS
@@ -83,6 +99,12 @@ export default function Navbar() {
   const canViewMyTrainings = hasPermission('my_trainings_view')
 
   const canAccessTrainings = canManageTrainings || canViewMyTrainings
+
+  /*
+   * ============================================================
+   * RENDER
+   * ============================================================
+   */
 
   return (
     <nav className="navbar">
@@ -160,22 +182,35 @@ export default function Navbar() {
         )}
 
         {/* ======================================================
-    AVALIAÇÕES
-====================================================== */}
+            AVALIAÇÕES
+        ====================================================== */}
 
-        <div className="dropdown">
-          <button className="dropbtn">Avaliações</button>
+        {(hasPermission('evaluations_view') ||
+          hasPermission('my_evaluations_view') ||
+          hasPermission('evaluation_models_view') ||
+          hasPermission('evaluations_history_view')) && (
+          <div className="dropdown">
+            <button className="dropbtn">Avaliações</button>
 
-          <div className="dropdown-content">
-            <Link to="/avaliacoes">Avaliações de desempenho</Link>
+            <div className="dropdown-content">
+              {hasPermission('evaluations_view') && (
+                <Link to="/avaliacoes">Avaliações de desempenho</Link>
+              )}
 
-            <Link to="/avaliacoes/minhas">Minhas avaliações</Link>
+              {hasPermission('my_evaluations_view') && (
+                <Link to="/avaliacoes/minhas">Minhas avaliações</Link>
+              )}
 
-            <Link to="/avaliacoes/modelos">Modelos de avaliação</Link>
+              {hasPermission('evaluation_models_view') && (
+                <Link to="/avaliacoes/modelos">Modelos de avaliação</Link>
+              )}
 
-            <Link to="/avaliacoes/historico">Histórico</Link>
+              {hasPermission('evaluations_history_view') && (
+                <Link to="/avaliacoes/historico">Histórico</Link>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ======================================================
             PONTO
@@ -231,11 +266,7 @@ export default function Navbar() {
           <button className="dropbtn">Relatórios</button>
 
           <div className="dropdown-content">
-            <Link to="#">Checklist</Link>
-
-            <Link to="#">Exames</Link>
-
-            <Link to="#">Quadro de Funcionários</Link>
+            <Link to="#">Relatórios</Link>
           </div>
         </div>
 
@@ -247,13 +278,7 @@ export default function Navbar() {
           <button className="dropbtn">Área do Candidato</button>
 
           <div className="dropdown-content">
-            <Link to="#">Currículo</Link>
-
-            <Link to="#">Pré-cadastro</Link>
-
-            <Link to="#">Vagas</Link>
-
-            <Link to="#">Entrevistas</Link>
+            <Link to="#">Candidatos</Link>
           </div>
         </div>
 
@@ -265,115 +290,45 @@ export default function Navbar() {
           <button className="dropbtn">Arquivo</button>
 
           <div className="dropdown-content">
-            <Link to="#">Busca</Link>
-
-            <Link to="#">Docs</Link>
-
-            <Link to="#">Currículos</Link>
+            <Link to="#">Arquivo</Link>
           </div>
         </div>
-
-        {/* ======================================================
-            CONFIGURAÇÕES
-        ====================================================== */}
-
-        {hasPermission('system_settings') && (
-          <Link to="/configuracoes" className="nav-link">
-            Configurações
-          </Link>
-        )}
       </div>
 
       {/* ========================================================
-          ÁREA DO USUÁRIO
+          PERFIL
       ======================================================== */}
 
-      <div className="navbar-user-area" ref={profileRef}>
+      <div className="nav-profile" ref={profileRef}>
         <button
           type="button"
-          className="navbar-user-button"
+          className="nav-profile-button"
           onClick={handleProfileClick}
         >
           {userPhoto ? (
-            <img
-              src={userPhoto}
-              alt={userName}
-              className="navbar-user-avatar"
-            />
+            <img src={userPhoto} alt={userName} className="nav-profile-photo" />
           ) : (
-            <div className="navbar-user-avatar navbar-user-initial">
-              {userInitial}
-            </div>
+            <span className="nav-profile-initial">{userInitial}</span>
           )}
 
-          <span className="navbar-user-name">{userName}</span>
+          <span className="nav-profile-name">{userName}</span>
         </button>
 
         {profileOpen && (
-          <div className="profile-dropdown">
-            <div className="profile-dropdown-header">
-              {userPhoto ? (
-                <img
-                  src={userPhoto}
-                  alt={userName}
-                  className="profile-dropdown-avatar"
-                />
-              ) : (
-                <div className="profile-dropdown-avatar profile-dropdown-initial">
-                  {userInitial}
-                </div>
-              )}
-
-              <div>
-                <strong>{userName}</strong>
-
-                <span>{roleName}</span>
-              </div>
-            </div>
-
-            <div className="profile-dropdown-divider" />
-
-            <div className="profile-dropdown-info">
-              <span>Usuário</span>
-
-              <strong>{currentUser.username || '-'}</strong>
-            </div>
-
+          <div className="nav-profile-menu">
             {hasPermission('profile_view') && (
-              <button
-                type="button"
-                className="profile-dropdown-item"
-                onClick={() => {
-                  setProfileOpen(false)
-
-                  navigate('/perfil')
-                }}
-              >
+              <Link to="/perfil" onClick={() => setProfileOpen(false)}>
                 Meu perfil
-              </button>
+              </Link>
             )}
 
             {hasPermission('password_change') && (
-              <button
-                type="button"
-                className="profile-dropdown-item"
-                onClick={() => {
-                  setProfileOpen(false)
-
-                  navigate('/alterar-senha')
-                }}
-              >
+              <Link to="/alterar-senha" onClick={() => setProfileOpen(false)}>
                 Alterar senha
-              </button>
+              </Link>
             )}
 
-            <div className="profile-dropdown-divider" />
-
-            <button
-              type="button"
-              className="profile-dropdown-item profile-logout-item"
-              onClick={handleLogout}
-            >
+            <button type="button" onClick={handleLogout}>
               Sair
             </button>
           </div>

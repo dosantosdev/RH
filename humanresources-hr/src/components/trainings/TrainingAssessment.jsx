@@ -7,19 +7,86 @@ import {
   deleteTrainingAssessment
 } from '../../services/trainingAssessment'
 
-export default function TrainingAssessment({ training, onClose }) {
-  const initialQuestion = {
-    question: '',
-    alternatives: ['', '', '', ''],
-    correctAnswer: 0,
-    points: 1
+const EMPTY_ALTERNATIVES = ['', '', '', '']
+
+const INITIAL_QUESTION = {
+  question: '',
+  alternatives: [...EMPTY_ALTERNATIVES],
+  correctAnswer: 0,
+  points: 1
+}
+
+/*
+ * Garante que uma pergunta sempre tenha exatamente
+ * quatro alternativas.
+ *
+ * Isso é necessário principalmente para perguntas antigas
+ * que foram cadastradas antes da estrutura atual.
+ */
+function normalizeQuestion(question) {
+  const alternatives = Array.isArray(question?.alternatives)
+    ? [...question.alternatives]
+    : []
+
+  while (alternatives.length < 4) {
+    alternatives.push('')
   }
 
+  return {
+    ...question,
+
+    question:
+      question?.question || question?.text || question?.questionText || '',
+
+    alternatives: alternatives.slice(0, 4),
+
+    correctAnswer: Number.isInteger(Number(question?.correctAnswer))
+      ? Number(question.correctAnswer)
+      : 0,
+
+    points: Number(question?.points) || 1
+  }
+}
+
+/*
+ * Normaliza toda a avaliação.
+ */
+function normalizeAssessment(assessment) {
+  if (!assessment) {
+    return null
+  }
+
+  return {
+    ...assessment,
+
+    allowRetake: assessment.allowRetake !== false,
+
+    unlimitedAttempts: assessment.unlimitedAttempts === true,
+
+    maxAttempts:
+      Number(assessment.maxAttempts) > 0 ? Number(assessment.maxAttempts) : 2,
+
+    questions: Array.isArray(assessment.questions)
+      ? assessment.questions.map(normalizeQuestion)
+      : []
+  }
+}
+
+export default function TrainingAssessment({ training, onClose }) {
   const [assessment, setAssessment] = useState(null)
 
-  const [question, setQuestion] = useState(initialQuestion)
+  const [question, setQuestion] = useState({
+    ...INITIAL_QUESTION,
+    alternatives: [...EMPTY_ALTERNATIVES]
+  })
 
   const [editingQuestion, setEditingQuestion] = useState(null)
+
+  /*
+   * ============================================================
+   * CARREGAR AVALIAÇÃO
+   * ============================================================
+   */
 
   useEffect(() => {
     const assessments = getTrainingAssessments()
@@ -29,29 +96,31 @@ export default function TrainingAssessment({ training, onClose }) {
     )
 
     if (existingAssessment) {
-      setAssessment({
-        ...existingAssessment,
-
-        allowRetake: existingAssessment.allowRetake !== false,
-
-        unlimitedAttempts: existingAssessment.unlimitedAttempts === true,
-
-        maxAttempts:
-          Number(existingAssessment.maxAttempts) > 0
-            ? Number(existingAssessment.maxAttempts)
-            : 2
-      })
+      setAssessment(normalizeAssessment(existingAssessment))
     }
   }, [training.id])
+
+  /*
+   * ============================================================
+   * ALTERAR PERGUNTA
+   * ============================================================
+   */
 
   function handleQuestionChange(e) {
     const { name, value } = e.target
 
     setQuestion((prev) => ({
       ...prev,
+
       [name]: value
     }))
   }
+
+  /*
+   * ============================================================
+   * ALTERAR ALTERNATIVA
+   * ============================================================
+   */
 
   function handleAlternativeChange(index, value) {
     setQuestion((prev) => {
@@ -61,10 +130,17 @@ export default function TrainingAssessment({ training, onClose }) {
 
       return {
         ...prev,
+
         alternatives
       }
     })
   }
+
+  /*
+   * ============================================================
+   * CRIAR AVALIAÇÃO
+   * ============================================================
+   */
 
   function handleCreateAssessment() {
     const newAssessment = {
@@ -93,8 +169,14 @@ export default function TrainingAssessment({ training, onClose }) {
       (item) => item.id === newAssessment.id
     )
 
-    setAssessment(createdAssessment)
+    setAssessment(normalizeAssessment(createdAssessment))
   }
+
+  /*
+   * ============================================================
+   * CONFIGURAÇÕES
+   * ============================================================
+   */
 
   function handleAssessmentSettingChange(field, value) {
     if (!assessment) {
@@ -103,6 +185,7 @@ export default function TrainingAssessment({ training, onClose }) {
 
     const updatedAssessment = {
       ...assessment,
+
       [field]: value
     }
 
@@ -110,7 +193,7 @@ export default function TrainingAssessment({ training, onClose }) {
 
     const updated = updatedAssessments.find((item) => item.id === assessment.id)
 
-    setAssessment(updated)
+    setAssessment(normalizeAssessment(updated))
   }
 
   function handleAllowRetakeChange(e) {
@@ -132,7 +215,7 @@ export default function TrainingAssessment({ training, onClose }) {
 
     const updated = updatedAssessments.find((item) => item.id === assessment.id)
 
-    setAssessment(updated)
+    setAssessment(normalizeAssessment(updated))
   }
 
   function handleUnlimitedAttemptsChange(e) {
@@ -147,6 +230,54 @@ export default function TrainingAssessment({ training, onClose }) {
     handleAssessmentSettingChange('maxAttempts', value)
   }
 
+  /*
+   * ============================================================
+   * VALIDAR ALTERNATIVAS
+   * ============================================================
+   */
+
+  function validateQuestion() {
+    if (!question.question.trim()) {
+      alert('Informe a pergunta.')
+
+      return false
+    }
+
+    const alternatives = question.alternatives || []
+
+    if (alternatives.length !== 4) {
+      alert('A pergunta precisa possuir quatro alternativas.')
+
+      return false
+    }
+
+    const hasEmptyAlternative = alternatives.some(
+      (alternative) => !String(alternative).trim()
+    )
+
+    if (hasEmptyAlternative) {
+      alert('Preencha todas as alternativas A, B, C e D.')
+
+      return false
+    }
+
+    const correctAnswer = Number(question.correctAnswer)
+
+    if (correctAnswer < 0 || correctAnswer > 3) {
+      alert('Selecione uma alternativa correta.')
+
+      return false
+    }
+
+    return true
+  }
+
+  /*
+   * ============================================================
+   * ADICIONAR PERGUNTA
+   * ============================================================
+   */
+
   function handleAddQuestion(e) {
     e.preventDefault()
 
@@ -154,19 +285,7 @@ export default function TrainingAssessment({ training, onClose }) {
       return
     }
 
-    if (!question.question.trim()) {
-      alert('Informe a pergunta.')
-
-      return
-    }
-
-    const hasEmptyAlternative = question.alternatives.some(
-      (alternative) => !alternative.trim()
-    )
-
-    if (hasEmptyAlternative) {
-      alert('Preencha todas as alternativas.')
-
+    if (!validateQuestion()) {
       return
     }
 
@@ -175,7 +294,9 @@ export default function TrainingAssessment({ training, onClose }) {
 
       question: question.question.trim(),
 
-      alternatives: question.alternatives,
+      alternatives: question.alternatives.map((alternative) =>
+        String(alternative).trim()
+      ),
 
       correctAnswer: Number(question.correctAnswer),
 
@@ -192,43 +313,56 @@ export default function TrainingAssessment({ training, onClose }) {
 
     const updated = updatedAssessments.find((item) => item.id === assessment.id)
 
-    setAssessment(updated)
+    setAssessment(normalizeAssessment(updated))
 
-    setQuestion({
-      ...initialQuestion
-    })
+    resetQuestion()
   }
 
+  /*
+   * ============================================================
+   * EDITAR PERGUNTA
+   * ============================================================
+   *
+   * Aqui está a correção decisiva.
+   *
+   * Mesmo que uma pergunta antiga tenha:
+   *
+   * alternatives: []
+   *
+   * ela passará a mostrar quatro campos para que
+   * possamos corrigir os dados antigos.
+   */
+
   function handleEditQuestion(item) {
+    const normalized = normalizeQuestion(item)
+
     setEditingQuestion(item)
 
     setQuestion({
-      question: item.question,
+      question: normalized.question,
 
-      alternatives: [...item.alternatives],
+      alternatives: [...normalized.alternatives],
 
-      correctAnswer: item.correctAnswer,
+      correctAnswer: normalized.correctAnswer,
 
-      points: item.points
+      points: normalized.points
     })
   }
+
+  /*
+   * ============================================================
+   * ATUALIZAR PERGUNTA
+   * ============================================================
+   */
 
   function handleUpdateQuestion(e) {
     e.preventDefault()
 
-    if (!question.question.trim()) {
-      alert('Informe a pergunta.')
-
+    if (!assessment || !editingQuestion) {
       return
     }
 
-    const hasEmptyAlternative = question.alternatives.some(
-      (alternative) => !alternative.trim()
-    )
-
-    if (hasEmptyAlternative) {
-      alert('Preencha todas as alternativas.')
-
+    if (!validateQuestion()) {
       return
     }
 
@@ -239,13 +373,15 @@ export default function TrainingAssessment({ training, onClose }) {
 
             question: question.question.trim(),
 
-            alternatives: [...question.alternatives],
+            alternatives: question.alternatives.map((alternative) =>
+              String(alternative).trim()
+            ),
 
             correctAnswer: Number(question.correctAnswer),
 
             points: Number(question.points) || 1
           }
-        : item
+        : normalizeQuestion(item)
     )
 
     const updatedAssessment = {
@@ -258,14 +394,18 @@ export default function TrainingAssessment({ training, onClose }) {
 
     const updated = updatedAssessments.find((item) => item.id === assessment.id)
 
-    setAssessment(updated)
+    setAssessment(normalizeAssessment(updated))
 
     setEditingQuestion(null)
 
-    setQuestion({
-      ...initialQuestion
-    })
+    resetQuestion()
   }
+
+  /*
+   * ============================================================
+   * EXCLUIR PERGUNTA
+   * ============================================================
+   */
 
   function handleDeleteQuestion(questionId) {
     const confirmed = window.confirm('Deseja excluir esta pergunta?')
@@ -284,24 +424,40 @@ export default function TrainingAssessment({ training, onClose }) {
 
     const updated = updatedAssessments.find((item) => item.id === assessment.id)
 
-    setAssessment(updated)
+    setAssessment(normalizeAssessment(updated))
 
     if (editingQuestion?.id === questionId) {
       setEditingQuestion(null)
 
-      setQuestion({
-        ...initialQuestion
-      })
+      resetQuestion()
     }
+  }
+
+  /*
+   * ============================================================
+   * CANCELAR EDIÇÃO
+   * ============================================================
+   */
+
+  function resetQuestion() {
+    setQuestion({
+      ...INITIAL_QUESTION,
+
+      alternatives: [...EMPTY_ALTERNATIVES]
+    })
   }
 
   function handleCancelEdit() {
     setEditingQuestion(null)
 
-    setQuestion({
-      ...initialQuestion
-    })
+    resetQuestion()
   }
+
+  /*
+   * ============================================================
+   * EXCLUIR AVALIAÇÃO
+   * ============================================================
+   */
 
   function handleDeleteAssessment() {
     const confirmed = window.confirm(
@@ -315,7 +471,15 @@ export default function TrainingAssessment({ training, onClose }) {
     deleteTrainingAssessment(assessment.id)
 
     setAssessment(null)
+
+    resetQuestion()
   }
+
+  /*
+   * ============================================================
+   * PONTUAÇÃO
+   * ============================================================
+   */
 
   function calculateTotalPoints() {
     if (!assessment?.questions) {
@@ -334,11 +498,19 @@ export default function TrainingAssessment({ training, onClose }) {
       ? 'Ilimitadas'
       : `${assessment.maxAttempts || 2} tentativas`
 
+  /*
+   * ============================================================
+   * RENDER
+   * ============================================================
+   */
+
   return (
     <div className="training-modal-overlay">
       <div className="training-content-modal training-assessment-modal">
         <div className="training-modal-header">
           <div>
+            <span className="training-progress-kicker">AVALIAÇÃO</span>
+
             <h2>Avaliação</h2>
 
             <p>{training.name}</p>
@@ -405,7 +577,7 @@ export default function TrainingAssessment({ training, onClose }) {
               </div>
             </div>
 
-            {/* CONFIGURAÇÃO DAS TENTATIVAS */}
+            {/* CONFIGURAÇÕES */}
 
             <div className="training-assessment-settings">
               <div className="training-assessment-settings-header">
@@ -468,13 +640,6 @@ export default function TrainingAssessment({ training, onClose }) {
                         step="1"
                         value={assessment.maxAttempts || 2}
                         onChange={handleMaxAttemptsChange}
-                        style={{
-                          width: '220px',
-                          minWidth: '220px',
-                          maxWidth: '280px',
-                          fontSize: '16px',
-                          padding: '13px 14px'
-                        }}
                       />
 
                       <small>Inclui a primeira tentativa do funcionário.</small>
@@ -486,8 +651,8 @@ export default function TrainingAssessment({ training, onClose }) {
               <div className="training-best-score-info">
                 🏆
                 <span>
-                  A maior nota obtida entre todas as tentativas será sempre
-                  considerada como a nota válida do funcionário.
+                  A maior nota obtida entre todas as tentativas será considerada
+                  como a nota válida do funcionário.
                 </span>
               </div>
             </div>
@@ -505,58 +670,85 @@ export default function TrainingAssessment({ training, onClose }) {
 
               {assessment.questions?.length > 0 ? (
                 <div className="training-assessment-questions">
-                  {assessment.questions.map((item, index) => (
-                    <div key={item.id} className="training-assessment-question">
-                      <div className="training-assessment-question-header">
-                        <strong>
-                          {index + 1}. {item.question}
-                        </strong>
+                  {assessment.questions.map((item, index) => {
+                    const normalized = normalizeQuestion(item)
 
-                        <span>{item.points} ponto(s)</span>
-                      </div>
+                    const hasAlternatives = normalized.alternatives.some(
+                      (alternative) => String(alternative).trim()
+                    )
 
-                      <div className="training-assessment-alternatives">
-                        {item.alternatives.map(
-                          (alternative, alternativeIndex) => (
-                            <div
-                              key={alternativeIndex}
-                              className={
-                                alternativeIndex === item.correctAnswer
-                                  ? 'assessment-alternative correct'
-                                  : 'assessment-alternative'
-                              }
-                            >
-                              <span>
-                                {String.fromCharCode(65 + alternativeIndex)}
-                              </span>
+                    return (
+                      <div
+                        key={item.id}
+                        className="training-assessment-question"
+                      >
+                        <div className="training-assessment-question-header">
+                          <strong>
+                            {index + 1}. {normalized.question}
+                          </strong>
 
-                              <p>{alternative}</p>
+                          <span>{normalized.points} ponto(s)</span>
+                        </div>
 
-                              {alternativeIndex === item.correctAnswer && (
-                                <small>Resposta correta</small>
-                              )}
-                            </div>
-                          )
+                        {hasAlternatives ? (
+                          <div className="training-assessment-alternatives">
+                            {normalized.alternatives.map(
+                              (alternative, alternativeIndex) => (
+                                <div
+                                  key={alternativeIndex}
+                                  className={
+                                    alternativeIndex ===
+                                    normalized.correctAnswer
+                                      ? 'assessment-alternative correct'
+                                      : 'assessment-alternative'
+                                  }
+                                >
+                                  <span>
+                                    {String.fromCharCode(65 + alternativeIndex)}
+                                  </span>
+
+                                  <p>{alternative || 'Sem texto'}</p>
+
+                                  {alternativeIndex ===
+                                    normalized.correctAnswer && (
+                                    <small>Resposta correta</small>
+                                  )}
+                                </div>
+                              )
+                            )}
+                          </div>
+                        ) : (
+                          <div className="training-assessment-missing-alternatives">
+                            <strong>
+                              ⚠️ Esta pergunta está sem alternativas.
+                            </strong>
+
+                            <p>
+                              Clique em
+                              <strong> Editar</strong> para preencher as
+                              alternativas A, B, C e D.
+                            </p>
+                          </div>
                         )}
-                      </div>
 
-                      <div className="training-assessment-question-actions">
-                        <button
-                          type="button"
-                          onClick={() => handleEditQuestion(item)}
-                        >
-                          ✏️ Editar
-                        </button>
+                        <div className="training-assessment-question-actions">
+                          <button
+                            type="button"
+                            onClick={() => handleEditQuestion(item)}
+                          >
+                            ✏️ Editar
+                          </button>
 
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteQuestion(item.id)}
-                        >
-                          🗑️ Excluir
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteQuestion(item.id)}
+                          >
+                            🗑️ Excluir
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <div className="training-content-empty">
@@ -567,7 +759,7 @@ export default function TrainingAssessment({ training, onClose }) {
               )}
             </div>
 
-            {/* FORMULÁRIO DE PERGUNTA */}
+            {/* FORMULÁRIO */}
 
             <form
               className="training-new-content"
@@ -594,7 +786,9 @@ export default function TrainingAssessment({ training, onClose }) {
 
                 {question.alternatives.map((alternative, index) => (
                   <div key={index} className="training-field full">
-                    <label>Alternativa {String.fromCharCode(65 + index)}</label>
+                    <label>
+                      Alternativa {String.fromCharCode(65 + index)} *
+                    </label>
 
                     <input
                       type="text"

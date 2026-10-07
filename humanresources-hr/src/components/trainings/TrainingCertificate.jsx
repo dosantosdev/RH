@@ -31,8 +31,17 @@ export default function TrainingCertificate({
   participant,
   onClose
 }) {
+  /*
+   * O certificado agora é buscado considerando:
+   *
+   * - participante;
+   * - treinamento.
+   *
+   * Isso evita que um certificado de outro treinamento
+   * seja reutilizado.
+   */
   const [certificate, setCertificate] = useState(() =>
-    getCertificateByParticipant(participant.id)
+    getCertificateByParticipant(participant.id, training.id)
   )
 
   const progress = Number(participant.progress || 0)
@@ -61,12 +70,16 @@ export default function TrainingCertificate({
 
     /*
      * Antes de criar um novo certificado,
-     * verificamos se já existe um emitido para esse participante.
+     * verificamos se já existe um certificado para
+     * este participante neste treinamento.
      *
-     * Isso permite que o funcionário volte posteriormente
-     * e faça uma segunda via sem gerar outro número.
+     * Isso permite emitir uma segunda via sem gerar
+     * outro número de certificado.
      */
-    const existingCertificate = getCertificateByParticipant(participant.id)
+    const existingCertificate = getCertificateByParticipant(
+      participant.id,
+      training.id
+    )
 
     if (existingCertificate) {
       setCertificate(existingCertificate)

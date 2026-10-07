@@ -47,11 +47,15 @@ export function deleteTrainingParticipant(participantId) {
 }
 
 /*
+ * ============================================================
+ * PROGRESSO
+ * ============================================================
+ *
  * Atualiza somente o progresso dos conteúdos.
  *
- * A avaliação não conclui automaticamente
- * o treinamento.
+ * A avaliação não conclui automaticamente o treinamento.
  */
+
 export function updateParticipantProgress(
   participantId,
   progress,
@@ -104,12 +108,11 @@ export function updateParticipantProgress(
 }
 
 /*
- * Registra uma tentativa da avaliação.
- *
- * A aprovação da avaliação é registrada,
- * mas o treinamento continua em andamento
- * até o usuário clicar em "Concluir treinamento".
+ * ============================================================
+ * TENTATIVA DA AVALIAÇÃO
+ * ============================================================
  */
+
 export function addAssessmentAttempt(
   participantId,
   attempt,
@@ -179,19 +182,36 @@ export function addAssessmentAttempt(
 }
 
 /*
- * Conclusão definitiva do treinamento.
+ * ============================================================
+ * CONCLUSÃO DO TREINAMENTO
+ * ============================================================
  *
- * É chamada somente depois que:
+ * O treinamento só pode ser concluído quando:
  *
- * - todos os conteúdos foram concluídos;
- * - a avaliação foi aprovada, quando existir;
- * - o usuário clicou em "Concluir treinamento".
+ * - todos os conteúdos estiverem em 100%;
+ * - a avaliação estiver aprovada.
+ *
+ * Essa validação também existe no serviço para impedir que
+ * outro componente marque o treinamento como concluído
+ * indevidamente.
  */
+
 export function completeParticipantTraining(participantId) {
   const participants = getTrainingParticipants()
 
   const updatedParticipants = participants.map((participant) => {
     if (participant.id !== participantId) {
+      return participant
+    }
+
+    const progress = Number(participant.progress) || 0
+
+    const assessmentApproved = participant.assessmentStatus === 'approved'
+
+    /*
+     * Não permite conclusão incompleta.
+     */
+    if (progress < 100 || !assessmentApproved) {
       return participant
     }
 

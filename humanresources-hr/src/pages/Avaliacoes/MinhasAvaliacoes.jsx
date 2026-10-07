@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 
 import { getEmployees } from '../../services/employee'
 import { getCurrentUser } from '../../services/auth'
@@ -12,8 +12,11 @@ import {
   isEvaluation180Unlocked,
   isPdiUnlocked,
   saveEvaluation180Answer,
+  saveEvaluation180Signature,
   saveEvaluationAnswer,
   saveEvaluationPdiAnswer,
+  saveEvaluationPdiSignature,
+  saveEvaluationStageSignature,
   startEvaluation180,
   startEvaluationPdi,
   startEvaluationStage
@@ -27,6 +30,8 @@ import {
   isEvaluationEmployee,
   isEvaluationStageResponsible
 } from '../../services/evaluationAccess'
+
+import SignaturePad from '../../components/evaluations/SignaturePad'
 
 import './avaliacoes.css'
 
@@ -48,9 +53,9 @@ export default function MinhasAvaliacoes() {
   const [message, setMessage] = useState('')
 
   /*
-   * ==========================================================
+   * ============================================================
    * ATUALIZAR DADOS
-   * ==========================================================
+   * ============================================================
    */
 
   function refresh() {
@@ -68,9 +73,9 @@ export default function MinhasAvaliacoes() {
   }
 
   /*
-   * ==========================================================
+   * ============================================================
    * VERIFICAR SE O USUÁRIO PODE ATUAR
-   * ==========================================================
+   * ============================================================
    */
 
   function canActOnWorkflow(workflow) {
@@ -114,22 +119,19 @@ export default function MinhasAvaliacoes() {
   }
 
   /*
-   * ==========================================================
+   * ============================================================
    * AVALIAÇÕES DISPONÍVEIS
-   * ==========================================================
+   * ============================================================
    */
 
-  const availableWorkflows = useMemo(() => {
-    return workflows.filter(
-      (workflow) =>
-        workflow.status !== 'cancelled' && canActOnWorkflow(workflow)
-    )
-  }, [workflows, currentUser])
+  const availableWorkflows = workflows.filter(
+    (workflow) => workflow.status !== 'cancelled' && canActOnWorkflow(workflow)
+  )
 
   /*
-   * ==========================================================
+   * ============================================================
    * NOME DO FUNCIONÁRIO
-   * ==========================================================
+   * ============================================================
    */
 
   function getEmployeeName(employeeId) {
@@ -138,12 +140,6 @@ export default function MinhasAvaliacoes() {
         ?.name || ''
     )
   }
-
-  /*
-   * ==========================================================
-   * RENDER
-   * ==========================================================
-   */
 
   return (
     <div className="evaluations-page">
@@ -264,9 +260,6 @@ export default function MinhasAvaliacoes() {
 function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
   const currentUser = getCurrentUser()
 
-  /*
-   * Etapa atualmente disponível.
-   */
   const currentStage = workflow.stages?.find(
     (stage) => stage.status === 'pending' || stage.status === 'in_progress'
   )
@@ -284,22 +277,23 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
   const [error, setError] = useState('')
 
   /*
-   * ==========================================================
+   * ============================================================
    * RESPOSTA
-   * ==========================================================
+   * ============================================================
    */
 
   function handleAnswer(questionId, value) {
     setAnswers((previous) => ({
       ...previous,
+
       [questionId]: value
     }))
   }
 
   /*
-   * ==========================================================
+   * ============================================================
    * ETAPA
-   * ==========================================================
+   * ============================================================
    */
 
   function handleStartStage(stage) {
@@ -325,13 +319,15 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
 
     setStageSignature('')
 
+    setAnswers({})
+
     onRefresh()
   }
 
   /*
-   * ==========================================================
+   * ============================================================
    * CONCLUIR ETAPA
-   * ==========================================================
+   * ============================================================
    */
 
   function handleSaveStage(stage) {
@@ -348,7 +344,7 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
     }
 
     /*
-     * Salva respostas.
+     * Salva as respostas.
      */
     for (const question of stage.questions || []) {
       const answer = answers[question.questionId]
@@ -356,23 +352,61 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
       if (answer !== undefined) {
         saveEvaluationAnswer({
           workflowId: workflow.id,
+
           stageId: stage.id,
+
           questionId: question.questionId,
+
           answer
         })
       }
     }
 
     /*
-     * A própria função completeEvaluationStage
-     * grava a assinatura e data/hora.
+     * ==========================================================
+     * SALVA A ASSINATURA
+     * ==========================================================
+     *
+     * O componente SignaturePad já transforma o desenho em
+     * Base64 PNG.
+     *
+     * Aqui gravamos a assinatura no workflow antes de chamar
+     * completeEvaluationStage().
+     */
+    const signatureResult = saveEvaluationStageSignature({
+      workflowId: workflow.id,
+
+      stageId: stage.id,
+
+      signature: stageSignature,
+
+      signedById: currentUser?.id || '',
+
+      signedByName: currentUser?.name || currentUser?.username || ''
+    })
+
+    if (!signatureResult.success) {
+      setError(
+        signatureResult.error ||
+          signatureResult.message ||
+          'Não foi possível salvar a assinatura da etapa.'
+      )
+
+      return
+    }
+
+    /*
+     * Agora a etapa pode ser concluída porque a assinatura
+     * já existe no workflow.
      */
     const result = completeEvaluationStage(
       workflow.id,
+
       stage.id,
+
       currentUser?.id || '',
-      currentUser?.name || currentUser?.username || '',
-      stageSignature
+
+      currentUser?.name || currentUser?.username || ''
     )
 
     if (!result.success) {
@@ -393,9 +427,9 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
   }
 
   /*
-   * ==========================================================
+   * ============================================================
    * PDI
-   * ==========================================================
+   * ============================================================
    */
 
   function handlePdi() {
@@ -421,13 +455,15 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
 
     setPdiSignature('')
 
+    setAnswers({})
+
     onRefresh()
   }
 
   /*
-   * ==========================================================
+   * ============================================================
    * CONCLUIR PDI
-   * ==========================================================
+   * ============================================================
    */
 
   function handleSavePdi() {
@@ -451,17 +487,43 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
       if (answer !== undefined) {
         saveEvaluationPdiAnswer({
           workflowId: workflow.id,
+
           questionId: question.questionId,
+
           answer
         })
       }
     }
 
+    /*
+     * Salva a assinatura primeiro.
+     */
+    const signatureResult = saveEvaluationPdiSignature({
+      workflowId: workflow.id,
+
+      signature: pdiSignature,
+
+      signedById: currentUser?.id || '',
+
+      signedByName: currentUser?.name || currentUser?.username || ''
+    })
+
+    if (!signatureResult.success) {
+      setError(
+        signatureResult.error ||
+          signatureResult.message ||
+          'Não foi possível salvar a assinatura do PDI.'
+      )
+
+      return
+    }
+
     const result = completeEvaluationPdi(
       workflow.id,
+
       currentUser?.id || '',
-      currentUser?.name || currentUser?.username || '',
-      pdiSignature
+
+      currentUser?.name || currentUser?.username || ''
     )
 
     if (!result.success) {
@@ -482,9 +544,9 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
   }
 
   /*
-   * ==========================================================
+   * ============================================================
    * 180°
-   * ==========================================================
+   * ============================================================
    */
 
   function handleStart180() {
@@ -512,13 +574,15 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
 
     setSignature180('')
 
+    setAnswers({})
+
     onRefresh()
   }
 
   /*
-   * ==========================================================
+   * ============================================================
    * CONCLUIR 180°
-   * ==========================================================
+   * ============================================================
    */
 
   function handleSave180() {
@@ -542,17 +606,43 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
       if (answer !== undefined) {
         saveEvaluation180Answer({
           workflowId: workflow.id,
+
           questionId: question.questionId,
+
           answer
         })
       }
     }
 
+    /*
+     * Salva a assinatura primeiro.
+     */
+    const signatureResult = saveEvaluation180Signature({
+      workflowId: workflow.id,
+
+      signature: signature180,
+
+      signedById: currentUser?.id || '',
+
+      signedByName: currentUser?.name || currentUser?.username || ''
+    })
+
+    if (!signatureResult.success) {
+      setError(
+        signatureResult.error ||
+          signatureResult.message ||
+          'Não foi possível salvar a assinatura do 180°.'
+      )
+
+      return
+    }
+
     const result = completeEvaluation180(
       workflow.id,
+
       currentUser?.id || '',
-      currentUser?.name || currentUser?.username || '',
-      signature180
+
+      currentUser?.name || currentUser?.username || ''
     )
 
     if (!result.success) {
@@ -575,9 +665,9 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
   }
 
   /*
-   * ==========================================================
+   * ============================================================
    * ESTADOS
-   * ==========================================================
+   * ============================================================
    */
 
   const stage = workflow.stages?.find((item) => item.id === activeStage)
@@ -597,9 +687,9 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
   const canView180 = canViewEvaluation180(workflow, currentUser)
 
   /*
-   * ==========================================================
+   * ============================================================
    * RENDER
-   * ==========================================================
+   * ============================================================
    */
 
   return (
@@ -679,7 +769,6 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
                   ))}
 
                   <SignaturePad
-                    label="Assinatura digital da etapa"
                     value={stageSignature}
                     onChange={setStageSignature}
                   />
@@ -708,21 +797,18 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
                 <div className="evaluation-detail-box">
                   <strong>Etapa concluída.</strong>
 
-                  {stage.result?.averageScore !== undefined && (
+                  {stage.averageScore !== undefined && (
                     <p>
-                      Média da etapa:{' '}
-                      <strong>{stage.result.averageScore}</strong>
+                      Média da etapa: <strong>{stage.averageScore}</strong>
                     </p>
                   )}
 
-                  {stage.signature?.signedAt && (
-                    <p>
-                      Assinada em: {formatDateTime(stage.signature.signedAt)}
-                    </p>
+                  {stage.signedAt && (
+                    <p>Assinada em: {formatDateTime(stage.signedAt)}</p>
                   )}
 
-                  {stage.signature?.signedByName && (
-                    <p>Assinada por: {stage.signature.signedByName}</p>
+                  {stage.signedByName && (
+                    <p>Assinada por: {stage.signedByName}</p>
                   )}
                 </div>
               )}
@@ -757,15 +843,13 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
                   )}
               </div>
 
-              {workflow.pdi?.status !== 'completed' &&
-                workflow.pdi?.status === 'pending' &&
-                !canAnswerPdi && (
-                  <div className="evaluation-detail-box">
-                    <strong>
-                      O PDI está aguardando o gerente/supervisor responsável.
-                    </strong>
-                  </div>
-                )}
+              {workflow.pdi?.status === 'pending' && !canAnswerPdi && (
+                <div className="evaluation-detail-box">
+                  <strong>
+                    O PDI está aguardando o gerente/supervisor responsável.
+                  </strong>
+                </div>
+              )}
 
               {workflow.pdi?.status === 'in_progress' && canAnswerPdi && (
                 <div className="evaluation-answer-list">
@@ -790,7 +874,6 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
                   ))}
 
                   <SignaturePad
-                    label="Assinatura digital do PDI"
                     value={pdiSignature}
                     onChange={setPdiSignature}
                   />
@@ -815,15 +898,12 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
                 <div className="evaluation-detail-box">
                   <strong>PDI concluído.</strong>
 
-                  {workflow.pdi?.signature?.signedAt && (
-                    <p>
-                      Assinado em:{' '}
-                      {formatDateTime(workflow.pdi.signature.signedAt)}
-                    </p>
+                  {workflow.pdi?.signedAt && (
+                    <p>Assinado em: {formatDateTime(workflow.pdi.signedAt)}</p>
                   )}
 
-                  {workflow.pdi?.signature?.signedByName && (
-                    <p>Assinado por: {workflow.pdi.signature.signedByName}</p>
+                  {workflow.pdi?.signedByName && (
+                    <p>Assinado por: {workflow.pdi.signedByName}</p>
                   )}
                 </div>
               )}
@@ -894,7 +974,6 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
                     )}
 
                     <SignaturePad
-                      label="Assinatura digital do 180°"
                       value={signature180}
                       onChange={setSignature180}
                     />
@@ -927,15 +1006,12 @@ function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
                     acesso da avaliação.
                   </p>
 
-                  {canView180 &&
-                    workflow.evaluation180?.signature?.signedAt && (
-                      <p>
-                        Assinada em:{' '}
-                        {formatDateTime(
-                          workflow.evaluation180.signature.signedAt
-                        )}
-                      </p>
-                    )}
+                  {canView180 && workflow.evaluation180?.signedAt && (
+                    <p>
+                      Assinada em:{' '}
+                      {formatDateTime(workflow.evaluation180.signedAt)}
+                    </p>
+                  )}
                 </div>
               )}
             </section>
@@ -1003,101 +1079,6 @@ function QuestionAnswer({ question, index, value, onChange }) {
           rows="4"
           value={value ?? ''}
           onChange={(event) => onChange(event.target.value)}
-        />
-      )}
-    </div>
-  )
-}
-
-/*
- * ============================================================
- * ASSINATURA DIGITAL
- * ============================================================
- */
-
-function SignaturePad({ label = 'Assinatura digital', value, onChange }) {
-  function handleChange(event) {
-    const file = event.target.files?.[0]
-
-    if (!file) {
-      return
-    }
-
-    /*
-     * Mantemos a assinatura como Base64 para continuar
-     * funcionando com localStorage.
-     */
-    const reader = new FileReader()
-
-    reader.onload = () => {
-      onChange(reader.result)
-    }
-
-    reader.readAsDataURL(file)
-  }
-
-  function clearSignature() {
-    onChange('')
-  }
-
-  return (
-    <div className="evaluation-answer-card">
-      <label>
-        {label}
-        <span> *</span>
-      </label>
-
-      <p
-        style={{
-          margin: '6px 0 14px',
-          color: '#64748b',
-          fontSize: '13px'
-        }}
-      >
-        Informe sua assinatura para confirmar a conclusão desta etapa.
-      </p>
-
-      {value ? (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px'
-          }}
-        >
-          <div
-            style={{
-              border: '1px solid #cbd5e1',
-              borderRadius: '8px',
-              padding: '10px',
-              background: '#ffffff'
-            }}
-          >
-            <img
-              src={value}
-              alt="Assinatura digital"
-              style={{
-                display: 'block',
-                maxWidth: '100%',
-                maxHeight: '120px',
-                objectFit: 'contain'
-              }}
-            />
-          </div>
-
-          <button
-            type="button"
-            className="evaluations-secondary-button"
-            onClick={clearSignature}
-          >
-            Refazer assinatura
-          </button>
-        </div>
-      ) : (
-        <input
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          onChange={handleChange}
         />
       )}
     </div>

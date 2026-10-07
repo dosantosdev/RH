@@ -1,448 +1,971 @@
-/* ============================================================
-   MODAL DA AVALIAÇÃO
-============================================================ */
+import { useMemo, useState } from 'react'
 
-.training-assessment-modal {
-  width: 100%;
-  max-width: 950px;
-  height: 90vh;
-  max-height: 90vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+import { getTrainingAssessments } from '../../services/trainingAssessment'
+
+import {
+  addAssessmentAttempt,
+  getTrainingParticipants
+} from '../../services/trainingParticipant'
+
+import TrainingCertificate from './TrainingCertificate'
+
+/*
+ * ============================================================
+ * NORMALIZAÇÃO DAS QUESTÕES
+ * ============================================================
+ *
+ * O cadastro atual utiliza:
+ *
+ * question
+ * alternatives
+ *
+ * Algumas versões anteriores podem ter utilizado:
+ *
+ * text
+ * questionText
+ * options
+ * answers
+ *
+ * Mantemos compatibilidade para evitar que avaliações antigas
+ * deixem de funcionar.
+ */
+
+function getQuestionText(question) {
+  return question?.question ?? question?.text ?? question?.questionText ?? ''
 }
 
-/* ============================================================
-   CABEÇALHO
-============================================================ */
-
-.training-assessment-modal .training-modal-header {
-  flex-shrink: 0;
-  padding: 24px 26px;
-}
-
-.training-assessment-label {
-  display: block;
-  margin-bottom: 5px;
-  color: #4f67c6;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.training-assessment-modal .training-modal-header h2 {
-  margin: 0 0 5px;
-  font-size: 22px;
-}
-
-.training-assessment-modal .training-modal-header p {
-  margin: 0;
-  color: #777;
-  font-size: 14px;
-}
-
-/* ============================================================
-   INFORMAÇÕES
-============================================================ */
-
-.training-assessment-modal .training-assessment-take-info {
-  flex-shrink: 0;
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 15px;
-  padding: 18px 26px;
-  border-bottom: 1px solid #e8e8e8;
-  background: #fafbff;
-}
-
-.training-assessment-take-info > div {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  min-width: 0;
-}
-
-.training-assessment-take-info span {
-  color: #777;
-  font-size: 11px;
-}
-
-.training-assessment-take-info strong {
-  overflow: hidden;
-  color: #222;
-  font-size: 13px;
-  text-overflow: ellipsis;
-}
-
-/* ============================================================
-   FORMULÁRIO / ÁREA ROLÁVEL
-============================================================ */
-
-.training-assessment-take-form {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.training-assessment-question-list {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 5px 26px 20px;
-  background: #fff;
-}
-
-.training-assessment-question-list::-webkit-scrollbar {
-  width: 9px;
-}
-
-.training-assessment-question-list::-webkit-scrollbar-track {
-  background: #f4f4f4;
-}
-
-.training-assessment-question-list::-webkit-scrollbar-thumb {
-  background: #c7cbd4;
-  border-radius: 10px;
-}
-
-.training-assessment-question-list::-webkit-scrollbar-thumb:hover {
-  background: #aeb3be;
-}
-
-/* ============================================================
-   QUESTÃO
-============================================================ */
-
-.training-take-question {
-  padding: 24px 0;
-  border-bottom: 1px solid #ececec;
-}
-
-.training-take-question:first-child {
-  padding-top: 20px;
-}
-
-.training-take-question:last-child {
-  border-bottom: none;
-}
-
-/* ============================================================
-   TÍTULO DA QUESTÃO
-============================================================ */
-
-.training-take-question-title {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
-  align-items: start;
-  gap: 12px;
-  margin-bottom: 15px;
-}
-
-.training-take-question-number {
-  width: 34px;
-  height: 34px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #4f67c6;
-  color: white;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.training-take-question-title strong {
-  padding-top: 7px;
-  color: #222;
-  font-size: 15px;
-  line-height: 1.5;
-}
-
-.training-take-question-title > span {
-  padding-top: 8px;
-  color: #777;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-/* ============================================================
-   ALTERNATIVAS
-============================================================ */
-
-.training-take-alternatives {
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
-  padding-left: 46px;
-}
-
-.training-take-alternative {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 48px;
-  padding: 10px 13px;
-  border: 1px solid #dedfe4;
-  border-radius: 9px;
-  background: #fff;
-  cursor: pointer;
-  transition:
-    border-color 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
-  box-sizing: border-box;
-}
-
-.training-take-alternative:hover {
-  border-color: #aeb8d8;
-  background: #fafbff;
-}
-
-.training-take-alternative.selected {
-  border-color: #4f67c6;
-  background: #f4f6ff;
-  box-shadow: 0 0 0 2px rgba(79, 103, 198, 0.08);
-}
-
-.training-take-alternative input {
-  width: 17px;
-  height: 17px;
-  margin: 0;
-  flex-shrink: 0;
-  accent-color: #4f67c6;
-}
-
-.training-take-alternative > span {
-  width: 27px;
-  height: 27px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: #f0f1f3;
-  color: #555;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.training-take-alternative.selected > span {
-  background: #4f67c6;
-  color: white;
-}
-
-.training-take-alternative p {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  color: #333;
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-/* ============================================================
-   RODAPÉ
-============================================================ */
-
-.training-assessment-footer {
-  flex-shrink: 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 20px;
-  padding: 15px 26px;
-  border-top: 1px solid #e8e8e8;
-  background: #fff;
-  box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.04);
-}
-
-.training-assessment-progress {
-  color: #777;
-  font-size: 12px;
-}
-
-.training-assessment-footer-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-/* ============================================================
-   ESTADO VAZIO
-============================================================ */
-
-.training-assessment-modal .training-assessment-empty {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 50px 25px;
-  text-align: center;
-}
-
-.training-assessment-empty span {
-  margin-bottom: 12px;
-  font-size: 42px;
-}
-
-.training-assessment-empty h3 {
-  margin: 0 0 8px;
-  font-size: 18px;
-}
-
-.training-assessment-empty p {
-  max-width: 500px;
-  margin: 0 0 20px;
-  color: #777;
-  line-height: 1.5;
-}
-
-/* ============================================================
-   RESULTADO
-============================================================ */
-
-.training-assessment-modal .training-assessment-result {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 45px 25px;
-  text-align: center;
-}
-
-.training-assessment-result::-webkit-scrollbar {
-  width: 9px;
-}
-
-.training-assessment-result::-webkit-scrollbar-thumb {
-  background: #c7cbd4;
-  border-radius: 10px;
-}
-
-.training-assessment-result h2 {
-  margin: 0 0 5px;
-}
-
-.training-assessment-result > p {
-  margin: 0;
-  color: #777;
-}
-
-.assessment-result-icon {
-  width: 65px;
-  height: 65px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 15px;
-  border-radius: 50%;
-  color: white;
-  font-size: 32px;
-}
-
-.assessment-result-icon.approved {
-  background: #39834c;
-}
-
-.assessment-result-icon.failed {
-  background: #b74a4a;
-}
-
-.assessment-result-score {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin: 25px auto;
-}
-
-.assessment-result-score strong {
-  font-size: 42px;
-}
-
-.assessment-result-score span,
-.assessment-result-points span {
-  color: #777;
-  font-size: 12px;
-}
-
-.assessment-result-points {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-top: 15px;
-}
-
-.assessment-result-points strong {
-  font-size: 18px;
-}
-
-/* ============================================================
-   RESPONSIVO
-============================================================ */
-
-@media (max-width: 900px) {
-  .training-assessment-modal .training-assessment-take-info {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-
-@media (max-width: 650px) {
-  .training-assessment-modal {
-    height: 94vh;
-    max-height: 94vh;
+function getQuestionAlternatives(question) {
+  if (Array.isArray(question?.alternatives)) {
+    return question.alternatives
   }
 
-  .training-assessment-modal .training-modal-header,
-  .training-assessment-modal .training-assessment-take-info,
-  .training-assessment-question-list {
-    padding-left: 18px;
-    padding-right: 18px;
+  if (Array.isArray(question?.options)) {
+    return question.options
   }
 
-  .training-assessment-modal .training-assessment-take-info {
-    grid-template-columns: repeat(2, 1fr);
+  if (Array.isArray(question?.answers)) {
+    return question.answers
   }
 
-  .training-take-question-title {
-    grid-template-columns: 34px minmax(0, 1fr);
-  }
-
-  .training-take-question-title > span {
-    grid-column: 2;
-    padding-top: 0;
-  }
-
-  .training-take-alternatives {
-    padding-left: 0;
-  }
-
-  .training-assessment-footer {
-    align-items: stretch;
-    flex-direction: column;
-    padding: 14px 18px;
-  }
-
-  .training-assessment-footer-actions {
-    justify-content: flex-end;
-  }
+  return []
 }
 
-@media (max-width: 450px) {
-  .training-assessment-modal .training-assessment-take-info {
-    grid-template-columns: 1fr;
+/*
+ * ============================================================
+ * COMPONENTE
+ * ============================================================
+ */
+
+export default function TrainingTakeAssessment({
+  training,
+  participant,
+  onClose,
+  onComplete,
+  onApproved
+}) {
+  /*
+   * A avaliação é somente leitura durante a realização.
+   *
+   * Não precisamos mantê-la em estado porque ela vem do
+   * localStorage e não é alterada enquanto a prova está aberta.
+   */
+  const assessment = useMemo(() => {
+    const assessments = getTrainingAssessments()
+
+    return (
+      assessments.find(
+        (item) => Number(item.trainingId) === Number(training.id)
+      ) || null
+    )
+  }, [training.id])
+
+  const [answers, setAnswers] = useState({})
+
+  const [result, setResult] = useState(null)
+
+  const [certificateParticipant, setCertificateParticipant] = useState(null)
+
+  const [showCertificate, setShowCertificate] = useState(false)
+
+  /*
+   * ============================================================
+   * RESPOSTA
+   * ============================================================
+   */
+
+  function handleAnswerChange(questionId, answer) {
+    setAnswers((prev) => ({
+      ...prev,
+
+      [questionId]: Number(answer)
+    }))
   }
 
-  .training-assessment-footer-actions {
-    flex-direction: column-reverse;
+  /*
+   * ============================================================
+   * LIMITE DE TENTATIVAS
+   * ============================================================
+   */
+
+  function getAttemptLimit() {
+    if (!assessment) {
+      return 1
+    }
+
+    if (assessment.allowRetake === false) {
+      return 1
+    }
+
+    if (assessment.unlimitedAttempts === true) {
+      return Infinity
+    }
+
+    const maxAttempts = Number(assessment.maxAttempts)
+
+    return maxAttempts >= 2 ? maxAttempts : 1
   }
 
-  .training-assessment-footer-actions button {
-    width: 100%;
+  /*
+   * ============================================================
+   * MELHOR NOTA
+   * ============================================================
+   */
+
+  function getBestScore() {
+    const attempts = Array.isArray(participant.attempts)
+      ? participant.attempts
+      : []
+
+    const storedBestScore = Number(participant.bestScore)
+
+    if (Number.isFinite(storedBestScore)) {
+      return storedBestScore
+    }
+
+    const scores = attempts
+      .map((attempt) => Number(attempt.score))
+      .filter((score) => Number.isFinite(score))
+
+    if (scores.length === 0) {
+      return null
+    }
+
+    return Math.max(...scores)
   }
+
+  /*
+   * ============================================================
+   * ENVIAR AVALIAÇÃO
+   * ============================================================
+   */
+
+  function handleSubmit(e) {
+    if (e?.preventDefault) {
+      e.preventDefault()
+    }
+
+    if (!assessment) {
+      return
+    }
+
+    const questions = assessment.questions || []
+
+    if (questions.length === 0) {
+      alert('Esta avaliação ainda não possui perguntas.')
+
+      return
+    }
+
+    const attempts = Array.isArray(participant.attempts)
+      ? participant.attempts
+      : []
+
+    const attemptLimit = getAttemptLimit()
+
+    /*
+     * Verifica limite de tentativas.
+     */
+    if (attempts.length >= attemptLimit) {
+      alert(
+        attemptLimit === 1
+          ? 'Este participante já realizou esta avaliação e uma nova tentativa não está permitida.'
+          : 'O número máximo de tentativas desta avaliação já foi atingido.'
+      )
+
+      return
+    }
+
+    /*
+     * ==========================================================
+     * VERIFICAÇÃO DAS ALTERNATIVAS
+     * ==========================================================
+     *
+     * Esta validação resolve o problema da tela apresentada:
+     *
+     * - pergunta aparece;
+     * - pontos aparecem;
+     * - mas nenhuma alternativa aparece.
+     *
+     * Isso significa que a questão foi salva sem alternativas.
+     */
+    const questionsWithoutAlternatives = questions.filter(
+      (question) => getQuestionAlternatives(question).length === 0
+    )
+
+    if (questionsWithoutAlternatives.length > 0) {
+      alert(
+        'Existem questões sem alternativas cadastradas. Volte ao cadastro da avaliação e preencha todas as alternativas antes de realizar a prova.'
+      )
+
+      return
+    }
+
+    /*
+     * Verifica perguntas sem resposta.
+     */
+    const unansweredQuestions = questions.filter(
+      (question) => answers[question.id] === undefined
+    )
+
+    if (unansweredQuestions.length > 0) {
+      alert('Responda todas as perguntas antes de enviar a avaliação.')
+
+      return
+    }
+
+    /*
+     * ==========================================================
+     * CÁLCULO DA NOTA
+     * ==========================================================
+     */
+
+    let earnedPoints = 0
+
+    let totalPoints = 0
+
+    questions.forEach((question) => {
+      const points = Number(question.points) || 0
+
+      totalPoints += points
+
+      if (answers[question.id] === Number(question.correctAnswer)) {
+        earnedPoints += points
+      }
+    })
+
+    const score =
+      totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0
+
+    const minimumScore = Number(assessment.minimumScore) || 0
+
+    const previousBestScore = getBestScore()
+
+    const bestScore =
+      previousBestScore === null
+        ? score
+        : Math.max(previousBestScore, score)
+
+    /*
+     * A aprovação é baseada na melhor nota.
+     */
+    const approved = bestScore >= minimumScore
+
+    /*
+     * ==========================================================
+     * REGISTRO DA TENTATIVA
+     * ==========================================================
+     */
+
+    const attempt = {
+      id: Date.now(),
+
+      startedAt: new Date().toISOString(),
+
+      completedAt: new Date().toISOString(),
+
+      answers,
+
+      earnedPoints,
+
+      totalPoints,
+
+      score,
+
+      bestScore,
+
+      minimumScore,
+
+      approved
+    }
+
+    addAssessmentAttempt(participant.id, attempt, {
+      minimumScore,
+
+      allowRetake: assessment.allowRetake !== false,
+
+      unlimitedAttempts: assessment.unlimitedAttempts === true,
+
+      maxAttempts: assessment.maxAttempts
+    })
+
+    const nextAttemptCount = attempts.length + 1
+
+    setResult({
+      score,
+
+      bestScore,
+
+      minimumScore,
+
+      approved,
+
+      earnedPoints,
+
+      totalPoints,
+
+      attemptNumber: nextAttemptCount,
+
+      attemptLimit
+    })
+
+    /*
+     * Mantém o componente pai atualizado.
+     *
+     * Importante:
+     * NÃO fechamos a avaliação aqui.
+     *
+     * O funcionário precisa visualizar o resultado.
+     */
+    if (onComplete) {
+      onComplete(attempt)
+    }
+
+    /*
+     * Busca novamente o participante depois de salvar a tentativa.
+     */
+    if (approved) {
+      const updatedParticipants = getTrainingParticipants()
+
+      const updatedParticipant = updatedParticipants.find(
+        (item) => item.id === participant.id
+      )
+
+      if (updatedParticipant) {
+        setCertificateParticipant(updatedParticipant)
+      }
+    }
+  }
+
+  /*
+   * ============================================================
+   * CONCLUIR TREINAMENTO
+   * ============================================================
+   */
+
+  function handleFinishApproved() {
+    /*
+     * Se o treinamento já estiver concluído,
+     * podemos abrir o certificado.
+     */
+    if (
+      result?.approved &&
+      certificateParticipant?.status === 'completed'
+    ) {
+      setShowCertificate(true)
+
+      return
+    }
+
+    /*
+     * Caso ainda não esteja concluído,
+     * o componente pai executará a conclusão.
+     */
+    if (onApproved) {
+      onApproved()
+
+      return
+    }
+
+    onClose()
+  }
+
+  /*
+   * ============================================================
+   * FECHAR CERTIFICADO
+   * ============================================================
+   */
+
+  function handleCloseCertificate() {
+    setShowCertificate(false)
+
+    if (onClose) {
+      onClose()
+    }
+  }
+
+  /*
+   * ============================================================
+   * MODAL
+   * ============================================================
+   */
+
+  function renderModal(content, footer) {
+    return (
+      <div className="training-modal-overlay">
+        <div className="training-content-modal training-assessment-modal">
+          {content}
+
+          {footer}
+        </div>
+      </div>
+    )
+  }
+
+  /*
+   * ============================================================
+   * CERTIFICADO
+   * ============================================================
+   */
+
+  if (showCertificate && certificateParticipant) {
+    return (
+      <TrainingCertificate
+        training={training}
+        participant={certificateParticipant}
+        onClose={handleCloseCertificate}
+      />
+    )
+  }
+
+  /*
+   * ============================================================
+   * AVALIAÇÃO NÃO ENCONTRADA
+   * ============================================================
+   */
+
+  if (!assessment) {
+    return renderModal(
+      <>
+        <div className="training-modal-header">
+          <div>
+            <span className="training-progress-kicker">
+              TREINAMENTO
+            </span>
+
+            <h2>Avaliação</h2>
+
+            <p>{training.name}</p>
+          </div>
+
+          <button
+            type="button"
+            className="training-modal-close"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="training-assessment-empty-screen">
+          <span>📝</span>
+
+          <h3>Avaliação não encontrada</h3>
+
+          <p>
+            Este treinamento ainda não possui uma avaliação cadastrada.
+          </p>
+        </div>
+      </>,
+
+      <div className="training-modal-footer">
+        <button
+          type="button"
+          className="training-secondary-button"
+          onClick={onClose}
+        >
+          Voltar
+        </button>
+      </div>
+    )
+  }
+
+  /*
+   * ============================================================
+   * SEM PERGUNTAS
+   * ============================================================
+   */
+
+  if (!assessment.questions?.length) {
+    return renderModal(
+      <>
+        <div className="training-modal-header">
+          <div>
+            <span className="training-progress-kicker">
+              TREINAMENTO
+            </span>
+
+            <h2>Avaliação</h2>
+
+            <p>{training.name}</p>
+          </div>
+
+          <button
+            type="button"
+            className="training-modal-close"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="training-assessment-empty-screen">
+          <span>📝</span>
+
+          <h3>Nenhuma pergunta cadastrada</h3>
+
+          <p>
+            A avaliação ainda não está pronta para ser realizada.
+          </p>
+        </div>
+      </>,
+
+      <div className="training-modal-footer">
+        <button
+          type="button"
+          className="training-secondary-button"
+          onClick={onClose}
+        >
+          Voltar
+        </button>
+      </div>
+    )
+  }
+
+  const attemptLimit = getAttemptLimit()
+
+  const attempts = Array.isArray(participant.attempts)
+    ? participant.attempts
+    : []
+
+  const hasReachedAttemptLimit = attempts.length >= attemptLimit
+
+  /*
+   * ============================================================
+   * LIMITE DE TENTATIVAS
+   * ============================================================
+   */
+
+  if (hasReachedAttemptLimit && !result) {
+    const bestScore = getBestScore()
+
+    const minimumScore = Number(assessment.minimumScore) || 0
+
+    const approved =
+      bestScore !== null && bestScore >= minimumScore
+
+    return renderModal(
+      <>
+        <div className="training-modal-header">
+          <div>
+            <span className="training-progress-kicker">
+              TREINAMENTO
+            </span>
+
+            <h2>Avaliação</h2>
+
+            <p>{participant.employeeName}</p>
+          </div>
+
+          <button
+            type="button"
+            className="training-modal-close"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="training-assessment-empty-screen">
+          <span>{approved ? '🏆' : '📝'}</span>
+
+          <h3>Limite de tentativas atingido</h3>
+
+          <p>
+            Este participante já utilizou todas as tentativas disponíveis
+            para esta avaliação.
+          </p>
+
+          <div className="training-assessment-result-score-grid">
+            <div className="training-assessment-result-score-card">
+              <strong>{bestScore ?? 0}%</strong>
+
+              <span>Melhor nota</span>
+            </div>
+
+            <div className="training-assessment-result-score-card">
+              <strong>{minimumScore}%</strong>
+
+              <span>Nota mínima</span>
+            </div>
+          </div>
+
+          <p>
+            Resultado:{' '}
+            <strong>
+              {approved ? 'Aprovado' : 'Reprovado'}
+            </strong>
+          </p>
+        </div>
+      </>,
+
+      <div className="training-modal-footer">
+        <button
+          type="button"
+          className="training-secondary-button"
+          onClick={onClose}
+        >
+          Voltar
+        </button>
+
+        {approved && (
+          <button
+            type="button"
+            className="training-primary-button"
+            onClick={() => {
+              if (certificateParticipant?.status === 'completed') {
+                setShowCertificate(true)
+
+                return
+              }
+
+              handleFinishApproved()
+            }}
+          >
+            ✓ Concluir treinamento
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  /*
+   * ============================================================
+   * RESULTADO
+   * ============================================================
+   */
+
+  if (result) {
+    const canIssueCertificate =
+      result.approved &&
+      certificateParticipant?.status === 'completed'
+
+    return renderModal(
+      <>
+        <div className="training-modal-header">
+          <div>
+            <span className="training-progress-kicker">
+              RESULTADO
+            </span>
+
+            <h2>Resultado da avaliação</h2>
+
+            <p>{participant.employeeName}</p>
+          </div>
+
+          <button
+            type="button"
+            className="training-modal-close"
+            onClick={onClose}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="training-assessment-scroll">
+          <div className="training-assessment-result-screen">
+            <div
+              className={`assessment-result-icon ${
+                result.approved ? 'approved' : 'failed'
+              }`}
+            >
+              {result.approved ? '✓' : '✕'}
+            </div>
+
+            <h2>
+              {result.approved ? 'Aprovado' : 'Reprovado'}
+            </h2>
+
+            <p>Resultado da avaliação</p>
+
+            <div className="training-assessment-result-score-grid">
+              <div className="training-assessment-result-score-card">
+                <strong>{result.score}%</strong>
+
+                <span>Nota desta tentativa</span>
+              </div>
+
+              <div className="training-assessment-result-score-card">
+                <strong>{result.bestScore}%</strong>
+
+                <span>Melhor nota</span>
+              </div>
+            </div>
+
+            <div className="training-assessment-result-details">
+              <div className="training-assessment-result-detail">
+                <span>Nota mínima</span>
+
+                <strong>{result.minimumScore}%</strong>
+              </div>
+
+              <div className="training-assessment-result-detail">
+                <span>Pontuação</span>
+
+                <strong>
+                  {result.earnedPoints} / {result.totalPoints}
+                </strong>
+              </div>
+
+              <div className="training-assessment-result-detail">
+                <span>Tentativa</span>
+
+                <strong>
+                  {result.attemptNumber}{' '}
+                  {result.attemptLimit === Infinity
+                    ? '/ Ilimitadas'
+                    : `/ ${result.attemptLimit}`}
+                </strong>
+              </div>
+            </div>
+
+            {result.approved && canIssueCertificate && (
+              <div className="training-certificate-ready">
+                <span>🎓</span>
+
+                <strong>Certificado disponível</strong>
+
+                <p>
+                  Você concluiu o treinamento e foi aprovado na
+                  avaliação. Seu certificado já pode ser emitido.
+                </p>
+              </div>
+            )}
+
+            {result.approved && !canIssueCertificate && (
+              <p className="training-assessment-result-note">
+                A avaliação foi aprovada. Conclua todos os conteúdos
+                do treinamento e confirme a conclusão para liberar o
+                certificado.
+              </p>
+            )}
+
+            {!result.approved && (
+              <p className="training-assessment-result-note">
+                A maior nota obtida é mantida como a nota válida da
+                avaliação.
+              </p>
+            )}
+          </div>
+        </div>
+      </>,
+
+      <div className="training-modal-footer">
+        {!result.approved && (
+          <button
+            type="button"
+            className="training-secondary-button"
+            onClick={onClose}
+          >
+            Voltar ao treinamento
+          </button>
+        )}
+
+        {result.approved && canIssueCertificate && (
+          <button
+            type="button"
+            className="training-primary-button"
+            onClick={() => setShowCertificate(true)}
+          >
+            🎓 Emitir certificado
+          </button>
+        )}
+
+        {result.approved && !canIssueCertificate && (
+          <button
+            type="button"
+            className="training-primary-button"
+            onClick={handleFinishApproved}
+          >
+            ✓ Concluir treinamento
+          </button>
+        )}
+      </div>
+    )
+  }
+
+  /*
+   * ============================================================
+   * REALIZAÇÃO DA AVALIAÇÃO
+   * ============================================================
+   */
+
+  return renderModal(
+    <>
+      <div className="training-modal-header">
+        <div>
+          <span className="training-progress-kicker">
+            AVALIAÇÃO
+          </span>
+
+          <h2>Realizar avaliação</h2>
+
+          <p>{training.name}</p>
+        </div>
+
+        <button
+          type="button"
+          className="training-modal-close"
+          onClick={onClose}
+        >
+          ×
+        </button>
+      </div>
+
+      <div className="training-assessment-scroll">
+        <div className="training-assessment-info-grid">
+          <div className="training-assessment-info-item">
+            <span>Participante</span>
+
+            <strong>{participant.employeeName}</strong>
+          </div>
+
+          <div className="training-assessment-info-item">
+            <span>Questões</span>
+
+            <strong>{assessment.questions.length}</strong>
+          </div>
+
+          <div className="training-assessment-info-item">
+            <span>Nota mínima</span>
+
+            <strong>
+              {Number(assessment.minimumScore) || 0}%
+            </strong>
+          </div>
+
+          <div className="training-assessment-info-item">
+            <span>Tentativa</span>
+
+            <strong>
+              {attempts.length + 1}{' '}
+              {attemptLimit === Infinity
+                ? '/ Ilimitadas'
+                : `/ ${attemptLimit}`}
+            </strong>
+          </div>
+        </div>
+
+        <form
+          className="training-assessment-form"
+          onSubmit={handleSubmit}
+        >
+          {assessment.questions.map((question, index) => {
+            const alternatives = getQuestionAlternatives(question)
+
+            const questionText = getQuestionText(question)
+
+            return (
+              <div
+                key={question.id}
+                className="training-take-question"
+              >
+                <div className="training-take-question-title">
+                  <strong>
+                    {index + 1}.{' '}
+                    {questionText || 'Questão sem enunciado'}
+                  </strong>
+
+                  <span>
+                    {Number(question.points) || 0} ponto(s)
+                  </span>
+                </div>
+
+                {alternatives.length > 0 ? (
+                  <div className="training-take-alternatives">
+                    {alternatives.map(
+                      (alternative, alternativeIndex) => (
+                        <label
+                          key={`${question.id}-${alternativeIndex}`}
+                          className={
+                            answers[question.id] === alternativeIndex
+                              ? 'training-take-alternative selected'
+                              : 'training-take-alternative'
+                          }
+                        >
+                          <input
+                            type="radio"
+                            name={`question-${question.id}`}
+                            value={alternativeIndex}
+                            checked={
+                              answers[question.id] === alternativeIndex
+                            }
+                            onChange={(e) =>
+                              handleAnswerChange(
+                                question.id,
+                                e.target.value
+                              )
+                            }
+                          />
+
+                          <span>
+                            {String.fromCharCode(
+                              65 + alternativeIndex
+                            )}
+                          </span>
+
+                          <p>{String(alternative)}</p>
+                        </label>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div className="training-take-missing-alternatives">
+                    <strong>
+                      Alternativas não cadastradas.
+                    </strong>
+
+                    <p>
+                      Esta questão ainda não possui respostas
+                      disponíveis. Volte ao cadastro da avaliação e
+                      preencha as alternativas antes de realizar a
+                      prova.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </form>
+      </div>
+
+      <div className="training-modal-footer">
+        <button
+          type="button"
+          className="training-secondary-button"
+          onClick={onClose}
+        >
+          Cancelar
+        </button>
+
+        <button
+          type="button"
+          className="training-primary-button"
+          onClick={handleSubmit}
+        >
+          Finalizar avaliação
+        </button>
+      </div>
+    </>,
+    null
+  )
 }

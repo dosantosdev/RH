@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 
 import {
   updateParticipantProgress,
-  getTrainingParticipants
+  getTrainingParticipants,
+  completeParticipantTraining
 } from '../../services/trainingParticipant'
 
 import TrainingCertificate from './TrainingCertificate'
@@ -39,7 +40,11 @@ export default function TrainingProgress({ training, participant, onClose }) {
       return 'failed'
     }
 
-    if (progress >= 100 && assessmentStatus === 'approved') {
+    if (
+      progress >= 100 &&
+      assessmentStatus === 'approved' &&
+      currentParticipant.status === 'completed'
+    ) {
       return 'completed'
     }
 
@@ -94,13 +99,70 @@ export default function TrainingProgress({ training, participant, onClose }) {
     )
   }
 
-  function handleAssessmentComplete() {
-    setShowAssessment(false)
+  /*
+   * ============================================================
+   * AVALIAÇÃO CONCLUÍDA
+   * ============================================================
+   */
 
+  function handleAssessmentComplete() {
+    /*
+     * Não fechamos a avaliação aqui.
+     *
+     * O resultado precisa continuar aparecendo dentro do modal.
+     *
+     * Apenas atualizamos os dados do participante no estado do
+     * treinamento.
+     */
     const updatedParticipant = refreshParticipant()
 
     setCurrentParticipant(updatedParticipant)
   }
+
+  /*
+   * ============================================================
+   * APROVAÇÃO DA AVALIAÇÃO
+   * ============================================================
+   *
+   * A aprovação não conclui automaticamente o treinamento.
+   *
+   * O usuário precisa clicar em:
+   *
+   * "Concluir treinamento"
+   *
+   * Porém a função central valida novamente:
+   *
+   * - 100% dos conteúdos;
+   * - avaliação aprovada.
+   */
+
+  function handleAssessmentApproved() {
+    const updatedParticipants = completeParticipantTraining(
+      currentParticipant.id
+    )
+
+    const updatedParticipant = updatedParticipants.find(
+      (item) => item.id === currentParticipant.id
+    )
+
+    if (!updatedParticipant || updatedParticipant.status !== 'completed') {
+      alert(
+        'O treinamento ainda não pode ser concluído. Verifique se todos os conteúdos foram concluídos e se a avaliação foi aprovada.'
+      )
+
+      return
+    }
+
+    setCurrentParticipant(updatedParticipant)
+
+    setShowAssessment(false)
+  }
+
+  /*
+   * ============================================================
+   * CONTEÚDOS
+   * ============================================================
+   */
 
   function renderContent(content) {
     switch (content.type) {
@@ -165,6 +227,12 @@ export default function TrainingProgress({ training, participant, onClose }) {
     }
   }
 
+  /*
+   * ============================================================
+   * CERTIFICADO
+   * ============================================================
+   */
+
   if (showCertificate) {
     return (
       <TrainingCertificate
@@ -175,6 +243,12 @@ export default function TrainingProgress({ training, participant, onClose }) {
     )
   }
 
+  /*
+   * ============================================================
+   * AVALIAÇÃO
+   * ============================================================
+   */
+
   if (showAssessment) {
     return (
       <TrainingTakeAssessment
@@ -182,6 +256,7 @@ export default function TrainingProgress({ training, participant, onClose }) {
         participant={currentParticipant}
         onClose={() => setShowAssessment(false)}
         onComplete={handleAssessmentComplete}
+        onApproved={handleAssessmentApproved}
       />
     )
   }
@@ -194,8 +269,11 @@ export default function TrainingProgress({ training, participant, onClose }) {
 
   const statusLabels = {
     pending: 'Pendente',
+
     in_progress: 'Em andamento',
+
     completed: 'Concluído',
+
     failed: 'Reprovado'
   }
 
@@ -204,7 +282,7 @@ export default function TrainingProgress({ training, participant, onClose }) {
   const canIssueCertificate =
     progress >= 100 &&
     currentParticipant.assessmentStatus === 'approved' &&
-    status === 'completed'
+    currentParticipant.status === 'completed'
 
   return (
     <div className="training-modal-overlay">

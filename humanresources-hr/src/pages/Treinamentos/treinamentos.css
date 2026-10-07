@@ -1277,121 +1277,318 @@
    REALIZAÇÃO DA AVALIAÇÃO
 ============================== */
 
-.training-assessment-take-info {
-  flex: 0 0 auto;
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 18px;
-  padding: 18px 26px;
-  background: white;
-  border-bottom: 1px solid #ededed;
-}
+/*
+ * Modal específico da realização da avaliação.
+ *
+ * O modal ocupa no máximo 90% da altura da tela.
+ * O cabeçalho e o rodapé permanecem visíveis.
+ * Somente o conteúdo central possui rolagem.
+ */
 
-.training-assessment-take-info > div {
+.training-assessment-modal {
+  width: 100%;
+  max-width: 950px;
+  height: 90vh;
+  max-height: 90vh;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+}
+
+/* ==============================
+   CABEÇALHO DA AVALIAÇÃO
+============================== */
+
+.training-assessment-modal .training-modal-header {
+  flex-shrink: 0;
+  padding: 22px 28px;
+  background: white;
+  border-bottom: 1px solid #e8eaf0;
+  z-index: 2;
+}
+
+.training-assessment-modal .training-modal-header > div:first-child {
   min-width: 0;
 }
 
-.training-assessment-take-info span {
-  color: #777;
-  font-size: 12px;
+.training-progress-kicker {
+  display: block;
+  margin-bottom: 5px;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
 }
 
-.training-assessment-take-info strong {
+.training-assessment-modal .training-modal-header h2 {
+  margin: 0;
+  color: #172033;
+  font-size: 24px;
+  line-height: 1.2;
+}
+
+.training-assessment-modal .training-modal-header p {
+  margin: 6px 0 0;
+  color: #667085;
   font-size: 14px;
-  color: #222;
 }
 
-.training-assessment-take-form {
+.training-assessment-modal .training-modal-close {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #f5f6fa;
+  color: #667085;
+  font-size: 24px;
+  line-height: 1;
+  transition: 0.2s;
+}
+
+.training-assessment-modal .training-modal-close:hover {
+  background: #eceef5;
+  color: #172033;
+  transform: none;
+}
+
+/* ==============================
+   ÁREA DE ROLAGEM
+============================== */
+
+/*
+ * Esta é a correção principal.
+ *
+ * O conteúdo da prova fica limitado à área disponível
+ * entre o cabeçalho e o rodapé.
+ */
+
+.training-assessment-scroll {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  display: flex;
-  flex-direction: column;
-  background: white;
+  background: #f7f8fb;
+  padding: 0;
   scrollbar-width: thin;
+  scrollbar-color: #c7ccda transparent;
 }
 
-.training-take-question {
-  padding: 22px 26px;
-  border-bottom: 1px solid #ededed;
-  background: white;
+/* Barra de rolagem para Chrome / Edge */
+
+.training-assessment-scroll::-webkit-scrollbar {
+  width: 9px;
 }
+
+.training-assessment-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.training-assessment-scroll::-webkit-scrollbar-thumb {
+  background: #c7ccda;
+  border-radius: 10px;
+  border: 2px solid #f7f8fb;
+}
+
+.training-assessment-scroll::-webkit-scrollbar-thumb:hover {
+  background: #aeb5c5;
+}
+
+/* ==============================
+   INFORMAÇÕES DA AVALIAÇÃO
+============================== */
+
+.training-assessment-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  padding: 20px 28px;
+  background: white;
+  border-bottom: 1px solid #e8eaf0;
+}
+
+.training-assessment-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+  padding: 13px 15px;
+  background: #f7f8fc;
+  border: 1px solid #e6e9f1;
+  border-radius: 10px;
+}
+
+.training-assessment-info-item span {
+  color: #667085;
+  font-size: 12px;
+}
+
+.training-assessment-info-item strong {
+  color: #172033;
+  font-size: 18px;
+}
+
+/* ==============================
+   FORMULÁRIO DA PROVA
+============================== */
+
+.training-assessment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px 28px 30px;
+}
+
+/* ==============================
+   QUESTÃO
+============================== */
+
+.training-take-question {
+  padding: 20px;
+  background: white;
+  border: 1px solid #e1e5ed;
+  border-radius: 13px;
+  box-shadow: 0 2px 7px rgba(25, 35, 55, 0.035);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+.training-take-question:hover {
+  border-color: #d2d7e3;
+  box-shadow: 0 4px 12px rgba(25, 35, 55, 0.06);
+}
+
+/* ==============================
+   TÍTULO DA QUESTÃO
+============================== */
 
 .training-take-question-title {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 20px;
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 
 .training-take-question-title strong {
+  color: #172033;
   font-size: 15px;
-  line-height: 1.5;
-  color: #222;
+  line-height: 1.55;
 }
 
 .training-take-question-title span {
-  color: #777;
-  font-size: 12px;
+  flex-shrink: 0;
+  padding: 5px 9px;
+  background: #f1f3f8;
+  border-radius: 6px;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 600;
   white-space: nowrap;
 }
+
+/* ==============================
+   ALTERNATIVAS
+============================== */
 
 .training-take-alternatives {
   display: flex;
   flex-direction: column;
-  gap: 9px;
+  gap: 10px;
 }
 
 .training-take-alternative {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 11px;
-  width: 100%;
+  gap: 12px;
+  min-height: 54px;
+  padding: 11px 14px;
   box-sizing: border-box;
-  padding: 12px 14px;
-  border: 1px solid #ddd;
-  border-radius: 9px;
+
   background: white;
+  border: 1px solid #dfe3eb;
+  border-radius: 10px;
+
   cursor: pointer;
-  transition: 0.15s;
+
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.15s;
 }
 
 .training-take-alternative:hover {
-  border-color: #4f67c6;
   background: #fafbff;
+  border-color: #8394da;
+  transform: translateY(-1px);
 }
 
-.training-take-alternative.selected {
-  border-color: #4f67c6;
-  background: #f3f5ff;
-  box-shadow: 0 0 0 1px rgba(79, 103, 198, 0.08);
-}
+/*
+ * Radio nativo.
+ */
 
 .training-take-alternative input {
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   margin: 0;
+  flex-shrink: 0;
   accent-color: #4f67c6;
-  flex: 0 0 auto;
+  cursor: pointer;
 }
 
+/*
+ * Letra da alternativa.
+ */
+
 .training-take-alternative > span {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  flex: 0 0 28px;
+
+  background: #eef0f4;
+  color: #667085;
+
   border-radius: 50%;
-  background: #f0f1f3;
-  color: #444;
+
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+/*
+ * Texto da alternativa.
+ */
+
+.training-take-alternative p {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+
+  color: #344054;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+/* ==============================
+   ALTERNATIVA SELECIONADA
+============================== */
+
+.training-take-alternative.selected {
+  background: #f1f4ff;
+  border-color: #4f67c6;
+  box-shadow: 0 0 0 2px rgba(79, 103, 198, 0.08);
 }
 
 .training-take-alternative.selected > span {
@@ -1399,18 +1596,67 @@
   color: white;
 }
 
-.training-take-alternative p {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.45;
-  color: #333;
+.training-take-alternative.selected p {
+  color: #25346e;
+  font-weight: 500;
 }
 
-.training-assessment-take-form > .training-modal-footer {
-  position: sticky;
-  bottom: 0;
+/* ==============================
+   RODAPÉ
+============================== */
+
+.training-assessment-modal .training-modal-footer {
+  flex-shrink: 0;
+
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+
+  padding: 15px 28px;
+
+  background: white;
+  border-top: 1px solid #e8eaf0;
+
   z-index: 2;
-  margin-top: auto;
+}
+
+.training-assessment-modal .training-modal-footer .training-primary-button {
+  min-width: 160px;
+  padding: 11px 20px;
+  font-weight: 600;
+}
+
+/* ==============================
+   ESTADO VAZIO
+============================== */
+
+.training-assessment-empty-screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px 25px;
+  text-align: center;
+  background: #f7f8fb;
+}
+
+.training-assessment-empty-screen > span {
+  margin-bottom: 15px;
+  font-size: 45px;
+}
+
+.training-assessment-empty-screen h3 {
+  margin: 0 0 8px;
+  color: #172033;
+}
+
+.training-assessment-empty-screen p {
+  max-width: 450px;
+  margin: 0;
+  color: #667085;
+  line-height: 1.5;
 }
 
 /* ==============================
@@ -1757,6 +2003,32 @@
   .trainings-list-header input {
     width: 100%;
   }
+
+  .training-assessment-modal {
+    height: 92vh;
+    max-height: 92vh;
+  }
+
+  .training-assessment-info-grid {
+    grid-template-columns: 1fr;
+    padding: 16px 20px;
+  }
+
+  .training-assessment-form {
+    padding: 18px 20px 25px;
+  }
+
+  .training-take-question {
+    padding: 17px;
+  }
+
+  .training-assessment-modal .training-modal-header {
+    padding: 18px 20px;
+  }
+
+  .training-assessment-modal .training-modal-footer {
+    padding: 13px 20px;
+  }
 }
 
 @media (max-width: 800px) {
@@ -1997,6 +2269,62 @@
   .training-assessment-summary {
     grid-template-columns: 1fr;
     padding: 16px 18px;
+  }
+
+  .training-assessment-modal {
+    width: 100%;
+    height: 94vh;
+    max-height: 94vh;
+    border-radius: 12px;
+  }
+
+  .training-assessment-modal .training-modal-header {
+    padding: 16px;
+  }
+
+  .training-assessment-modal .training-modal-header h2 {
+    font-size: 20px;
+  }
+
+  .training-assessment-info-grid {
+    padding: 14px 16px;
+  }
+
+  .training-assessment-form {
+    gap: 12px;
+    padding: 15px 16px 20px;
+  }
+
+  .training-take-question {
+    padding: 15px;
+    border-radius: 10px;
+  }
+
+  .training-take-question-title {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .training-take-question-title span {
+    align-self: flex-start;
+  }
+
+  .training-take-alternative {
+    min-height: 52px;
+    padding: 10px 11px;
+  }
+
+  .training-assessment-modal .training-modal-footer {
+    padding: 12px 16px;
+  }
+
+  .training-assessment-modal .training-modal-footer .training-primary-button {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .training-assessment-modal .training-modal-footer .training-secondary-button {
+    flex: 0 0 auto;
   }
 }
 

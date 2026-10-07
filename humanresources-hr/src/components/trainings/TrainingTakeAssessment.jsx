@@ -9,6 +9,25 @@ import {
 
 import TrainingCertificate from './TrainingCertificate'
 
+function normalizeQuestion(question) {
+  const alternatives = Array.isArray(question?.alternatives)
+    ? question.alternatives
+    : []
+
+  return {
+    ...question,
+
+    question:
+      question?.question || question?.text || question?.questionText || '',
+
+    alternatives,
+
+    correctAnswer: Number(question?.correctAnswer) || 0,
+
+    points: Number(question?.points) || 1
+  }
+}
+
 export default function TrainingTakeAssessment({
   training,
   participant,
@@ -33,12 +52,23 @@ export default function TrainingTakeAssessment({
       (item) => Number(item.trainingId) === Number(training.id)
     )
 
-    setAssessment(existingAssessment || null)
+    if (!existingAssessment) {
+      setAssessment(null)
+
+      return
+    }
+
+    setAssessment({
+      ...existingAssessment,
+
+      questions: (existingAssessment.questions || []).map(normalizeQuestion)
+    })
   }, [training.id])
 
   function handleAnswerChange(questionId, answer) {
     setAnswers((prev) => ({
       ...prev,
+
       [questionId]: Number(answer)
     }))
   }
@@ -84,7 +114,7 @@ export default function TrainingTakeAssessment({
   }
 
   function handleSubmit(e) {
-    e.preventDefault()
+    e?.preventDefault()
 
     if (!assessment) {
       return
@@ -94,6 +124,29 @@ export default function TrainingTakeAssessment({
 
     if (questions.length === 0) {
       alert('Esta avaliação ainda não possui perguntas.')
+
+      return
+    }
+
+    /*
+     * Verifica se alguma pergunta está sem alternativas.
+     *
+     * Se aparecer este aviso, significa que a pergunta
+     * precisa ser corrigida no cadastro da avaliação.
+     */
+    const invalidQuestions = questions.filter(
+      (question) =>
+        !Array.isArray(question.alternatives) ||
+        question.alternatives.length < 4 ||
+        question.alternatives.some(
+          (alternative) => !String(alternative || '').trim()
+        )
+    )
+
+    if (invalidQuestions.length > 0) {
+      alert(
+        'Esta avaliação possui uma ou mais perguntas sem as quatro alternativas preenchidas. Volte ao cadastro da avaliação, clique em "Editar" e preencha as alternativas A, B, C e D.'
+      )
 
       return
     }
@@ -125,6 +178,7 @@ export default function TrainingTakeAssessment({
     }
 
     let earnedPoints = 0
+
     let totalPoints = 0
 
     questions.forEach((question) => {
@@ -201,18 +255,17 @@ export default function TrainingTakeAssessment({
       attemptLimit
     })
 
+    /*
+     * IMPORTANTE:
+     *
+     * Não fechamos a avaliação aqui.
+     *
+     * O resultado permanece na tela.
+     */
     if (onComplete) {
       onComplete(attempt)
     }
 
-    /*
-     * Depois de salvar a tentativa, buscamos novamente
-     * o participante no localStorage.
-     *
-     * Isso é necessário porque o objeto `participant`
-     * recebido pelo componente ainda pode conter os
-     * dados anteriores à avaliação.
-     */
     if (approved) {
       const updatedParticipants = getTrainingParticipants()
 
@@ -227,10 +280,6 @@ export default function TrainingTakeAssessment({
   }
 
   function handleFinishApproved() {
-    /*
-     * Se o treinamento já estiver completamente concluído,
-     * o funcionário pode abrir o certificado imediatamente.
-     */
     if (result?.approved && certificateParticipant?.status === 'completed') {
       setShowCertificate(true)
 
@@ -249,33 +298,15 @@ export default function TrainingTakeAssessment({
   function handleCloseCertificate() {
     setShowCertificate(false)
 
-    if (onApproved) {
-      onApproved()
-
-      return
-    }
-
     onClose()
   }
 
-  function renderModal(content, footer) {
-    return (
-      <div className="training-modal-overlay">
-        <div className="training-content-modal training-assessment-modal">
-          {content}
-
-          {footer}
-        </div>
-      </div>
-    )
-  }
-
   /*
+   * ============================================================
    * CERTIFICADO
-   *
-   * O certificado aparece diretamente depois da aprovação
-   * quando todos os conteúdos também foram concluídos.
+   * ============================================================
    */
+
   if (showCertificate && certificateParticipant) {
     return (
       <TrainingCertificate
@@ -286,212 +317,200 @@ export default function TrainingTakeAssessment({
     )
   }
 
-  /* ======================================
-     AVALIAÇÃO NÃO ENCONTRADA
-  ====================================== */
+  /*
+   * ============================================================
+   * SEM AVALIAÇÃO
+   * ============================================================
+   */
 
   if (!assessment) {
-    return renderModal(
-      <>
-        <div className="training-modal-header">
-          <div>
-            <span className="training-progress-kicker">TREINAMENTO</span>
+    return (
+      <div className="training-modal-overlay">
+        <div className="training-content-modal training-assessment-modal">
+          <div className="training-modal-header">
+            <div>
+              <span className="training-progress-kicker">TREINAMENTO</span>
 
-            <h2>Avaliação</h2>
+              <h2>Avaliação</h2>
 
-            <p>{training.name}</p>
-          </div>
-
-          <button
-            type="button"
-            className="training-modal-close"
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="training-assessment-empty-screen">
-          <span>📝</span>
-
-          <h3>Avaliação não encontrada</h3>
-
-          <p>Este treinamento ainda não possui uma avaliação cadastrada.</p>
-        </div>
-      </>,
-
-      <div className="training-modal-footer">
-        <button
-          type="button"
-          className="training-secondary-button"
-          onClick={onClose}
-        >
-          Voltar
-        </button>
-      </div>
-    )
-  }
-
-  /* ======================================
-     SEM PERGUNTAS
-  ====================================== */
-
-  if (!assessment.questions?.length) {
-    return renderModal(
-      <>
-        <div className="training-modal-header">
-          <div>
-            <span className="training-progress-kicker">TREINAMENTO</span>
-
-            <h2>Avaliação</h2>
-
-            <p>{training.name}</p>
-          </div>
-
-          <button
-            type="button"
-            className="training-modal-close"
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="training-assessment-empty-screen">
-          <span>📝</span>
-
-          <h3>Nenhuma pergunta cadastrada</h3>
-
-          <p>A avaliação ainda não está pronta para ser realizada.</p>
-        </div>
-      </>,
-
-      <div className="training-modal-footer">
-        <button
-          type="button"
-          className="training-secondary-button"
-          onClick={onClose}
-        >
-          Voltar
-        </button>
-      </div>
-    )
-  }
-
-  const attemptLimit = getAttemptLimit()
-
-  const attempts = Array.isArray(participant.attempts)
-    ? participant.attempts
-    : []
-
-  const hasReachedAttemptLimit = attempts.length >= attemptLimit
-
-  /* ======================================
-     LIMITE DE TENTATIVAS
-  ====================================== */
-
-  if (hasReachedAttemptLimit && !result) {
-    const bestScore = getBestScore()
-
-    const minimumScore = Number(assessment.minimumScore) || 0
-
-    const approved = bestScore !== null && bestScore >= minimumScore
-
-    return renderModal(
-      <>
-        <div className="training-modal-header">
-          <div>
-            <span className="training-progress-kicker">TREINAMENTO</span>
-
-            <h2>Avaliação</h2>
-
-            <p>{participant.employeeName}</p>
-          </div>
-
-          <button
-            type="button"
-            className="training-modal-close"
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </div>
-
-        <div className="training-assessment-empty-screen">
-          <span>{approved ? '🏆' : '📝'}</span>
-
-          <h3>Limite de tentativas atingido</h3>
-
-          <p>
-            Este participante já utilizou todas as tentativas disponíveis para
-            esta avaliação.
-          </p>
-
-          <div className="training-assessment-result-score-grid">
-            <div className="training-assessment-result-score-card">
-              <strong>{bestScore ?? 0}%</strong>
-
-              <span>Melhor nota</span>
+              <p>{training.name}</p>
             </div>
 
-            <div className="training-assessment-result-score-card">
-              <strong>{minimumScore}%</strong>
-
-              <span>Nota mínima</span>
-            </div>
+            <button
+              type="button"
+              className="training-modal-close"
+              onClick={onClose}
+            >
+              ×
+            </button>
           </div>
 
-          <p>
-            Resultado: <strong>{approved ? 'Aprovado' : 'Reprovado'}</strong>
-          </p>
+          <div className="training-assessment-empty-screen">
+            <span>📝</span>
+
+            <h3>Avaliação não encontrada</h3>
+
+            <p>Este treinamento ainda não possui uma avaliação cadastrada.</p>
+          </div>
+
+          <div className="training-modal-footer">
+            <button
+              type="button"
+              className="training-secondary-button"
+              onClick={onClose}
+            >
+              Voltar
+            </button>
+          </div>
         </div>
-      </>,
-
-      <div className="training-modal-footer">
-        <button
-          type="button"
-          className="training-secondary-button"
-          onClick={onClose}
-        >
-          Voltar
-        </button>
-
-        {approved && (
-          <button
-            type="button"
-            className="training-primary-button"
-            onClick={() => {
-              if (certificateParticipant?.status === 'completed') {
-                setShowCertificate(true)
-              } else {
-                handleFinishApproved()
-              }
-            }}
-          >
-            🎓 Ver certificado
-          </button>
-        )}
       </div>
     )
   }
 
-  /* ======================================
-     RESULTADO
-  ====================================== */
+  /*
+   * ============================================================
+   * RESULTADO
+   * ============================================================
+   */
 
   if (result) {
     const canIssueCertificate =
       result.approved && certificateParticipant?.status === 'completed'
 
-    return renderModal(
-      <>
+    return (
+      <div className="training-modal-overlay">
+        <div className="training-content-modal training-assessment-modal">
+          <div className="training-modal-header">
+            <div>
+              <span className="training-progress-kicker">RESULTADO</span>
+
+              <h2>Resultado da avaliação</h2>
+
+              <p>{participant.employeeName}</p>
+            </div>
+
+            <button
+              type="button"
+              className="training-modal-close"
+              onClick={onClose}
+            >
+              ×
+            </button>
+          </div>
+
+          <div className="training-assessment-scroll">
+            <div className="training-assessment-result-screen">
+              <div
+                className={`assessment-result-icon ${
+                  result.approved ? 'approved' : 'failed'
+                }`}
+              >
+                {result.approved ? '✓' : '✕'}
+              </div>
+
+              <h2>{result.approved ? 'Aprovado' : 'Reprovado'}</h2>
+
+              <p>Resultado da avaliação</p>
+
+              <div className="training-assessment-result-score-grid">
+                <div className="training-assessment-result-score-card">
+                  <strong>{result.score}%</strong>
+
+                  <span>Nota desta tentativa</span>
+                </div>
+
+                <div className="training-assessment-result-score-card">
+                  <strong>{result.bestScore}%</strong>
+
+                  <span>Melhor nota</span>
+                </div>
+              </div>
+
+              <div className="training-assessment-result-details">
+                <div className="training-assessment-result-detail">
+                  <span>Nota mínima</span>
+
+                  <strong>{result.minimumScore}%</strong>
+                </div>
+
+                <div className="training-assessment-result-detail">
+                  <span>Pontuação</span>
+
+                  <strong>
+                    {result.earnedPoints} / {result.totalPoints}
+                  </strong>
+                </div>
+              </div>
+
+              {result.approved && (
+                <p className="training-assessment-result-note">
+                  A avaliação foi aprovada. Clique em "Concluir treinamento"
+                  para finalizar o treinamento.
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="training-modal-footer">
+            {!result.approved && (
+              <button
+                type="button"
+                className="training-secondary-button"
+                onClick={onClose}
+              >
+                Voltar
+              </button>
+            )}
+
+            {result.approved && canIssueCertificate && (
+              <button
+                type="button"
+                className="training-primary-button"
+                onClick={() => setShowCertificate(true)}
+              >
+                🎓 Emitir certificado
+              </button>
+            )}
+
+            {result.approved && !canIssueCertificate && (
+              <button
+                type="button"
+                className="training-primary-button"
+                onClick={handleFinishApproved}
+              >
+                ✓ Concluir treinamento
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  /*
+   * ============================================================
+   * PROVA
+   * ============================================================
+   */
+
+  const questions = assessment.questions || []
+
+  const attempts = Array.isArray(participant.attempts)
+    ? participant.attempts
+    : []
+
+  const attemptLimit = getAttemptLimit()
+
+  return (
+    <div className="training-modal-overlay">
+      <div className="training-content-modal training-assessment-modal">
         <div className="training-modal-header">
           <div>
-            <span className="training-progress-kicker">RESULTADO</span>
+            <span className="training-progress-kicker">AVALIAÇÃO</span>
 
-            <h2>Resultado da avaliação</h2>
+            <h2>Realizar avaliação</h2>
 
-            <p>{participant.employeeName}</p>
+            <p>{training.name}</p>
           </div>
 
           <button
@@ -504,236 +523,92 @@ export default function TrainingTakeAssessment({
         </div>
 
         <div className="training-assessment-scroll">
-          <div className="training-assessment-result-screen">
-            <div
-              className={`assessment-result-icon ${
-                result.approved ? 'approved' : 'failed'
-              }`}
-            >
-              {result.approved ? '✓' : '✕'}
+          <div className="training-assessment-info-grid">
+            <div className="training-assessment-info-item">
+              <span>Nota mínima</span>
+
+              <strong>{Number(assessment.minimumScore) || 0}%</strong>
             </div>
 
-            <h2>{result.approved ? 'Aprovado' : 'Reprovado'}</h2>
+            <div className="training-assessment-info-item">
+              <span>Perguntas</span>
 
-            <p>Resultado da avaliação</p>
-
-            <div className="training-assessment-result-score-grid">
-              <div className="training-assessment-result-score-card">
-                <strong>{result.score}%</strong>
-
-                <span>Nota desta tentativa</span>
-              </div>
-
-              <div className="training-assessment-result-score-card">
-                <strong>{result.bestScore}%</strong>
-
-                <span>Melhor nota</span>
-              </div>
+              <strong>{questions.length}</strong>
             </div>
 
-            <div className="training-assessment-result-details">
-              <div className="training-assessment-result-detail">
-                <span>Nota mínima</span>
+            <div className="training-assessment-info-item">
+              <span>Tentativas</span>
 
-                <strong>{result.minimumScore}%</strong>
-              </div>
-
-              <div className="training-assessment-result-detail">
-                <span>Pontuação</span>
-
-                <strong>
-                  {result.earnedPoints} / {result.totalPoints}
-                </strong>
-              </div>
-
-              <div className="training-assessment-result-detail">
-                <span>Tentativa</span>
-
-                <strong>
-                  {result.attemptNumber}{' '}
-                  {result.attemptLimit === Infinity
-                    ? '/ Ilimitadas'
-                    : `/ ${result.attemptLimit}`}
-                </strong>
-              </div>
+              <strong>
+                {attemptLimit === Infinity ? 'Ilimitadas' : attemptLimit}
+              </strong>
             </div>
-
-            {result.approved && canIssueCertificate && (
-              <div className="training-certificate-ready">
-                <span>🎓</span>
-
-                <strong>Certificado disponível</strong>
-
-                <p>
-                  Você concluiu o treinamento e foi aprovado na avaliação. Seu
-                  certificado já pode ser emitido.
-                </p>
-              </div>
-            )}
-
-            {result.approved && !canIssueCertificate && (
-              <p className="training-assessment-result-note">
-                A avaliação foi aprovada. Conclua todos os conteúdos do
-                treinamento para liberar o certificado.
-              </p>
-            )}
-
-            {!result.approved && (
-              <p className="training-assessment-result-note">
-                A maior nota obtida é mantida como a nota válida da avaliação.
-              </p>
-            )}
           </div>
-        </div>
-      </>,
 
-      <div className="training-modal-footer">
-        {!result.approved && (
+          <form className="training-assessment-form" onSubmit={handleSubmit}>
+            {questions.map((question, index) => (
+              <div key={question.id} className="training-take-question">
+                <div className="training-take-question-title">
+                  <strong>
+                    {index + 1}. {question.question}
+                  </strong>
+
+                  <span>{question.points} ponto(s)</span>
+                </div>
+
+                <div className="training-take-alternatives">
+                  {question.alternatives.map(
+                    (alternative, alternativeIndex) => (
+                      <label
+                        key={alternativeIndex}
+                        className={
+                          answers[question.id] === alternativeIndex
+                            ? 'training-take-alternative selected'
+                            : 'training-take-alternative'
+                        }
+                      >
+                        <input
+                          type="radio"
+                          name={`question-${question.id}`}
+                          value={alternativeIndex}
+                          checked={answers[question.id] === alternativeIndex}
+                          onChange={(e) =>
+                            handleAnswerChange(question.id, e.target.value)
+                          }
+                        />
+
+                        <span>
+                          {String.fromCharCode(65 + alternativeIndex)}
+                        </span>
+
+                        <p>{alternative}</p>
+                      </label>
+                    )
+                  )}
+                </div>
+              </div>
+            ))}
+          </form>
+        </div>
+
+        <div className="training-modal-footer">
           <button
             type="button"
             className="training-secondary-button"
             onClick={onClose}
           >
-            Voltar ao treinamento
+            Cancelar
           </button>
-        )}
 
-        {result.approved && canIssueCertificate && (
           <button
             type="button"
             className="training-primary-button"
-            onClick={() => setShowCertificate(true)}
+            onClick={handleSubmit}
           >
-            🎓 Emitir certificado
+            Enviar avaliação
           </button>
-        )}
-
-        {result.approved && !canIssueCertificate && (
-          <button
-            type="button"
-            className="training-primary-button"
-            onClick={handleFinishApproved}
-          >
-            ✓ Concluir treinamento
-          </button>
-        )}
-      </div>
-    )
-  }
-
-  /* ======================================
-     REALIZAÇÃO DA AVALIAÇÃO
-  ====================================== */
-
-  return renderModal(
-    <>
-      <div className="training-modal-header">
-        <div>
-          <span className="training-progress-kicker">AVALIAÇÃO</span>
-
-          <h2>Realizar avaliação</h2>
-
-          <p>{training.name}</p>
         </div>
-
-        <button
-          type="button"
-          className="training-modal-close"
-          onClick={onClose}
-        >
-          ×
-        </button>
       </div>
-
-      <div className="training-assessment-scroll">
-        <div className="training-assessment-info-grid">
-          <div className="training-assessment-info-item">
-            <span>Participante</span>
-
-            <strong>{participant.employeeName}</strong>
-          </div>
-
-          <div className="training-assessment-info-item">
-            <span>Questões</span>
-
-            <strong>{assessment.questions.length}</strong>
-          </div>
-
-          <div className="training-assessment-info-item">
-            <span>Nota mínima</span>
-
-            <strong>{Number(assessment.minimumScore) || 0}%</strong>
-          </div>
-
-          <div className="training-assessment-info-item">
-            <span>Tentativa</span>
-
-            <strong>
-              {attempts.length + 1}{' '}
-              {attemptLimit === Infinity ? '/ Ilimitadas' : `/ ${attemptLimit}`}
-            </strong>
-          </div>
-        </div>
-
-        <form className="training-assessment-form" onSubmit={handleSubmit}>
-          {assessment.questions.map((question, index) => (
-            <div key={question.id} className="training-take-question">
-              <div className="training-take-question-title">
-                <strong>
-                  {index + 1}. {question.question}
-                </strong>
-
-                <span>{question.points} ponto(s)</span>
-              </div>
-
-              <div className="training-take-alternatives">
-                {question.alternatives.map((alternative, alternativeIndex) => (
-                  <label
-                    key={alternativeIndex}
-                    className={
-                      answers[question.id] === alternativeIndex
-                        ? 'training-take-alternative selected'
-                        : 'training-take-alternative'
-                    }
-                  >
-                    <input
-                      type="radio"
-                      name={`question-${question.id}`}
-                      value={alternativeIndex}
-                      checked={answers[question.id] === alternativeIndex}
-                      onChange={(e) =>
-                        handleAnswerChange(question.id, e.target.value)
-                      }
-                    />
-
-                    <span>{String.fromCharCode(65 + alternativeIndex)}</span>
-
-                    <p>{alternative}</p>
-                  </label>
-                ))}
-              </div>
-            </div>
-          ))}
-        </form>
-      </div>
-    </>,
-
-    <div className="training-modal-footer">
-      <button
-        type="button"
-        className="training-secondary-button"
-        onClick={onClose}
-      >
-        Cancelar
-      </button>
-
-      <button
-        type="button"
-        className="training-primary-button"
-        onClick={handleSubmit}
-      >
-        Finalizar avaliação
-      </button>
     </div>
   )
 }
