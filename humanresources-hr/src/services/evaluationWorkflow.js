@@ -1,21 +1,23 @@
 import { getStoredArray, setStored } from './storage'
-import { getEvaluationModelById } from './evaluationModels'
+
+import {
+  getEvaluationModelById,
+  getEvaluationModels,
+  normalizePdiQuestions
+} from './evaluationModels'
+
+import {
+  findResponsibleUser,
+  resolveEvaluationPdiResponsible
+} from './evaluationAccess'
 
 const STORAGE_KEY = 'evaluationWorkflows'
 
-export const EVALUATION_WORKFLOW_STATUSES = [
-  { value: 'draft', label: 'Rascunho' },
-  { value: 'in_progress', label: 'Em andamento' },
-  { value: 'completed', label: 'Concluída' },
-  { value: 'cancelled', label: 'Cancelada' }
-]
-
-export const EVALUATION_STAGE_STATUSES = [
-  { value: 'locked', label: 'Bloqueada' },
-  { value: 'pending', label: 'Pendente' },
-  { value: 'in_progress', label: 'Em andamento' },
-  { value: 'completed', label: 'Concluída' }
-]
+/*
+ * ============================================================
+ * UTILITÁRIOS
+ * ============================================================
+ */
 
 function generateId(prefix = 'evaluation') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
@@ -25,1573 +27,83 @@ function getNow() {
   return new Date().toISOString()
 }
 
-function normalizeUser(userId, userName) {
-  return {
-    id: userId || '',
-    name: userName || ''
+function normalizeId(value) {
+  if (value === null || value === undefined) {
+    return ''
   }
+
+  return String(value)
 }
 
-export function getEvaluationWorkflows() {
-  return getStoredArray(STORAGE_KEY)
-}
-
-export function getEvaluationWorkflowById(workflowId) {
-  return getEvaluationWorkflows().find((workflow) => workflow.id === workflowId)
-}
-
-export function getEmployeeEvaluationWorkflows(employeeId) {
-  return getEvaluationWorkflows().filter(
-    (workflow) => String(workflow.employeeId) === String(employeeId)
-  )
-}
-
-function createQuestionAnswer(question) {
-  return {
-    questionId: question.id,
-    questionText: question.text,
-    questionType: question.type,
-    required: question.required !== false,
-    answer: '',
-    comment: '',
-    answeredAt: null
-  }
-}
-
-function createWorkflowStage(modelStage, index) {
-  return {
-    id: generateId('stage'),
-    modelStageId: modelStage.id,
-    order: index + 1,
-    name: modelStage.name,
-    description: modelStage.description || '',
-    responsibleType: modelStage.responsibleType || '',
-    responsibleUserId: modelStage.responsibleUserId || '',
-    responsibleUserName: modelStage.responsibleUserName || '',
-    status: index === 0 ? 'pending' : 'locked',
-    startedAt: null,
-    completedAt: null,
-    startedById: '',
-    startedByName: '',
-    completedById: '',
-    completedByName: '',
-
-    /*
-     * Resultado da etapa.
-     */
-    totalScore: 0,
-    answeredQuestions: 0,
-    averageScore: 0,
-
-    /*
-     * Assinatura digital da etapa.
-     */
-    signature: '',
-    signedById: '',
-    signedByName: '',
-    signedAt: null,
-
-    questions: Array.isArray(modelStage.questions)
-      ? modelStage.questions.map(createQuestionAnswer)
-      : []
-  }
-}
-
-function createWorkflowPdi(model) {
-  return {
-    status: 'locked',
-    startedAt: null,
-    completedAt: null,
-    startedById: '',
-    startedByName: '',
-    completedById: '',
-    completedByName: '',
-    responsibleType: 'manager_or_supervisor',
-    responsibleUserId: '',
-    responsibleUserName: '',
-
-    /*
-     * Assinatura digital do responsável pelo PDI.
-     */
-    signature: '',
-    signedById: '',
-    signedByName: '',
-    signedAt: null,
-
-    questions: Array.isArray(model.pdiQuestions)
-      ? model.pdiQuestions.map(createQuestionAnswer)
-      : [],
-
-    employeeFeedback: {
-      positivePoints: '',
-      negativePoints: '',
-      sent: false,
-      sentAt: null
-    }
-  }
-}
-
-function createWorkflow180(model) {
-  const enabled = model.evaluation180?.enabled === true
-
-  return {
-    enabled,
-    status: enabled ? 'locked' : 'disabled',
-    startedAt: null,
-    completedAt: null,
-    startedById: '',
-    startedByName: '',
-    completedById: '',
-    completedByName: '',
-    responsibleType: 'employee',
-
-    /*
-     * Resultado do 180°.
-     *
-     * Fica separado do resultado das etapas normais,
-     * pois o 180° é confidencial.
-     */
-    totalScore: 0,
-    answeredQuestions: 0,
-    averageScore: 0,
-
-    /*
-     * Assinatura digital do funcionário.
-     */
-    signature: '',
-    signedById: '',
-    signedByName: '',
-    signedAt: null,
-
-    questions: Array.isArray(model.evaluation180?.questions)
-      ? model.evaluation180.questions.map(createQuestionAnswer)
-      : []
-  }
+function normalizeText(value) {
+  return String(value || '').trim()
 }
 
 /*
  * ============================================================
- * CALCULAR RESULTADO DAS PERGUNTAS
- * ============================================================
- *
- * Somente perguntas do tipo "scale" entram no cálculo.
- *
- * A escala utilizada pelo módulo é de 1 a 10.
+ * CÁLCULO DE DURAÇÃO
  * ============================================================
  */
 
-function calculateScoreResult(questions = []) {
-  const scoredQuestions = questions.filter((question) => {
-    if (question.questionType !== 'scale') {
-      return false
-    }
-
-    const score = Number(question.answer)
-
-    return Number.isFinite(score) && score >= 1 && score <= 10
-  })
-
-  const totalScore = scoredQuestions.reduce(
-    (total, question) => total + Number(question.answer),
-    0
-  )
-
-  const answeredQuestions = scoredQuestions.length
-
-  const averageScore =
-    answeredQuestions > 0
-      ? Number((totalScore / answeredQuestions).toFixed(2))
-      : 0
-
-  return {
-    totalScore,
-    answeredQuestions,
-    averageScore
-  }
-}
-
-export function createEvaluationWorkflow({
-  employeeId,
-  employeeName,
-  branchId,
-  branchName,
-  modelId,
-  startDate,
-  endDate,
-  createdBy,
-  createdByName
-}) {
-  const model = getEvaluationModelById(modelId)
-
-  if (!model) {
-    return {
-      success: false,
-      message: 'Modelo de avaliação não encontrado.'
-    }
-  }
-
-  if (!employeeId) {
-    return {
-      success: false,
-      message: 'Funcionário não informado.'
-    }
-  }
-
-  if (!modelId) {
-    return {
-      success: false,
-      message: 'Modelo de avaliação não informado.'
-    }
-  }
-
-  if (!Array.isArray(model.stages) || model.stages.length === 0) {
-    return {
-      success: false,
-      message: 'O modelo precisa possuir pelo menos uma etapa.'
-    }
-  }
-
-  const now = getNow()
-
-  const workflow = {
-    id: generateId('workflow'),
-    modelId: model.id,
-    modelName: model.name,
-    modelType: model.type,
-
-    employeeId,
-    employeeName,
-
-    branchId: branchId || '',
-    branchName: branchName || '',
-
-    startDate: startDate || '',
-    endDate: endDate || '',
-
-    status: 'in_progress',
-    currentStageOrder: 1,
-
-    stages: model.stages.map(createWorkflowStage),
-
-    pdi: createWorkflowPdi(model),
-
-    evaluation180: createWorkflow180(model),
-
-    createdBy: createdBy || '',
-    createdByName: createdByName || '',
-    createdAt: now,
-    updatedAt: now,
-    completedAt: null
-  }
-
-  const workflows = getEvaluationWorkflows()
-
-  setStored(STORAGE_KEY, [...workflows, workflow])
-
-  return {
-    success: true,
-    workflow
-  }
-}
-
-export function getCurrentEvaluationStage(workflow) {
-  if (!workflow || !Array.isArray(workflow.stages)) {
+function toTimestamp(value) {
+  if (!value) {
     return null
   }
 
-  return (
-    workflow.stages.find(
-      (stage) => stage.status === 'pending' || stage.status === 'in_progress'
-    ) || null
-  )
+  const timestamp = new Date(value).getTime()
+
+  if (Number.isNaN(timestamp)) {
+    return null
+  }
+
+  return timestamp
 }
 
-export function isEvaluationStageUnlocked(workflow, stageId) {
-  if (!workflow || !Array.isArray(workflow.stages)) {
-    return false
+function calculateDuration(start, end) {
+  const startTimestamp = toTimestamp(start)
+  const endTimestamp = toTimestamp(end)
+
+  if (startTimestamp === null || endTimestamp === null) {
+    return 0
   }
 
-  const stageIndex = workflow.stages.findIndex((stage) => stage.id === stageId)
-
-  if (stageIndex === -1) {
-    return false
+  if (endTimestamp < startTimestamp) {
+    return 0
   }
 
-  if (stageIndex === 0) {
-    return true
-  }
-
-  const previousStage = workflow.stages[stageIndex - 1]
-
-  return previousStage?.status === 'completed'
+  return Math.round((endTimestamp - startTimestamp) / 60000)
 }
 
-export function startEvaluationStage(
-  workflowId,
-  stageId,
-  startedById = '',
-  startedByName = ''
-) {
-  const workflow = getEvaluationWorkflowById(workflowId)
+/*
+ * ============================================================
+ * DURAÇÃO DA AVALIAÇÃO
+ * ============================================================
+ */
 
+export function calculateEvaluationDuration(workflow) {
   if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
+    return 0
   }
 
-  if (!isEvaluationStageUnlocked(workflow, stageId)) {
-    return {
-      success: false,
-      message: 'Esta etapa ainda está bloqueada.'
-    }
-  }
+  const start = workflow.startDate || workflow.startedAt || workflow.createdAt
 
-  const stageIndex = workflow.stages.findIndex((stage) => stage.id === stageId)
+  const end = workflow.endDate || workflow.completedAt || workflow.updatedAt
 
-  if (stageIndex === -1) {
-    return {
-      success: false,
-      message: 'Etapa não encontrada.'
-    }
-  }
-
-  const stage = workflow.stages[stageIndex]
-
-  if (stage.status === 'completed') {
-    return {
-      success: false,
-      message: 'Esta etapa já foi concluída.'
-    }
-  }
-
-  const user = normalizeUser(
-    startedById || stage.responsibleUserId,
-    startedByName || stage.responsibleUserName
-  )
-
-  const now = getNow()
-
-  const updatedStage = {
-    ...stage,
-    status: 'in_progress',
-    startedAt: stage.startedAt || now,
-    startedById: stage.startedById || user.id,
-    startedByName: stage.startedByName || user.name
-  }
-
-  const updatedStages = workflow.stages.map((item) =>
-    item.id === stageId ? updatedStage : item
-  )
-
-  const updatedWorkflow = {
-    ...workflow,
-    status: 'in_progress',
-    currentStageOrder: stage.order,
-    stages: updatedStages,
-    updatedAt: now
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    stage: updatedStage
-  }
+  return calculateDuration(start, end)
 }
 
-export function saveEvaluationAnswer({
-  workflowId,
-  stageId,
-  questionId,
-  answer,
-  comment = ''
-}) {
-  const workflow = getEvaluationWorkflowById(workflowId)
+/*
+ * ============================================================
+ * DURAÇÃO DA ETAPA
+ * ============================================================
+ */
 
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  const stage = workflow.stages.find((item) => item.id === stageId)
-
+export function calculateStageDuration(stage) {
   if (!stage) {
-    return {
-      success: false,
-      message: 'Etapa não encontrada.'
-    }
+    return 0
   }
 
-  if (stage.status === 'locked') {
-    return {
-      success: false,
-      message: 'Esta etapa ainda está bloqueada.'
-    }
-  }
-
-  if (stage.status === 'completed') {
-    return {
-      success: false,
-      message: 'Esta etapa já foi concluída.'
-    }
-  }
-
-  const question = stage.questions.find(
-    (item) => item.questionId === questionId
-  )
-
-  if (!question) {
-    return {
-      success: false,
-      message: 'Pergunta não encontrada.'
-    }
-  }
-
-  const updatedQuestions = stage.questions.map((item) =>
-    item.questionId === questionId
-      ? {
-          ...item,
-          answer,
-          comment,
-          answeredAt: getNow()
-        }
-      : item
-  )
-
-  const updatedStage = {
-    ...stage,
-    questions: updatedQuestions
-  }
-
-  const updatedWorkflow = {
-    ...workflow,
-    stages: workflow.stages.map((item) =>
-      item.id === stageId ? updatedStage : item
-    ),
-    updatedAt: getNow()
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    stage: updatedStage
-  }
-}
-
-export function validateEvaluationStage(stage) {
-  if (!stage) {
-    return {
-      valid: false,
-      unanswered: []
-    }
-  }
-
-  const unanswered = stage.questions.filter(
-    (question) =>
-      question.required &&
-      (question.answer === '' ||
-        question.answer === null ||
-        question.answer === undefined)
-  )
-
-  return {
-    valid: unanswered.length === 0,
-    unanswered
-  }
-}
-
-export function completeEvaluationStage(
-  workflowId,
-  stageId,
-  completedById = '',
-  completedByName = ''
-) {
-  const workflow = getEvaluationWorkflowById(workflowId)
-
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  const stage = workflow.stages.find((item) => item.id === stageId)
-
-  if (!stage) {
-    return {
-      success: false,
-      message: 'Etapa não encontrada.'
-    }
-  }
-
-  if (stage.status !== 'in_progress') {
-    return {
-      success: false,
-      message: 'A etapa precisa estar em andamento para ser concluída.'
-    }
-  }
-
-  const validation = validateEvaluationStage(stage)
-
-  if (!validation.valid) {
-    return {
-      success: false,
-      message: 'Existem perguntas obrigatórias sem resposta.',
-      unanswered: validation.unanswered
-    }
-  }
-
-  /*
-   * A etapa não pode ser concluída sem assinatura.
-   */
-  if (!stage.signature) {
-    return {
-      success: false,
-      message: 'A assinatura digital é obrigatória antes de concluir a etapa.'
-    }
-  }
-
-  /*
-   * Calcula o resultado da etapa no momento da conclusão.
-   */
-  const scoreResult = calculateScoreResult(stage.questions)
-
-  const user = normalizeUser(
-    completedById || stage.startedById || stage.responsibleUserId,
-    completedByName || stage.startedByName || stage.responsibleUserName
-  )
-
-  const now = getNow()
-
-  const updatedStage = {
-    ...stage,
-    status: 'completed',
-    completedAt: now,
-    completedById: user.id,
-    completedByName: user.name,
-
-    totalScore: scoreResult.totalScore,
-    answeredQuestions: scoreResult.answeredQuestions,
-    averageScore: scoreResult.averageScore
-  }
-
-  const updatedStages = workflow.stages.map((item) =>
-    item.id === stageId ? updatedStage : item
-  )
-
-  const nextStage = updatedStages.find((item) => item.status === 'locked')
-
-  let finalStages = updatedStages
-
-  if (nextStage) {
-    finalStages = updatedStages.map((item) =>
-      item.id === nextStage.id
-        ? {
-            ...item,
-            status: 'pending'
-          }
-        : item
-    )
-  }
-
-  const allStagesCompleted = finalStages.every(
-    (item) => item.status === 'completed'
-  )
-
-  /*
-   * Calcula a média geral das etapas normais.
-   *
-   * O 180° não participa deste cálculo.
-   */
-  const regularResult = calculateRegularEvaluationResult({
-    ...workflow,
-    stages: finalStages
-  })
-
-  const updatedWorkflow = {
-    ...workflow,
-
-    stages: finalStages,
-
-    currentStageOrder: nextStage ? nextStage.order : workflow.currentStageOrder,
-
-    totalScore: regularResult.totalScore,
-
-    answeredQuestions: regularResult.answeredQuestions,
-
-    averageScore: regularResult.averageScore,
-
-    updatedAt: now,
-
-    pdi: allStagesCompleted
-      ? {
-          ...workflow.pdi,
-          status:
-            workflow.pdi.status === 'locked' ? 'pending' : workflow.pdi.status
-        }
-      : workflow.pdi
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    nextStage: nextStage || null,
-    pdiUnlocked: allStagesCompleted
-  }
-}
-
-export function isPdiUnlocked(workflow) {
-  if (!workflow?.pdi) {
-    return false
-  }
-
-  return (
-    workflow.pdi.status === 'pending' ||
-    workflow.pdi.status === 'in_progress' ||
-    workflow.pdi.status === 'completed'
-  )
-}
-
-export function startEvaluationPdi(
-  workflowId,
-  startedById = '',
-  startedByName = ''
-) {
-  const workflow = getEvaluationWorkflowById(workflowId)
-
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  if (!isPdiUnlocked(workflow)) {
-    return {
-      success: false,
-      message: 'O PDI ainda está bloqueado.'
-    }
-  }
-
-  if (workflow.pdi.status === 'completed') {
-    return {
-      success: false,
-      message: 'O PDI já foi concluído.'
-    }
-  }
-
-  const now = getNow()
-
-  const user = normalizeUser(
-    startedById || workflow.pdi.responsibleUserId,
-    startedByName || workflow.pdi.responsibleUserName
-  )
-
-  const updatedPdi = {
-    ...workflow.pdi,
-    status: 'in_progress',
-    startedAt: workflow.pdi.startedAt || now,
-    startedById: workflow.pdi.startedById || user.id,
-    startedByName: workflow.pdi.startedByName || user.name
-  }
-
-  const updatedWorkflow = {
-    ...workflow,
-    pdi: updatedPdi,
-    updatedAt: now
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    pdi: updatedPdi
-  }
-}
-
-export function saveEvaluationPdiAnswer({
-  workflowId,
-  questionId,
-  answer,
-  comment = ''
-}) {
-  const workflow = getEvaluationWorkflowById(workflowId)
-
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  if (!isPdiUnlocked(workflow)) {
-    return {
-      success: false,
-      message: 'O PDI ainda está bloqueado.'
-    }
-  }
-
-  if (workflow.pdi.status === 'completed') {
-    return {
-      success: false,
-      message: 'O PDI já foi concluído.'
-    }
-  }
-
-  const question = workflow.pdi.questions.find(
-    (item) => item.questionId === questionId
-  )
-
-  if (!question) {
-    return {
-      success: false,
-      message: 'Pergunta do PDI não encontrada.'
-    }
-  }
-
-  const updatedQuestions = workflow.pdi.questions.map((item) =>
-    item.questionId === questionId
-      ? {
-          ...item,
-          answer,
-          comment,
-          answeredAt: getNow()
-        }
-      : item
-  )
-
-  const updatedPdi = {
-    ...workflow.pdi,
-    questions: updatedQuestions,
-    status:
-      workflow.pdi.status === 'pending' ? 'in_progress' : workflow.pdi.status
-  }
-
-  const updatedWorkflow = {
-    ...workflow,
-    pdi: updatedPdi,
-    updatedAt: getNow()
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    pdi: updatedPdi
-  }
-}
-
-export function validateEvaluationPdi(pdi) {
-  if (!pdi) {
-    return {
-      valid: false,
-      unanswered: []
-    }
-  }
-
-  const unanswered = pdi.questions.filter(
-    (question) =>
-      question.required &&
-      (question.answer === '' ||
-        question.answer === null ||
-        question.answer === undefined)
-  )
-
-  return {
-    valid: unanswered.length === 0,
-    unanswered
-  }
-}
-
-export function completeEvaluationPdi(
-  workflowId,
-  completedById = '',
-  completedByName = ''
-) {
-  const workflow = getEvaluationWorkflowById(workflowId)
-
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  if (!isPdiUnlocked(workflow)) {
-    return {
-      success: false,
-      message: 'O PDI ainda está bloqueado.'
-    }
-  }
-
-  if (workflow.pdi.status !== 'in_progress') {
-    return {
-      success: false,
-      message: 'O PDI precisa estar em andamento para ser concluído.'
-    }
-  }
-
-  const validation = validateEvaluationPdi(workflow.pdi)
-
-  if (!validation.valid) {
-    return {
-      success: false,
-      message: 'Existem perguntas obrigatórias do PDI sem resposta.',
-      unanswered: validation.unanswered
-    }
-  }
-
-  /*
-   * O PDI faz parte do documento formal da avaliação.
-   * Portanto, a assinatura é obrigatória.
-   */
-  if (!workflow.pdi.signature) {
-    return {
-      success: false,
-      message: 'A assinatura digital do PDI é obrigatória antes de concluir.'
-    }
-  }
-
-  const now = getNow()
-
-  const user = normalizeUser(
-    completedById || workflow.pdi.startedById || workflow.pdi.responsibleUserId,
-
-    completedByName ||
-      workflow.pdi.startedByName ||
-      workflow.pdi.responsibleUserName
-  )
-
-  const updatedPdi = {
-    ...workflow.pdi,
-    status: 'completed',
-    completedAt: now,
-    completedById: user.id,
-    completedByName: user.name
-  }
-
-  let updated180 = workflow.evaluation180
-  let workflowStatus = workflow.status
-  let completedAt = workflow.completedAt
-
-  if (workflow.evaluation180?.enabled) {
-    updated180 = {
-      ...workflow.evaluation180,
-      status: 'pending'
-    }
-  } else {
-    workflowStatus = 'completed'
-    completedAt = now
-  }
-
-  const updatedWorkflow = {
-    ...workflow,
-    status: workflowStatus,
-    completedAt,
-    pdi: updatedPdi,
-    evaluation180: updated180,
-    updatedAt: now
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    evaluation180Unlocked: workflow.evaluation180?.enabled === true
-  }
-}
-
-export function isEvaluation180Unlocked(workflow) {
-  return (
-    workflow?.evaluation180?.enabled === true &&
-    (workflow.evaluation180.status === 'pending' ||
-      workflow.evaluation180.status === 'in_progress' ||
-      workflow.evaluation180.status === 'completed')
-  )
-}
-
-export function startEvaluation180(
-  workflowId,
-  startedById = '',
-  startedByName = ''
-) {
-  const workflow = getEvaluationWorkflowById(workflowId)
-
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  if (!workflow.evaluation180?.enabled) {
-    return {
-      success: false,
-      message: 'A avaliação 180° não está habilitada.'
-    }
-  }
-
-  if (!isEvaluation180Unlocked(workflow)) {
-    return {
-      success: false,
-      message: 'A avaliação 180° ainda está bloqueada.'
-    }
-  }
-
-  if (workflow.evaluation180.status === 'completed') {
-    return {
-      success: false,
-      message: 'A avaliação 180° já foi concluída.'
-    }
-  }
-
-  const now = getNow()
-
-  const updated180 = {
-    ...workflow.evaluation180,
-
-    status: 'in_progress',
-
-    startedAt: workflow.evaluation180.startedAt || now,
-
-    startedById:
-      workflow.evaluation180.startedById || startedById || workflow.employeeId,
-
-    startedByName:
-      workflow.evaluation180.startedByName ||
-      startedByName ||
-      workflow.employeeName
-  }
-
-  const updatedWorkflow = {
-    ...workflow,
-    evaluation180: updated180,
-    updatedAt: now
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    evaluation180: updated180
-  }
-}
-
-export function saveEvaluation180Answer({
-  workflowId,
-  questionId,
-  answer,
-  comment = ''
-}) {
-  const workflow = getEvaluationWorkflowById(workflowId)
-
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  if (!isEvaluation180Unlocked(workflow)) {
-    return {
-      success: false,
-      message: 'A avaliação 180° ainda está bloqueada.'
-    }
-  }
-
-  if (workflow.evaluation180.status === 'completed') {
-    return {
-      success: false,
-      message: 'A avaliação 180° já foi concluída.'
-    }
-  }
-
-  const question = workflow.evaluation180.questions.find(
-    (item) => item.questionId === questionId
-  )
-
-  if (!question) {
-    return {
-      success: false,
-      message: 'Pergunta da avaliação 180° não encontrada.'
-    }
-  }
-
-  const updatedQuestions = workflow.evaluation180.questions.map((item) =>
-    item.questionId === questionId
-      ? {
-          ...item,
-          answer,
-          comment,
-          answeredAt: getNow()
-        }
-      : item
-  )
-
-  const updated180 = {
-    ...workflow.evaluation180,
-
-    questions: updatedQuestions,
-
-    status:
-      workflow.evaluation180.status === 'pending'
-        ? 'in_progress'
-        : workflow.evaluation180.status,
-
-    startedAt: workflow.evaluation180.startedAt || getNow(),
-
-    startedById: workflow.evaluation180.startedById || workflow.employeeId,
-
-    startedByName: workflow.evaluation180.startedByName || workflow.employeeName
-  }
-
-  const updatedWorkflow = {
-    ...workflow,
-    evaluation180: updated180,
-    updatedAt: getNow()
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    evaluation180: updated180
-  }
-}
-
-export function validateEvaluation180(evaluation180) {
-  if (!evaluation180) {
-    return {
-      valid: false,
-      unanswered: []
-    }
-  }
-
-  const unanswered = evaluation180.questions.filter(
-    (question) =>
-      question.required &&
-      (question.answer === '' ||
-        question.answer === null ||
-        question.answer === undefined)
-  )
-
-  return {
-    valid: unanswered.length === 0,
-    unanswered
-  }
-}
-
-export function completeEvaluation180(
-  workflowId,
-  completedById = '',
-  completedByName = ''
-) {
-  const workflow = getEvaluationWorkflowById(workflowId)
-
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  if (!workflow.evaluation180?.enabled) {
-    return {
-      success: false,
-      message: 'A avaliação 180° não está habilitada.'
-    }
-  }
-
-  if (!isEvaluation180Unlocked(workflow)) {
-    return {
-      success: false,
-      message: 'A avaliação 180° ainda está bloqueada.'
-    }
-  }
-
-  if (workflow.evaluation180.status !== 'in_progress') {
-    return {
-      success: false,
-      message: 'A avaliação 180° precisa estar em andamento para ser concluída.'
-    }
-  }
-
-  const validation = validateEvaluation180(workflow.evaluation180)
-
-  if (!validation.valid) {
-    return {
-      success: false,
-      message: 'Existem perguntas obrigatórias da avaliação 180° sem resposta.',
-      unanswered: validation.unanswered
-    }
-  }
-
-  /*
-   * O funcionário precisa assinar o 180°
-   * antes da conclusão.
-   */
-  if (!workflow.evaluation180.signature) {
-    return {
-      success: false,
-      message:
-        'A assinatura digital é obrigatória antes de concluir a avaliação 180°.'
-    }
-  }
-
-  const scoreResult = calculateScoreResult(workflow.evaluation180.questions)
-
-  const now = getNow()
-
-  const updated180 = {
-    ...workflow.evaluation180,
-
-    status: 'completed',
-
-    completedAt: now,
-
-    completedById:
-      completedById ||
-      workflow.evaluation180.startedById ||
-      workflow.employeeId,
-
-    completedByName:
-      completedByName ||
-      workflow.evaluation180.startedByName ||
-      workflow.employeeName,
-
-    totalScore: scoreResult.totalScore,
-
-    answeredQuestions: scoreResult.answeredQuestions,
-
-    averageScore: scoreResult.averageScore
-  }
-
-  const updatedWorkflow = {
-    ...workflow,
-
-    status: 'completed',
-
-    completedAt: now,
-
-    evaluation180: updated180,
-
-    updatedAt: now
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    evaluation180: updated180
-  }
-}
-
-/*
- * ============================================================
- * ASSINATURA DA ETAPA
- * ============================================================
- */
-
-export function saveEvaluationStageSignature({
-  workflowId,
-  stageId,
-  signature,
-  signedById = '',
-  signedByName = ''
-}) {
-  const workflow = getEvaluationWorkflowById(workflowId)
-
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  const stage = workflow.stages.find((item) => item.id === stageId)
-
-  if (!stage) {
-    return {
-      success: false,
-      message: 'Etapa não encontrada.'
-    }
-  }
-
-  if (stage.status !== 'in_progress') {
-    return {
-      success: false,
-      message: 'A etapa precisa estar em andamento.'
-    }
-  }
-
-  if (!signature) {
-    return {
-      success: false,
-      message: 'A assinatura é obrigatória.'
-    }
-  }
-
-  const now = getNow()
-
-  const updatedStage = {
-    ...stage,
-
-    signature,
-
-    signedById: signedById || stage.startedById || stage.responsibleUserId,
-
-    signedByName:
-      signedByName || stage.startedByName || stage.responsibleUserName,
-
-    signedAt: now
-  }
-
-  const updatedWorkflow = {
-    ...workflow,
-
-    stages: workflow.stages.map((item) =>
-      item.id === stageId ? updatedStage : item
-    ),
-
-    updatedAt: now
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    stage: updatedStage
-  }
-}
-
-/*
- * ============================================================
- * ASSINATURA DO PDI
- * ============================================================
- */
-
-export function saveEvaluationPdiSignature({
-  workflowId,
-  signature,
-  signedById = '',
-  signedByName = ''
-}) {
-  const workflow = getEvaluationWorkflowById(workflowId)
-
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  if (workflow.pdi?.status !== 'in_progress') {
-    return {
-      success: false,
-      message: 'O PDI precisa estar em andamento.'
-    }
-  }
-
-  if (!signature) {
-    return {
-      success: false,
-      message: 'A assinatura do PDI é obrigatória.'
-    }
-  }
-
-  const now = getNow()
-
-  const updatedPdi = {
-    ...workflow.pdi,
-
-    signature,
-
-    signedById:
-      signedById || workflow.pdi.startedById || workflow.pdi.responsibleUserId,
-
-    signedByName:
-      signedByName ||
-      workflow.pdi.startedByName ||
-      workflow.pdi.responsibleUserName,
-
-    signedAt: now
-  }
-
-  const updatedWorkflow = {
-    ...workflow,
-
-    pdi: updatedPdi,
-
-    updatedAt: now
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    pdi: updatedPdi
-  }
-}
-
-/*
- * ============================================================
- * ASSINATURA DO 180°
- * ============================================================
- */
-
-export function saveEvaluation180Signature({
-  workflowId,
-  signature,
-  signedById = '',
-  signedByName = ''
-}) {
-  const workflow = getEvaluationWorkflowById(workflowId)
-
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  if (!workflow.evaluation180?.enabled) {
-    return {
-      success: false,
-      message: 'A avaliação 180° não está habilitada.'
-    }
-  }
-
-  if (workflow.evaluation180.status !== 'in_progress') {
-    return {
-      success: false,
-      message: 'A avaliação 180° precisa estar em andamento.'
-    }
-  }
-
-  if (!signature) {
-    return {
-      success: false,
-      message: 'A assinatura é obrigatória.'
-    }
-  }
-
-  const now = getNow()
-
-  const updated180 = {
-    ...workflow.evaluation180,
-
-    signature,
-
-    signedById:
-      signedById || workflow.evaluation180.startedById || workflow.employeeId,
-
-    signedByName:
-      signedByName ||
-      workflow.evaluation180.startedByName ||
-      workflow.employeeName,
-
-    signedAt: now
-  }
-
-  const updatedWorkflow = {
-    ...workflow,
-
-    evaluation180: updated180,
-
-    updatedAt: now
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    evaluation180: updated180
-  }
-}
-
-/*
- * ============================================================
- * RESULTADO DAS ETAPAS NORMAIS
- * ============================================================
- *
- * O 180° não entra aqui.
- *
- * Esta média é a que poderá ser visualizada pelos responsáveis
- * da avaliação e utilizada nas conversas de feedback.
- * ============================================================
- */
-
-export function calculateRegularEvaluationResult(workflow) {
-  if (!workflow || !Array.isArray(workflow.stages)) {
-    return {
-      totalScore: 0,
-      answeredQuestions: 0,
-      averageScore: 0
-    }
-  }
-
-  const result = workflow.stages.reduce(
-    (accumulator, stage) => {
-      accumulator.totalScore += Number(stage.totalScore || 0)
-
-      accumulator.answeredQuestions += Number(stage.answeredQuestions || 0)
-
-      return accumulator
-    },
-    {
-      totalScore: 0,
-      answeredQuestions: 0
-    }
-  )
-
-  return {
-    ...result,
-
-    averageScore:
-      result.answeredQuestions > 0
-        ? Number((result.totalScore / result.answeredQuestions).toFixed(2))
-        : 0
-  }
-}
-
-/*
- * ============================================================
- * RESULTADO DO 180°
- * ============================================================
- *
- * Deve ser utilizado somente por telas que possuem permissão
- * para visualizar os dados confidenciais do 180°.
- * ============================================================
- */
-
-export function calculateEvaluation180Result(workflow) {
-  if (!workflow?.evaluation180) {
-    return {
-      totalScore: 0,
-      answeredQuestions: 0,
-      averageScore: 0
-    }
-  }
-
-  return calculateScoreResult(workflow.evaluation180.questions || [])
-}
-
-/*
- * ============================================================
- * ENVIO DO FEEDBACK DO PDI PARA O FUNCIONÁRIO
- * ============================================================
- */
-
-export function sendPdiEmployeeFeedback(workflowId) {
-  const workflow = getEvaluationWorkflowById(workflowId)
-
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  if (workflow.pdi?.status !== 'completed') {
-    return {
-      success: false,
-      message: 'O PDI precisa estar concluído antes do envio.'
-    }
-  }
-
-  const positiveQuestion = workflow.pdi.questions.find(
-    (question) => question.questionId === 'pdi-positive'
-  )
-
-  const negativeQuestion = workflow.pdi.questions.find(
-    (question) => question.questionId === 'pdi-negative'
-  )
-
-  const employeeFeedback = {
-    positivePoints: positiveQuestion?.answer || '',
-
-    negativePoints: negativeQuestion?.answer || '',
-
-    sent: true,
-
-    sentAt: getNow()
-  }
-
-  const updatedWorkflow = {
-    ...workflow,
-
-    pdi: {
-      ...workflow.pdi,
-      employeeFeedback
-    },
-
-    updatedAt: getNow()
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow,
-    employeeFeedback
-  }
-}
-
-/*
- * ============================================================
- * CANCELAR AVALIAÇÃO
- * ============================================================
- */
-
-export function cancelEvaluationWorkflow(workflowId) {
-  const workflow = getEvaluationWorkflowById(workflowId)
-
-  if (!workflow) {
-    return {
-      success: false,
-      message: 'Avaliação não encontrada.'
-    }
-  }
-
-  if (workflow.status === 'completed') {
-    return {
-      success: false,
-      message: 'Uma avaliação concluída não pode ser cancelada.'
-    }
-  }
-
-  const updatedWorkflow = {
-    ...workflow,
-
-    status: 'cancelled',
-
-    updatedAt: getNow()
-  }
-
-  saveWorkflow(updatedWorkflow)
-
-  return {
-    success: true,
-    workflow: updatedWorkflow
-  }
+  return calculateDuration(stage.startedAt, stage.completedAt)
 }
 
 /*
@@ -1601,270 +113,1872 @@ export function cancelEvaluationWorkflow(workflowId) {
  */
 
 export function calculateEvaluationProgress(workflow) {
-  if (!workflow || !Array.isArray(workflow.stages)) {
+  if (!workflow) {
     return {
-      completedStages: 0,
-      totalStages: 0,
+      completed: 0,
+      total: 0,
       percentage: 0
     }
   }
 
-  const totalStages = workflow.stages.length
+  const stages = Array.isArray(workflow.stages) ? workflow.stages : []
 
-  const completedStages = workflow.stages.filter(
-    (stage) => stage.status === 'completed'
-  ).length
+  let total = stages.length
+  let completed = stages.filter((stage) => stage.status === 'completed').length
 
-  const percentage =
-    totalStages > 0 ? Math.round((completedStages / totalStages) * 100) : 0
+  /*
+   * O PDI faz parte do progresso da avaliação.
+   */
+  if (workflow.pdi) {
+    total += 1
 
-  return {
-    completedStages,
-    totalStages,
-    percentage
-  }
-}
-
-/*
- * ============================================================
- * DURAÇÃO DE UMA ETAPA
- * ============================================================
- */
-
-export function calculateStageDuration(stage) {
-  if (!stage?.startedAt) {
-    return {
-      minutes: 0,
-      hours: 0,
-      days: 0
+    if (workflow.pdi.status === 'completed') {
+      completed += 1
     }
   }
 
-  const start = new Date(stage.startedAt).getTime()
+  /*
+   * A avaliação 180° só entra no cálculo quando estiver
+   * habilitada no modelo.
+   */
+  if (workflow.evaluation180?.enabled === true) {
+    total += 1
 
-  const end = stage.completedAt
-    ? new Date(stage.completedAt).getTime()
-    : Date.now()
-
-  const milliseconds = Math.max(0, end - start)
-
-  const minutes = Math.floor(milliseconds / 60000)
-
-  return {
-    minutes,
-
-    hours: Number((minutes / 60).toFixed(2)),
-
-    days: Number((minutes / 1440).toFixed(2))
-  }
-}
-
-/*
- * ============================================================
- * DURAÇÃO TOTAL DA AVALIAÇÃO
- * ============================================================
- */
-
-export function calculateEvaluationDuration(workflow) {
-  if (!workflow?.createdAt) {
-    return {
-      minutes: 0,
-      hours: 0,
-      days: 0
+    if (workflow.evaluation180.status === 'completed') {
+      completed += 1
     }
   }
 
-  const start = new Date(workflow.createdAt).getTime()
-
-  const end = workflow.completedAt
-    ? new Date(workflow.completedAt).getTime()
-    : Date.now()
-
-  const milliseconds = Math.max(0, end - start)
-
-  const minutes = Math.floor(milliseconds / 60000)
-
   return {
-    minutes,
-
-    hours: Number((minutes / 60).toFixed(2)),
-
-    days: Number((minutes / 1440).toFixed(2))
+    completed,
+    total,
+    percentage: total > 0 ? Math.round((completed / total) * 100) : 0
   }
 }
 
 /*
  * ============================================================
- * MÉTRICAS DAS AVALIAÇÕES
+ * MÉTRICAS DO HISTÓRICO
  * ============================================================
  */
 
 export function calculateEvaluationMetrics(workflows = []) {
-  const completedWorkflows = workflows.filter(
-    (workflow) => workflow.status === 'completed'
+  const list = Array.isArray(workflows) ? workflows : []
+
+  const completedWorkflows = list.filter(
+    (workflow) => workflow?.status === 'completed'
   )
 
-  const totalEvaluations = workflows.length
+  const totalCompleted = completedWorkflows.length
 
-  const completedEvaluations = completedWorkflows.length
+  const durations = completedWorkflows
+    .map(calculateEvaluationDuration)
+    .filter((duration) => duration > 0)
 
-  let totalDurationMinutes = 0
+  const averageEvaluationMinutes =
+    durations.length > 0
+      ? Math.round(
+          durations.reduce((total, duration) => total + duration, 0) /
+            durations.length
+        )
+      : 0
 
-  completedWorkflows.forEach((workflow) => {
-    totalDurationMinutes += calculateEvaluationDuration(workflow).minutes
-  })
-
-  const averageDurationMinutes =
-    completedEvaluations > 0 ? totalDurationMinutes / completedEvaluations : 0
+  /*
+   * ----------------------------------------------------------
+   * MÉTRICAS POR RESPONSÁVEL
+   * ----------------------------------------------------------
+   */
 
   const responsibleMap = {}
-  const branchMap = {}
 
-  workflows.forEach((workflow) => {
-    const branchKey =
-      workflow.branchId || workflow.branchName || 'without-branch'
+  completedWorkflows.forEach((workflow) => {
+    const stages = Array.isArray(workflow.stages) ? workflow.stages : []
 
-    if (!branchMap[branchKey]) {
-      branchMap[branchKey] = {
-        branchId: workflow.branchId || '',
+    stages
+      .filter((stage) => stage.status === 'completed')
+      .forEach((stage) => {
+        const key =
+          stage.completedByUserId ||
+          stage.responsibleUserId ||
+          stage.responsibleType ||
+          'unknown'
 
-        branchName: workflow.branchName || 'Sem filial',
-
-        stages: 0,
-
-        completedStages: 0,
-
-        totalMinutes: 0
-      }
-    }
-
-    workflow.stages?.forEach((stage) => {
-      const responsibleKey =
-        stage.responsibleUserId ||
-        stage.responsibleUserName ||
-        stage.responsibleType ||
-        'without-responsible'
-
-      const responsibleName =
-        stage.responsibleUserName ||
-        stage.responsibleType ||
-        'Responsável não informado'
-
-      if (!responsibleMap[responsibleKey]) {
-        responsibleMap[responsibleKey] = {
-          responsibleId: stage.responsibleUserId || '',
-
-          responsibleName,
-
-          stages: 0,
-
-          completedStages: 0,
-
-          totalMinutes: 0
+        if (!responsibleMap[key]) {
+          responsibleMap[key] = {
+            userId: stage.completedByUserId || stage.responsibleUserId || '',
+            userName:
+              stage.completedByUserName ||
+              stage.responsibleUserName ||
+              stage.responsibleType ||
+              'Não informado',
+            responsibleType: stage.responsibleType || '',
+            stages: 0,
+            totalMinutes: 0,
+            averageMinutes: 0
+          }
         }
-      }
 
-      responsibleMap[responsibleKey].stages += 1
-
-      branchMap[branchKey].stages += 1
-
-      if (stage.status === 'completed') {
         const duration = calculateStageDuration(stage)
 
-        responsibleMap[responsibleKey].completedStages += 1
-
-        responsibleMap[responsibleKey].totalMinutes += duration.minutes
-
-        branchMap[branchKey].completedStages += 1
-
-        branchMap[branchKey].totalMinutes += duration.minutes
-      }
-    })
+        responsibleMap[key].stages += 1
+        responsibleMap[key].totalMinutes += duration
+      })
   })
 
   const byResponsible = Object.values(responsibleMap).map((item) => ({
     ...item,
-
     averageMinutes:
-      item.completedStages > 0
-        ? Number((item.totalMinutes / item.completedStages).toFixed(2))
-        : 0
-  }))
-
-  const byBranch = Object.values(branchMap).map((item) => ({
-    ...item,
-
-    averageMinutes:
-      item.completedStages > 0
-        ? Number((item.totalMinutes / item.completedStages).toFixed(2))
-        : 0
+      item.stages > 0 ? Math.round(item.totalMinutes / item.stages) : 0
   }))
 
   /*
-   * Resultado geral das avaliações normais.
-   *
-   * O 180° fica separado e não é incluído.
+   * ----------------------------------------------------------
+   * MÉTRICAS POR FILIAL
+   * ----------------------------------------------------------
    */
-  const regularResults = workflows
-    .map((workflow) => calculateRegularEvaluationResult(workflow))
-    .filter((result) => result.answeredQuestions > 0)
 
-  const totalRegularScore = regularResults.reduce(
-    (total, result) => total + result.totalScore,
-    0
-  )
+  const branchMap = {}
 
-  const totalRegularAnswers = regularResults.reduce(
-    (total, result) => total + result.answeredQuestions,
-    0
-  )
+  completedWorkflows.forEach((workflow) => {
+    const key = workflow.branchId || workflow.branchName || 'unknown'
 
-  const averageRegularScore =
-    totalRegularAnswers > 0
-      ? Number((totalRegularScore / totalRegularAnswers).toFixed(2))
-      : 0
+    if (!branchMap[key]) {
+      branchMap[key] = {
+        branchId: workflow.branchId || '',
+        branchName: workflow.branchName || 'Não informado',
+        count: 0,
+        stages: 0,
+        totalMinutes: 0,
+        averageMinutes: 0
+      }
+    }
+
+    branchMap[key].count += 1
+
+    const stages = Array.isArray(workflow.stages) ? workflow.stages : []
+
+    stages
+      .filter((stage) => stage.status === 'completed')
+      .forEach((stage) => {
+        branchMap[key].stages += 1
+        branchMap[key].totalMinutes += calculateStageDuration(stage)
+      })
+  })
+
+  const byBranch = Object.values(branchMap).map((item) => ({
+    ...item,
+    averageMinutes:
+      item.stages > 0 ? Math.round(item.totalMinutes / item.stages) : 0
+  }))
 
   return {
-    totalEvaluations,
-
-    completedEvaluations,
-
-    averageDurationMinutes: Number(averageDurationMinutes.toFixed(2)),
-
-    averageRegularScore,
-
+    totalCompleted,
+    completedEvaluations: totalCompleted,
+    averageEvaluationMinutes,
+    averageDurationMinutes: averageEvaluationMinutes,
     byResponsible,
-
     byBranch
   }
 }
 
 /*
  * ============================================================
- * SALVAR WORKFLOW
+ * BUSCAR WORKFLOWS
  * ============================================================
  */
 
-export function saveWorkflow(workflow) {
-  const workflows = getEvaluationWorkflows()
+export function getEvaluationWorkflows() {
+  const workflows = getStoredArray(STORAGE_KEY)
 
-  const existingIndex = workflows.findIndex((item) => item.id === workflow.id)
+  return workflows.map(normalizeWorkflow)
+}
 
-  if (existingIndex === -1) {
-    setStored(STORAGE_KEY, [...workflows, workflow])
+/*
+ * ============================================================
+ * BUSCAR WORKFLOW POR ID
+ * ============================================================
+ */
 
-    return workflow
+export function getEvaluationWorkflowById(workflowId) {
+  const normalizedId = normalizeId(workflowId)
+
+  if (!normalizedId) {
+    return null
   }
 
-  const updatedWorkflows = [...workflows]
+  return (
+    getEvaluationWorkflows().find(
+      (workflow) => normalizeId(workflow.id) === normalizedId
+    ) || null
+  )
+}
 
-  updatedWorkflows[existingIndex] = {
+/*
+ * ============================================================
+ * NORMALIZAR PERGUNTA
+ * ============================================================
+ */
+
+function normalizeQuestion(question = {}) {
+  return {
+    id: question.id || generateId('question'),
+
+    text: question.text || question.question || '',
+
+    type: question.type || 'text',
+
+    required: question.required !== false,
+
+    answer: question.answer ?? '',
+
+    answeredAt: question.answeredAt || null
+  }
+}
+
+/*
+ * ============================================================
+ * NORMALIZAR PDI
+ * ============================================================
+ */
+
+function normalizePdi(pdi = {}) {
+  const questions = normalizePdiQuestions(pdi.questions || pdi.pdiQuestions)
+
+  return {
+    id: pdi.id || generateId('pdi'),
+
+    status: pdi.status || 'pending',
+
+    responsibleType: pdi.responsibleType || 'manager_or_supervisor',
+
+    responsibleUserId: pdi.responsibleUserId || '',
+
+    responsibleUserName: pdi.responsibleUserName || '',
+
+    responsibleEmployeeId: pdi.responsibleEmployeeId || '',
+
+    responsiblePositionId: pdi.responsiblePositionId || '',
+
+    responsiblePositionName: pdi.responsiblePositionName || '',
+
+    questions: questions.map(normalizeQuestion),
+
+    startedAt: pdi.startedAt || null,
+
+    completedAt: pdi.completedAt || null,
+
+    completedByUserId: pdi.completedByUserId || '',
+
+    completedByUserName: pdi.completedByUserName || '',
+
+    signature: pdi.signature || null
+  }
+}
+
+/*
+ * ============================================================
+ * NORMALIZAR ETAPA
+ * ============================================================
+ */
+
+function normalizeStage(stage = {}) {
+  return {
+    id: stage.id || generateId('stage'),
+
+    name: stage.name || '',
+
+    description: stage.description || '',
+
+    status: stage.status || 'pending',
+
+    responsibleType: stage.responsibleType || 'specific_user',
+
+    responsibleUserId: stage.responsibleUserId || '',
+
+    responsibleUserName: stage.responsibleUserName || '',
+
+    questions: Array.isArray(stage.questions)
+      ? stage.questions.map(normalizeQuestion)
+      : [],
+
+    startedAt: stage.startedAt || null,
+
+    completedAt: stage.completedAt || null,
+
+    completedByUserId: stage.completedByUserId || '',
+
+    completedByUserName: stage.completedByUserName || '',
+
+    signature: stage.signature || null
+  }
+}
+
+/*
+ * ============================================================
+ * NORMALIZAR AVALIAÇÃO 180°
+ * ============================================================
+ */
+
+function normalizeEvaluation180(evaluation180 = {}) {
+  return {
+    enabled: evaluation180.enabled === true,
+
+    status: evaluation180.status || 'pending',
+
+    questions: Array.isArray(evaluation180.questions)
+      ? evaluation180.questions.map(normalizeQuestion)
+      : [],
+
+    startedAt: evaluation180.startedAt || null,
+
+    completedAt: evaluation180.completedAt || null,
+
+    completedByUserId: evaluation180.completedByUserId || '',
+
+    completedByUserName: evaluation180.completedByUserName || '',
+
+    signature: evaluation180.signature || null
+  }
+}
+
+/*
+ * ============================================================
+ * NORMALIZAR WORKFLOW
+ * ============================================================
+ */
+
+export function normalizeWorkflow(workflow = {}) {
+  return {
     ...workflow,
+
+    id: workflow.id || generateId('workflow'),
+
+    modelId: workflow.modelId || '',
+
+    modelName: workflow.modelName || '',
+
+    employeeId: workflow.employeeId || '',
+
+    employeeName: workflow.employeeName || '',
+
+    employeeEmail: workflow.employeeEmail || '',
+
+    branchId: workflow.branchId || '',
+
+    branchName: workflow.branchName || '',
+
+    departmentId: workflow.departmentId || '',
+
+    departmentName: workflow.departmentName || '',
+
+    positionId: workflow.positionId || '',
+
+    positionName: workflow.positionName || '',
+
+    status: workflow.status || 'pending',
+
+    stages: Array.isArray(workflow.stages)
+      ? workflow.stages.map(normalizeStage)
+      : [],
+
+    pdi: normalizePdi(workflow.pdi),
+
+    evaluation180: normalizeEvaluation180(workflow.evaluation180),
+
+    createdAt: workflow.createdAt || getNow(),
+
+    updatedAt: workflow.updatedAt || getNow()
+  }
+}
+
+/*
+ * ============================================================
+ * CONSTRUIR PERGUNTAS DO PDI
+ * ============================================================
+ *
+ * As perguntas são COPIADAS do modelo para o workflow.
+ *
+ * Dessa forma:
+ *
+ * Modelo atual
+ *       ↓
+ * cria avaliação
+ *       ↓
+ * avaliação recebe uma cópia das perguntas
+ *
+ * Se o modelo for alterado posteriormente, a avaliação que já
+ * existe não muda.
+ * ============================================================
+ */
+
+function buildPdiQuestions(model) {
+  const modelQuestions = normalizePdiQuestions(model?.pdiQuestions)
+
+  return modelQuestions.map((question) => ({
+    id: question.id || generateId('pdi'),
+
+    text: normalizeText(question.text),
+
+    type: question.type || 'text',
+
+    required: question.required !== false,
+
+    answer: '',
+
+    answeredAt: null
+  }))
+}
+
+/*
+ * ============================================================
+ * CONSTRUIR PERGUNTAS DA ETAPA
+ * ============================================================
+ */
+
+function buildStageQuestions(stage) {
+  if (!Array.isArray(stage?.questions)) {
+    return []
+  }
+
+  return stage.questions.map((question) => ({
+    id: question.id || generateId('question'),
+
+    text: normalizeText(question.text),
+
+    type: question.type || 'scale',
+
+    required: question.required !== false,
+
+    answer: '',
+
+    answeredAt: null
+  }))
+}
+
+/*
+ * ============================================================
+ * CONSTRUIR AVALIAÇÃO 180°
+ * ============================================================
+ */
+
+function buildEvaluation180(model) {
+  const enabled = model?.evaluation180Enabled === true
+
+  if (!enabled) {
+    return {
+      enabled: false,
+
+      status: 'disabled',
+
+      questions: [],
+
+      startedAt: null,
+
+      completedAt: null,
+
+      completedByUserId: '',
+
+      completedByUserName: '',
+
+      signature: null
+    }
+  }
+
+  const questions = Array.isArray(model.evaluation180Questions)
+    ? model.evaluation180Questions.map((question) => ({
+        id: question.id || generateId('evaluation180'),
+
+        text: normalizeText(question.text),
+
+        type: question.type || 'scale',
+
+        required: question.required !== false,
+
+        answer: '',
+
+        answeredAt: null
+      }))
+    : []
+
+  return {
+    enabled: true,
+
+    status: 'pending',
+
+    questions,
+
+    startedAt: null,
+
+    completedAt: null,
+
+    completedByUserId: '',
+
+    completedByUserName: '',
+
+    signature: null
+  }
+}
+/*
+ * ============================================================
+ * RESOLVER RESPONSÁVEL DA ETAPA
+ * ============================================================
+ */
+
+function resolveStageResponsible(stage, employee) {
+  const responsible = findResponsibleUser({
+    responsibleType: stage.responsibleType,
+
+    employee,
+
+    responsibleUserId: stage.responsibleUserId,
+
+    responsibleUserName: stage.responsibleUserName
+  })
+
+  return {
+    ...stage,
+
+    responsibleUserId: responsible.userId || stage.responsibleUserId || '',
+
+    responsibleUserName: responsible.userName || stage.responsibleUserName || ''
+  }
+}
+
+/*
+ * ============================================================
+ * RESOLVER RESPONSÁVEL DO PDI
+ * ============================================================
+ */
+
+function resolvePdiResponsibleData(pdi, workflow) {
+  const responsible = resolveEvaluationPdiResponsible(workflow)
+
+  return {
+    ...pdi,
+
+    responsibleUserId: responsible.userId || pdi.responsibleUserId || '',
+
+    responsibleUserName: responsible.userName || pdi.responsibleUserName || '',
+
+    responsibleEmployeeId:
+      responsible.employeeId || pdi.responsibleEmployeeId || '',
+
+    responsiblePositionId:
+      responsible.positionId || pdi.responsiblePositionId || '',
+
+    responsiblePositionName:
+      responsible.positionName || pdi.responsiblePositionName || ''
+  }
+}
+
+/*
+ * ============================================================
+ * CRIAR WORKFLOW
+ * ============================================================
+ *
+ * A função aceita tanto a estrutura antiga:
+ *
+ * {
+ *   employee,
+ *   branch,
+ *   department,
+ *   position
+ * }
+ *
+ * quanto a estrutura utilizada atualmente pela tela
+ * Avaliacoes.jsx:
+ *
+ * {
+ *   employeeId,
+ *   employeeName,
+ *   branchId,
+ *   branchName,
+ *   modelId,
+ *   startDate,
+ *   endDate,
+ *   createdBy,
+ *   createdByName
+ * }
+ * ============================================================
+ */
+
+export function createEvaluationWorkflow({
+  modelId,
+
+  /*
+   * Estrutura antiga.
+   */
+  employee = null,
+  branch = null,
+  department = null,
+  position = null,
+
+  /*
+   * Estrutura utilizada pela tela atual.
+   */
+  employeeId = '',
+  employeeName = '',
+  employeeEmail = '',
+
+  branchId = '',
+  branchName = '',
+
+  departmentId = '',
+  departmentName = '',
+
+  positionId = '',
+  positionName = '',
+
+  startDate = null,
+  endDate = null,
+
+  createdBy = '',
+  createdByName = ''
+}) {
+  const model = getEvaluationModelById(modelId)
+
+  if (!model) {
+    throw new Error('Modelo de avaliação não encontrado.')
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * MONTAR DADOS DO FUNCIONÁRIO
+   * ----------------------------------------------------------
+   *
+   * Se a chamada antiga enviou o objeto employee,
+   * utilizamos esse objeto.
+   *
+   * Caso contrário, utilizamos os campos individuais.
+   */
+
+  const employeeDataInput = employee || {
+    id: employeeId,
+
+    name: employeeName || '',
+
+    email: employeeEmail || '',
+
+    branchId: branchId || '',
+
+    branchName: branchName || '',
+
+    departmentId: departmentId || '',
+
+    departmentName: departmentName || '',
+
+    positionId: positionId || '',
+
+    positionName: positionName || ''
+  }
+
+  if (!employeeDataInput?.id) {
+    throw new Error('Funcionário não informado.')
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * INFORMAÇÕES DO FUNCIONÁRIO
+   * ----------------------------------------------------------
+   */
+
+  const employeeData = {
+    ...employeeDataInput,
+
+    id: employeeDataInput.id,
+
+    name:
+      employeeDataInput.name ||
+      employeeDataInput.fullName ||
+      employeeName ||
+      '',
+
+    email: employeeDataInput.email || employeeEmail || '',
+
+    branchId: employeeDataInput.branchId || branch?.id || branchId || '',
+
+    branchName:
+      employeeDataInput.branchName || branch?.name || branchName || '',
+
+    departmentId:
+      employeeDataInput.departmentId || department?.id || departmentId || '',
+
+    departmentName:
+      employeeDataInput.departmentName ||
+      department?.name ||
+      departmentName ||
+      '',
+
+    positionId:
+      employeeDataInput.positionId || position?.id || positionId || '',
+
+    positionName:
+      employeeDataInput.positionName || position?.name || positionName || ''
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * ETAPAS
+   * ----------------------------------------------------------
+   */
+
+  const stages = Array.isArray(model.stages)
+    ? model.stages.map((stage) => {
+        const baseStage = {
+          id: stage.id || generateId('stage'),
+
+          name: stage.name || '',
+
+          description: stage.description || '',
+
+          status: 'pending',
+
+          responsibleType: stage.responsibleType || 'specific_user',
+
+          responsibleUserId: stage.responsibleUserId || '',
+
+          responsibleUserName: stage.responsibleUserName || '',
+
+          questions: buildStageQuestions(stage),
+
+          startedAt: null,
+
+          completedAt: null,
+
+          completedByUserId: '',
+
+          completedByUserName: '',
+
+          signature: null
+        }
+
+        return resolveStageResponsible(baseStage, employeeData)
+      })
+    : []
+
+  /*
+   * ----------------------------------------------------------
+   * PDI
+   * ----------------------------------------------------------
+   */
+
+  const pdi = {
+    id: generateId('pdi'),
+
+    status: 'pending',
+
+    responsibleType: 'manager_or_supervisor',
+
+    responsibleUserId: '',
+
+    responsibleUserName: '',
+
+    responsibleEmployeeId: '',
+
+    responsiblePositionId: '',
+
+    responsiblePositionName: '',
+
+    questions: buildPdiQuestions(model),
+
+    startedAt: null,
+
+    completedAt: null,
+
+    completedByUserId: '',
+
+    completedByUserName: '',
+
+    signature: null
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * WORKFLOW BASE
+   * ----------------------------------------------------------
+   */
+
+  const workflow = {
+    id: generateId('evaluation'),
+
+    modelId: model.id,
+
+    modelName: model.name,
+
+    employeeId: employeeData.id,
+
+    employeeName: employeeData.name,
+
+    employeeEmail: employeeData.email,
+
+    branchId: employeeData.branchId,
+
+    branchName: employeeData.branchName,
+
+    departmentId: employeeData.departmentId,
+
+    departmentName: employeeData.departmentName,
+
+    positionId: employeeData.positionId,
+
+    positionName: employeeData.positionName,
+
+    /*
+     * Mantemos as datas informadas pela tela quando
+     * existirem.
+     */
+    startDate: startDate || null,
+
+    endDate: endDate || null,
+
+    /*
+     * Informações de criação.
+     */
+    createdBy: createdBy || '',
+
+    createdByName: createdByName || '',
+
+    status: 'pending',
+
+    stages,
+
+    pdi,
+
+    evaluation180: buildEvaluation180(model),
+
+    createdAt: getNow(),
 
     updatedAt: getNow()
   }
 
+  /*
+   * ----------------------------------------------------------
+   * RESOLVER RESPONSÁVEL DO PDI
+   * ----------------------------------------------------------
+   */
+
+  workflow.pdi = resolvePdiResponsibleData(workflow.pdi, workflow)
+
+  /*
+   * ----------------------------------------------------------
+   * SALVAR
+   * ----------------------------------------------------------
+   */
+
+  const workflows = getEvaluationWorkflows()
+
+  const updatedWorkflows = [...workflows, workflow]
+
   setStored(STORAGE_KEY, updatedWorkflows)
 
-  return updatedWorkflows[existingIndex]
+  return workflow
 }
+
+/*
+ * ============================================================
+ * ATUALIZAR WORKFLOW
+ * ============================================================
+ */
+
+export function updateEvaluationWorkflow(workflow) {
+  const workflows = getEvaluationWorkflows()
+
+  const normalized = normalizeWorkflow(workflow)
+
+  normalized.updatedAt = getNow()
+
+  /*
+   * Se o PDI ainda não possui responsável,
+   * tentamos resolver novamente.
+   */
+
+  normalized.pdi = resolvePdiResponsibleData(normalized.pdi, normalized)
+
+  /*
+   * Também corrigimos etapas que ainda estejam
+   * sem responsável.
+   */
+
+  normalized.stages = normalized.stages.map((stage) => {
+    if (stage.responsibleUserId) {
+      return stage
+    }
+
+    return resolveStageResponsible(stage, {
+      id: normalized.employeeId,
+
+      name: normalized.employeeName,
+
+      branchId: normalized.branchId,
+
+      branchName: normalized.branchName,
+
+      departmentId: normalized.departmentId,
+
+      departmentName: normalized.departmentName,
+
+      positionId: normalized.positionId,
+
+      positionName: normalized.positionName
+    })
+  })
+
+  const index = workflows.findIndex(
+    (item) => normalizeId(item.id) === normalizeId(normalized.id)
+  )
+
+  if (index === -1) {
+    return null
+  }
+
+  const updatedWorkflows = [...workflows]
+
+  updatedWorkflows[index] = normalized
+
+  setStored(STORAGE_KEY, updatedWorkflows)
+
+  return normalized
+}
+
+/*
+ * ============================================================
+ * ATUALIZAR PARCIALMENTE WORKFLOW
+ * ============================================================
+ */
+
+export function patchEvaluationWorkflow(workflowId, updates = {}) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return null
+  }
+
+  return updateEvaluationWorkflow({
+    ...workflow,
+    ...updates
+  })
+}
+
+/*
+ * ============================================================
+ * INICIAR ETAPA
+ * ============================================================
+ */
+
+export function startEvaluationStage(workflowId, stageId, user = null) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return null
+  }
+
+  const stages = workflow.stages.map((stage) => {
+    if (normalizeId(stage.id) !== normalizeId(stageId)) {
+      return stage
+    }
+
+    return {
+      ...stage,
+
+      status: stage.status === 'completed' ? 'completed' : 'in_progress',
+
+      startedAt: stage.startedAt || getNow(),
+
+      startedByUserId: user?.id || user?.userId || '',
+
+      startedByUserName: user?.name || user?.username || ''
+    }
+  })
+
+  return updateEvaluationWorkflow({
+    ...workflow,
+
+    status: workflow.status === 'completed' ? 'completed' : 'in_progress',
+
+    stages
+  })
+}
+
+/*
+ * ============================================================
+ * INICIAR PDI
+ * ============================================================
+ */
+
+export function startEvaluationPdi(workflowId, user = null) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return null
+  }
+
+  const pdi = resolvePdiResponsibleData(workflow.pdi, workflow)
+
+  /*
+   * Mesmo que o usuário seja Admin/RH,
+   * registramos quem iniciou a etapa.
+   */
+
+  return updateEvaluationWorkflow({
+    ...workflow,
+
+    pdi: {
+      ...pdi,
+
+      status: pdi.status === 'completed' ? pdi.status : 'in_progress',
+
+      startedAt: pdi.startedAt || getNow(),
+
+      startedByUserId: user?.id || user?.userId || '',
+
+      startedByUserName: user?.name || user?.username || ''
+    }
+  })
+}
+
+/*
+ * ============================================================
+ * RESPONDER PERGUNTA DO PDI
+ * ============================================================
+ */
+
+export function answerEvaluationPdiQuestion(workflowId, questionId, answer) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return null
+  }
+
+  const questions = workflow.pdi.questions.map((question) =>
+    normalizeId(question.id) === normalizeId(questionId)
+      ? {
+          ...question,
+
+          answer,
+
+          answeredAt: getNow()
+        }
+      : question
+  )
+
+  return updateEvaluationWorkflow({
+    ...workflow,
+
+    pdi: {
+      ...workflow.pdi,
+
+      questions
+    }
+  })
+}
+
+/*
+ * ============================================================
+ * ATUALIZAR TODAS AS RESPOSTAS DO PDI
+ * ============================================================
+ */
+
+export function updateEvaluationPdiAnswers(workflowId, answers) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return null
+  }
+
+  const questions = workflow.pdi.questions.map((question) => {
+    const answer = answers?.[question.id]
+
+    if (answer === undefined) {
+      return question
+    }
+
+    return {
+      ...question,
+
+      answer,
+
+      answeredAt: getNow()
+    }
+  })
+
+  return updateEvaluationWorkflow({
+    ...workflow,
+
+    pdi: {
+      ...workflow.pdi,
+
+      questions
+    }
+  })
+}
+
+/*
+ * ============================================================
+ * VALIDAR PDI
+ * ============================================================
+ */
+
+export function validateEvaluationPdi(workflow) {
+  if (!workflow?.pdi) {
+    return {
+      valid: false,
+
+      errors: ['PDI não encontrado.']
+    }
+  }
+
+  const errors = []
+
+  const questions = workflow.pdi.questions || []
+
+  questions.forEach((question, index) => {
+    if (question.required !== false) {
+      const answer = String(question.answer || '').trim()
+
+      if (!answer) {
+        errors.push(`Responda a pergunta ${index + 1} do PDI.`)
+      }
+    }
+  })
+
+  return {
+    valid: errors.length === 0,
+
+    errors
+  }
+}
+
+/*
+ * ============================================================
+ * CONCLUIR PDI
+ * ============================================================
+ */
+
+export function completeEvaluationPdi(
+  workflowId,
+  user = null,
+  signature = null
+) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return null
+  }
+
+  const validation = validateEvaluationPdi(workflow)
+
+  if (!validation.valid) {
+    return {
+      success: false,
+
+      errors: validation.errors,
+
+      workflow
+    }
+  }
+
+  const completedAt = getNow()
+
+  const updated = updateEvaluationWorkflow({
+    ...workflow,
+
+    pdi: {
+      ...workflow.pdi,
+
+      status: 'completed',
+
+      completedAt,
+
+      completedByUserId: user?.id || user?.userId || '',
+
+      completedByUserName: user?.name || user?.username || '',
+
+      signature: signature || workflow.pdi.signature || null
+    }
+  })
+
+  return {
+    success: true,
+
+    errors: [],
+
+    workflow: updated
+  }
+}
+
+/*
+ * ============================================================
+ * CONCLUIR ETAPA
+ * ============================================================
+ */
+
+export function completeEvaluationStage(
+  workflowId,
+  stageId,
+  user = null,
+  signature = null
+) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return null
+  }
+
+  const stage = workflow.stages.find(
+    (item) => normalizeId(item.id) === normalizeId(stageId)
+  )
+
+  if (!stage) {
+    return {
+      success: false,
+
+      errors: ['Etapa não encontrada.'],
+
+      workflow
+    }
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * VALIDAR PERGUNTAS OBRIGATÓRIAS
+   * ----------------------------------------------------------
+   */
+
+  const requiredQuestions = stage.questions.filter(
+    (question) => question.required !== false
+  )
+
+  const unanswered = requiredQuestions.filter(
+    (question) => String(question.answer ?? '').trim() === ''
+  )
+
+  if (unanswered.length > 0) {
+    return {
+      success: false,
+
+      errors: ['Existem perguntas obrigatórias sem resposta.'],
+
+      workflow
+    }
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * ATUALIZAR ETAPA
+   * ----------------------------------------------------------
+   */
+
+  const completedAt = getNow()
+
+  const stages = workflow.stages.map((item) => {
+    if (normalizeId(item.id) !== normalizeId(stageId)) {
+      return item
+    }
+
+    return {
+      ...item,
+
+      status: 'completed',
+
+      completedAt,
+
+      completedByUserId: user?.id || user?.userId || '',
+
+      completedByUserName: user?.name || user?.username || '',
+
+      signature: signature || item.signature || null
+    }
+  })
+
+  const updated = updateEvaluationWorkflow({
+    ...workflow,
+
+    stages
+  })
+
+  return {
+    success: true,
+
+    errors: [],
+
+    workflow: updated
+  }
+}
+
+/*
+ * ============================================================
+ * RESPONDER PERGUNTA DA ETAPA
+ * ============================================================
+ */
+
+export function answerEvaluationStageQuestion(
+  workflowId,
+  stageId,
+  questionId,
+  answer
+) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return null
+  }
+
+  const stages = workflow.stages.map((stage) => {
+    if (normalizeId(stage.id) !== normalizeId(stageId)) {
+      return stage
+    }
+
+    const questions = stage.questions.map((question) =>
+      normalizeId(question.id) === normalizeId(questionId)
+        ? {
+            ...question,
+
+            answer,
+
+            answeredAt: getNow()
+          }
+        : question
+    )
+
+    return {
+      ...stage,
+
+      questions
+    }
+  })
+
+  return updateEvaluationWorkflow({
+    ...workflow,
+
+    stages
+  })
+}
+
+/*
+ * ============================================================
+ * INICIAR AVALIAÇÃO 180°
+ * ============================================================
+ */
+
+export function startEvaluation180(workflowId, user = null) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return null
+  }
+
+  if (workflow.evaluation180?.enabled !== true) {
+    return {
+      success: false,
+
+      errors: ['A avaliação 180° não está habilitada.'],
+
+      workflow
+    }
+  }
+
+  return updateEvaluationWorkflow({
+    ...workflow,
+
+    evaluation180: {
+      ...workflow.evaluation180,
+
+      status:
+        workflow.evaluation180.status === 'completed'
+          ? 'completed'
+          : 'in_progress',
+
+      startedAt: workflow.evaluation180.startedAt || getNow(),
+
+      startedByUserId: user?.id || user?.userId || '',
+
+      startedByUserName: user?.name || user?.username || ''
+    }
+  })
+}
+
+/*
+ * ============================================================
+ * RESPONDER PERGUNTA DA AVALIAÇÃO 180°
+ * ============================================================
+ */
+
+export function answerEvaluation180Question(workflowId, questionId, answer) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return null
+  }
+
+  if (workflow.evaluation180?.enabled !== true) {
+    return null
+  }
+
+  const questions = workflow.evaluation180.questions.map((question) =>
+    normalizeId(question.id) === normalizeId(questionId)
+      ? {
+          ...question,
+
+          answer,
+
+          answeredAt: getNow()
+        }
+      : question
+  )
+
+  return updateEvaluationWorkflow({
+    ...workflow,
+
+    evaluation180: {
+      ...workflow.evaluation180,
+
+      questions
+    }
+  })
+}
+
+/*
+ * ============================================================
+ * CONCLUIR AVALIAÇÃO 180°
+ * ============================================================
+ */
+
+export function completeEvaluation180(
+  workflowId,
+  user = null,
+  signature = null
+) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return null
+  }
+
+  if (workflow.evaluation180?.enabled !== true) {
+    return {
+      success: false,
+
+      errors: ['A avaliação 180° não está habilitada.'],
+
+      workflow
+    }
+  }
+
+  const questions = workflow.evaluation180.questions || []
+
+  const requiredQuestions = questions.filter(
+    (question) => question.required !== false
+  )
+
+  const unanswered = requiredQuestions.filter(
+    (question) => String(question.answer ?? '').trim() === ''
+  )
+
+  if (unanswered.length > 0) {
+    return {
+      success: false,
+
+      errors: ['Existem perguntas obrigatórias sem resposta.'],
+
+      workflow
+    }
+  }
+
+  const updated = updateEvaluationWorkflow({
+    ...workflow,
+
+    evaluation180: {
+      ...workflow.evaluation180,
+
+      status: 'completed',
+
+      completedAt: getNow(),
+
+      completedByUserId: user?.id || user?.userId || '',
+
+      completedByUserName: user?.name || user?.username || '',
+
+      signature: signature || workflow.evaluation180.signature || null
+    }
+  })
+
+  return {
+    success: true,
+
+    errors: [],
+
+    workflow: updated
+  }
+}
+
+/*
+ * ============================================================
+ * ATUALIZAR STATUS GERAL
+ * ============================================================
+ */
+
+export function refreshEvaluationWorkflowStatus(workflowId) {
+  const workflow = getEvaluationWorkflowById(workflowId)
+
+  if (!workflow) {
+    return null
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * ETAPAS
+   * ----------------------------------------------------------
+   */
+
+  const stagesCompleted =
+    workflow.stages.length === 0 ||
+    workflow.stages.every((stage) => stage.status === 'completed')
+
+  /*
+   * ----------------------------------------------------------
+   * PDI
+   * ----------------------------------------------------------
+   */
+
+  const pdiCompleted = workflow.pdi.status === 'completed'
+
+  /*
+   * ----------------------------------------------------------
+   * AVALIAÇÃO 180°
+   * ----------------------------------------------------------
+   */
+
+  const evaluation180Completed =
+    workflow.evaluation180.enabled !== true ||
+    workflow.evaluation180.status === 'completed'
+
+  /*
+   * ----------------------------------------------------------
+   * DEFINIR STATUS
+   * ----------------------------------------------------------
+   */
+
+  let status = 'in_progress'
+
+  if (stagesCompleted && pdiCompleted && evaluation180Completed) {
+    status = 'completed'
+  }
+
+  /*
+   * Se ainda não iniciou nenhuma etapa,
+   * mantemos como pendente.
+   */
+
+  if (workflow.status === 'pending') {
+    const hasStarted =
+      workflow.stages.some((stage) => stage.status !== 'pending') ||
+      workflow.pdi.status !== 'pending' ||
+      workflow.evaluation180.status !== 'pending'
+
+    if (!hasStarted) {
+      status = 'pending'
+    }
+  }
+
+  return updateEvaluationWorkflow({
+    ...workflow,
+
+    status
+  })
+}
+
+/*
+ * ============================================================
+ * CORRIGIR RESPONSÁVEIS DE AVALIAÇÕES EXISTENTES
+ * ============================================================
+ *
+ * Esta função é importante para avaliações que foram criadas
+ * antes das correções de responsáveis.
+ *
+ * A avaliação já existe.
+ *
+ * Ela é analisada novamente:
+ *
+ * avaliação
+ *     ↓
+ * funcionário
+ *     ↓
+ * estrutura organizacional
+ *     ↓
+ * responsável
+ *
+ * Não recriamos a avaliação.
+ * ============================================================
+ */
+
+export function repairEvaluationWorkflowResponsible(workflow) {
+  if (!workflow) {
+    return null
+  }
+
+  const normalized = normalizeWorkflow(workflow)
+
+  /*
+   * ----------------------------------------------------------
+   * CORRIGIR ETAPAS
+   * ----------------------------------------------------------
+   */
+
+  const stages = normalized.stages.map((stage) => {
+    /*
+     * Se já possui responsável,
+     * mantemos o responsável existente.
+     */
+
+    if (stage.responsibleUserId) {
+      return stage
+    }
+
+    return resolveStageResponsible(stage, {
+      id: normalized.employeeId,
+
+      name: normalized.employeeName,
+
+      branchId: normalized.branchId,
+
+      branchName: normalized.branchName,
+
+      departmentId: normalized.departmentId,
+
+      departmentName: normalized.departmentName,
+
+      positionId: normalized.positionId,
+
+      positionName: normalized.positionName
+    })
+  })
+
+  /*
+   * ----------------------------------------------------------
+   * CORRIGIR PDI
+   * ----------------------------------------------------------
+   */
+
+  const pdi = resolvePdiResponsibleData(normalized.pdi, {
+    ...normalized,
+
+    stages
+  })
+
+  return {
+    ...normalized,
+
+    stages,
+
+    pdi
+  }
+}
+
+/*
+ * ============================================================
+ * CORRIGIR TODAS AS AVALIAÇÕES
+ * ============================================================
+ */
+
+export function repairEvaluationWorkflows() {
+  const workflows = getEvaluationWorkflows()
+
+  const repaired = workflows.map((workflow) =>
+    repairEvaluationWorkflowResponsible(workflow)
+  )
+
+  setStored(STORAGE_KEY, repaired)
+
+  return repaired
+}
+
+/*
+ * ============================================================
+ * REPARAR PERGUNTAS DO PDI
+ * ============================================================
+ *
+ * Utilizado para avaliações antigas que possam ter recebido
+ * perguntas de uma versão anterior do modelo.
+ * ============================================================
+ */
+
+export function repairEvaluationPdiQuestions(workflow) {
+  if (!workflow) {
+    return null
+  }
+
+  const normalized = normalizeWorkflow(workflow)
+
+  const model = getEvaluationModelById(normalized.modelId)
+
+  if (!model) {
+    return normalized
+  }
+
+  /*
+   * Se o workflow já possui perguntas,
+   * não substituímos as respostas existentes.
+   *
+   * Apenas garantimos que a estrutura esteja normalizada.
+   */
+
+  const currentQuestions = Array.isArray(normalized.pdi?.questions)
+    ? normalized.pdi.questions
+    : []
+
+  if (currentQuestions.length > 0) {
+    return normalized
+  }
+
+  /*
+   * Caso não existam perguntas no workflow,
+   * copiamos as perguntas atuais do modelo.
+   */
+
+  return {
+    ...normalized,
+
+    pdi: {
+      ...normalized.pdi,
+
+      questions: buildPdiQuestions(model)
+    }
+  }
+}
+
+/*
+ * ============================================================
+ * REPARAR WORKFLOW COMPLETO
+ * ============================================================
+ */
+
+export function repairEvaluationWorkflow(workflow) {
+  if (!workflow) {
+    return null
+  }
+
+  const withPdi = repairEvaluationPdiQuestions(workflow)
+
+  return repairEvaluationWorkflowResponsible(withPdi)
+}
+
+/*
+ * ============================================================
+ * REPARAR TODAS AS AVALIAÇÕES
+ * ============================================================
+ */
+
+export function repairAllEvaluationWorkflows() {
+  const workflows = getStoredArray(STORAGE_KEY)
+
+  const repaired = workflows.map((workflow) =>
+    repairEvaluationWorkflow(workflow)
+  )
+
+  setStored(STORAGE_KEY, repaired)
+
+  return repaired
+}
+
+/*
+ * ============================================================
+ * EXCLUIR WORKFLOW
+ * ============================================================
+ */
+
+export function deleteEvaluationWorkflow(workflowId) {
+  const workflows = getEvaluationWorkflows()
+
+  const updated = workflows.filter(
+    (workflow) => normalizeId(workflow.id) !== normalizeId(workflowId)
+  )
+
+  setStored(STORAGE_KEY, updated)
+
+  return updated
+}
+
+/*
+ * ============================================================
+ * BUSCAR AVALIAÇÕES DO FUNCIONÁRIO
+ * ============================================================
+ */
+
+export function getEmployeeEvaluationWorkflows(employeeId) {
+  const normalizedId = normalizeId(employeeId)
+
+  return getEvaluationWorkflows().filter(
+    (workflow) => normalizeId(workflow.employeeId) === normalizedId
+  )
+}
+
+/*
+ * ============================================================
+ * BUSCAR AVALIAÇÕES PENDENTES
+ * ============================================================
+ */
+
+export function getPendingEvaluationWorkflows() {
+  return getEvaluationWorkflows().filter(
+    (workflow) => workflow.status !== 'completed'
+  )
+}
+
+/*
+ * ============================================================
+ * BUSCAR AVALIAÇÕES CONCLUÍDAS
+ * ============================================================
+ */
+
+export function getCompletedEvaluationWorkflows() {
+  return getEvaluationWorkflows().filter(
+    (workflow) => workflow.status === 'completed'
+  )
+}
+
+/*
+ * ============================================================
+ * INICIALIZAÇÃO / MIGRAÇÃO
+ * ============================================================
+ *
+ * Mantemos esta função exportada para que a aplicação possa
+ * executá-la na inicialização.
+ * ============================================================
+ */
+
+export function initializeEvaluationWorkflows() {
+  /*
+   * Primeiro garante que a estrutura atual esteja normalizada.
+   */
+
+  const workflows = getEvaluationWorkflows()
+
+  /*
+   * Depois corrige os responsáveis e PDI das avaliações antigas.
+   */
+
+  const repaired = workflows.map((workflow) =>
+    repairEvaluationWorkflow(workflow)
+  )
+
+  setStored(STORAGE_KEY, repaired)
+
+  return repaired
+}
+
+/*
+ * ============================================================
+ * ALIAS
+ * ============================================================
+ *
+ * Mantido para componentes que possam utilizar o nome antigo.
+ * ============================================================
+ */
+
+export const createWorkflow = createEvaluationWorkflow
+
+export const updateWorkflow = updateEvaluationWorkflow
+
+export const getWorkflows = getEvaluationWorkflows
+
+export const getWorkflowById = getEvaluationWorkflowById

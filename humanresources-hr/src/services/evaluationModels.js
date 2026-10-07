@@ -81,8 +81,18 @@ export const EVALUATION_RESPONSIBLE_TYPES = [
  * ============================================================
  * PDI
  *
- * O PDI é obrigatório no final do fluxo.
- * As quatro perguntas são mantidas pelo sistema.
+ * Estas perguntas são utilizadas somente como modelo inicial.
+ *
+ * A empresa pode:
+ *
+ * - editar as perguntas;
+ * - excluir perguntas;
+ * - adicionar novas perguntas;
+ * - definir perguntas obrigatórias;
+ * - definir a quantidade de perguntas.
+ *
+ * Portanto, elas NÃO são mais consideradas perguntas fixas
+ * do sistema.
  * ============================================================
  */
 
@@ -135,6 +145,46 @@ function getNow() {
 
 /*
  * ============================================================
+ * NORMALIZAR PERGUNTA
+ * ============================================================
+ */
+
+function normalizeQuestion(question = {}) {
+  return {
+    id: question.id || generateId('question'),
+
+    text: question.text || question.question || '',
+
+    type: question.type || 'text',
+
+    required: question.required !== false
+  }
+}
+
+/*
+ * ============================================================
+ * NORMALIZAR PERGUNTAS DO PDI
+ * ============================================================
+ *
+ * Esta função também mantém compatibilidade com modelos antigos.
+ *
+ * Se um modelo antigo não possuir pdiQuestions, usamos as
+ * perguntas padrão como ponto de partida.
+ * ============================================================
+ */
+
+export function normalizePdiQuestions(questions) {
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return DEFAULT_PDI_QUESTIONS.map((question) => ({
+      ...question
+    }))
+  }
+
+  return questions.map(normalizeQuestion)
+}
+
+/*
+ * ============================================================
  * CRIAR PERGUNTA
  * ============================================================
  */
@@ -146,8 +196,29 @@ export function createEvaluationQuestion({
 } = {}) {
   return {
     id: generateId('question'),
+
     text,
+
     type,
+
+    required
+  }
+}
+
+/*
+ * ============================================================
+ * CRIAR PERGUNTA DO PDI
+ * ============================================================
+ */
+
+export function createPdiQuestion({ text = '', required = true } = {}) {
+  return {
+    id: generateId('pdi'),
+
+    text,
+
+    type: 'text',
+
     required
   }
 }
@@ -206,6 +277,7 @@ export function createEvaluationModel({
   stages = [],
   evaluation180Enabled = false,
   evaluation180Questions = [],
+  pdiQuestions = DEFAULT_PDI_QUESTIONS,
   createdAt = null,
   updatedAt = null
 } = {}) {
@@ -223,17 +295,18 @@ export function createEvaluationModel({
     active,
 
     /*
-     * O PDI é sempre obrigatório.
+     * O PDI continua sendo uma etapa obrigatória
+     * do processo de avaliação.
      */
     pdiRequired: true,
 
     /*
-     * As perguntas padrão do PDI ficam dentro do modelo
-     * para que a avaliação criada mantenha uma cópia delas.
+     * Agora as perguntas pertencem ao modelo.
+     *
+     * Quando uma avaliação for criada, ela receberá uma cópia
+     * dessas perguntas.
      */
-    pdiQuestions: DEFAULT_PDI_QUESTIONS.map((question) => ({
-      ...question
-    })),
+    pdiQuestions: normalizePdiQuestions(pdiQuestions),
 
     /*
      * Etapas configuráveis.
@@ -241,21 +314,11 @@ export function createEvaluationModel({
     stages: stages.map((stage) => createEvaluationStage(stage)),
 
     /*
-     * 180° é opcional.
+     * Avaliação 180°.
      */
-    evaluation180: {
-      enabled: evaluation180Enabled === true,
+    evaluation180Enabled: evaluation180Enabled === true,
 
-      questions: evaluation180Questions.map((question) => ({
-        id: question.id || generateId('180-question'),
-
-        text: question.text || '',
-
-        type: question.type || 'scale',
-
-        required: question.required !== false
-      }))
-    },
+    evaluation180Questions: evaluation180Questions.map(normalizeQuestion),
 
     createdAt: createdAt || now,
 
@@ -270,24 +333,19 @@ export function createEvaluationModel({
  */
 
 export function getEvaluationModels() {
-  return getStoredArray(STORAGE_KEY)
+  const models = getStoredArray(STORAGE_KEY)
+
+  return models.map(normalizeEvaluationModel)
 }
 
 /*
  * ============================================================
- * BUSCAR MODELO
+ * BUSCAR MODELOS ATIVOS
  * ============================================================
- */
-
-export function getEvaluationModelById(modelId) {
-  return getEvaluationModels().find(
-    (model) => String(model.id) === String(modelId)
-  )
-}
-
-/*
- * ============================================================
- * MODELOS ATIVOS
+ *
+ * Esta função é utilizada pela tela de Avaliações para mostrar
+ * somente modelos que estão disponíveis para criação de uma
+ * nova avaliação.
  * ============================================================
  */
 
@@ -297,20 +355,109 @@ export function getActiveEvaluationModels() {
 
 /*
  * ============================================================
+ * BUSCAR NOME DO TIPO DO MODELO
+ * ============================================================
+ *
+ * Recebe o valor salvo no modelo e devolve o texto amigável
+ * para exibição na interface.
+ *
+ * Exemplo:
+ *
+ * performance
+ *       ↓
+ * Avaliação de desempenho
+ * ============================================================
+ */
+
+export function getEvaluationModelTypeLabel(type) {
+  const normalizedType = String(type || '').trim()
+
+  const found = EVALUATION_MODEL_TYPES.find(
+    (item) => item.value === normalizedType
+  )
+
+  return found?.label || normalizedType || 'Não informado'
+}
+
+/*
+ * ============================================================
+ * NORMALIZAR MODELO
+ * ============================================================
+ *
+ * Mantém compatibilidade com modelos que foram criados
+ * antes da configuração personalizada do PDI.
+ * ============================================================
+ */
+
+export function normalizeEvaluationModel(model = {}) {
+  return {
+    ...model,
+
+    id: model.id || generateId('model'),
+
+    name: model.name || '',
+
+    description: model.description || '',
+
+    type: model.type || 'performance',
+
+    active: model.active !== false,
+
+    pdiRequired: model.pdiRequired !== false,
+
+    pdiQuestions: normalizePdiQuestions(model.pdiQuestions),
+
+    stages: Array.isArray(model.stages)
+      ? model.stages.map((stage) => createEvaluationStage(stage))
+      : [],
+
+    evaluation180Enabled: model.evaluation180Enabled === true,
+
+    evaluation180Questions: Array.isArray(model.evaluation180Questions)
+      ? model.evaluation180Questions.map(normalizeQuestion)
+      : [],
+
+    createdAt: model.createdAt || getNow(),
+
+    updatedAt: model.updatedAt || getNow()
+  }
+}
+
+/*
+ * ============================================================
+ * BUSCAR MODELO POR ID
+ * ============================================================
+ */
+
+export function getEvaluationModelById(modelId) {
+  const normalizedId = String(modelId || '')
+
+  if (!normalizedId) {
+    return null
+  }
+
+  return (
+    getEvaluationModels().find((model) => String(model.id) === normalizedId) ||
+    null
+  )
+}
+
+/*
+ * ============================================================
  * ADICIONAR MODELO
  * ============================================================
  */
 
 export function addEvaluationModel(model) {
-  const normalized = createEvaluationModel(model)
-
   const models = getEvaluationModels()
 
-  const updatedModels = [...models, normalized]
+  const newModel = createEvaluationModel(model)
+
+  const updatedModels = [...models, newModel]
 
   setStored(STORAGE_KEY, updatedModels)
 
-  return normalized
+  return updatedModels
 }
 
 /*
@@ -322,61 +469,22 @@ export function addEvaluationModel(model) {
 export function updateEvaluationModel(model) {
   const models = getEvaluationModels()
 
-  const existing = models.find((item) => String(item.id) === String(model.id))
+  const normalizedModel = normalizeEvaluationModel(model)
 
-  if (!existing) {
-    return null
-  }
-
-  /*
-   * Preserva a data original de criação.
-   */
-  const normalized = createEvaluationModel({
-    ...model,
-
-    createdAt: existing.createdAt,
-
-    updatedAt: getNow()
-  })
+  normalizedModel.updatedAt = getNow()
 
   const updatedModels = models.map((item) =>
-    String(item.id) === String(model.id) ? normalized : item
+    String(item.id) === String(normalizedModel.id) ? normalizedModel : item
   )
 
   setStored(STORAGE_KEY, updatedModels)
 
-  return normalized
+  return updatedModels
 }
 
 /*
  * ============================================================
- * ATIVAR / DESATIVAR
- * ============================================================
- */
-
-export function setEvaluationModelActive(modelId, active) {
-  const models = getEvaluationModels()
-
-  const updatedModels = models.map((model) =>
-    String(model.id) === String(modelId)
-      ? {
-          ...model,
-
-          active: active === true,
-
-          updatedAt: getNow()
-        }
-      : model
-  )
-
-  setStored(STORAGE_KEY, updatedModels)
-
-  return updatedModels.find((model) => String(model.id) === String(modelId))
-}
-
-/*
- * ============================================================
- * EXCLUIR
+ * EXCLUIR MODELO
  * ============================================================
  */
 
@@ -384,7 +492,7 @@ export function deleteEvaluationModel(modelId) {
   const models = getEvaluationModels()
 
   const updatedModels = models.filter(
-    (model) => String(model.id) !== String(modelId)
+    (item) => String(item.id) !== String(modelId)
   )
 
   setStored(STORAGE_KEY, updatedModels)
@@ -402,76 +510,180 @@ export function duplicateEvaluationModel(modelId) {
   const model = getEvaluationModelById(modelId)
 
   if (!model) {
-    return null
+    return getEvaluationModels()
   }
 
   const duplicated = createEvaluationModel({
+    ...model,
+
+    id: null,
+
     name: `${model.name} - Cópia`,
 
-    description: model.description,
+    createdAt: null,
 
-    type: model.type,
-
-    active: false,
+    updatedAt: null,
 
     stages: model.stages.map((stage) => ({
       ...stage,
 
-      id: undefined,
+      id: null,
 
       questions: stage.questions.map((question) => ({
         ...question,
 
-        id: undefined
+        id: null
       }))
     })),
 
-    evaluation180Enabled: model.evaluation180?.enabled === true,
+    pdiQuestions: normalizePdiQuestions(model.pdiQuestions).map((question) => ({
+      ...question,
 
-    evaluation180Questions: (model.evaluation180?.questions || []).map(
-      (question) => ({
-        ...question,
+      id: null
+    })),
 
-        id: undefined
-      })
-    )
+    evaluation180Questions: model.evaluation180Questions.map((question) => ({
+      ...question,
+
+      id: null
+    }))
   })
 
   const models = getEvaluationModels()
 
-  setStored(STORAGE_KEY, [...models, duplicated])
+  const updatedModels = [...models, duplicated]
 
-  return duplicated
+  setStored(STORAGE_KEY, updatedModels)
+
+  return updatedModels
 }
 
 /*
  * ============================================================
- * LABELS
+ * ATUALIZAR PERGUNTAS DO PDI
  * ============================================================
  */
 
-export function getEvaluationModelTypeLabel(type) {
-  return (
-    EVALUATION_MODEL_TYPES.find((item) => item.value === type)?.label ||
-    type ||
-    ''
-  )
+export function updatePdiQuestions(modelId, questions) {
+  const model = getEvaluationModelById(modelId)
+
+  if (!model) {
+    return getEvaluationModels()
+  }
+
+  const normalizedQuestions = normalizePdiQuestions(questions)
+
+  const updatedModel = {
+    ...model,
+
+    pdiQuestions: normalizedQuestions,
+
+    pdiRequired: true,
+
+    updatedAt: getNow()
+  }
+
+  return updateEvaluationModel(updatedModel)
 }
 
-export function getEvaluationQuestionTypeLabel(type) {
-  return (
-    EVALUATION_QUESTION_TYPES.find((item) => item.value === type)?.label ||
-    type ||
-    ''
-  )
+/*
+ * ============================================================
+ * ADICIONAR PERGUNTA AO PDI
+ * ============================================================
+ */
+
+export function addPdiQuestion(modelId, question = {}) {
+  const model = getEvaluationModelById(modelId)
+
+  if (!model) {
+    return getEvaluationModels()
+  }
+
+  const currentQuestions = normalizePdiQuestions(model.pdiQuestions)
+
+  const newQuestion = createPdiQuestion(question)
+
+  return updatePdiQuestions(modelId, [...currentQuestions, newQuestion])
 }
 
-export function getResponsibleTypeLabel(type) {
-  return (
-    EVALUATION_RESPONSIBLE_TYPES.find((item) => item.value === type)?.label ||
-    type ||
-    ''
+/*
+ * ============================================================
+ * EDITAR PERGUNTA DO PDI
+ * ============================================================
+ */
+
+export function updatePdiQuestion(modelId, questionId, questionData) {
+  const model = getEvaluationModelById(modelId)
+
+  if (!model) {
+    return getEvaluationModels()
+  }
+
+  const questions = normalizePdiQuestions(model.pdiQuestions)
+
+  const updatedQuestions = questions.map((question) =>
+    String(question.id) === String(questionId)
+      ? {
+          ...question,
+
+          text:
+            questionData.text !== undefined ? questionData.text : question.text,
+
+          required:
+            questionData.required !== undefined
+              ? questionData.required
+              : question.required,
+
+          type: questionData.type || question.type || 'text'
+        }
+      : question
   )
+
+  return updatePdiQuestions(modelId, updatedQuestions)
+}
+
+/*
+ * ============================================================
+ * EXCLUIR PERGUNTA DO PDI
+ * ============================================================
+ */
+
+export function deletePdiQuestion(modelId, questionId) {
+  const model = getEvaluationModelById(modelId)
+
+  if (!model) {
+    return getEvaluationModels()
+  }
+
+  const questions = normalizePdiQuestions(model.pdiQuestions)
+
+  /*
+   * Não permitimos que o modelo fique sem nenhuma pergunta.
+   *
+   * Se a empresa tentar excluir a última pergunta,
+   * mantemos a estrutura e deixamos a interface informar
+   * o usuário.
+   */
+
+  if (questions.length <= 1) {
+    return getEvaluationModels()
+  }
+
+  const updatedQuestions = questions.filter(
+    (question) => String(question.id) !== String(questionId)
+  )
+
+  return updatePdiQuestions(modelId, updatedQuestions)
+}
+
+/*
+ * ============================================================
+ * REORDENAR PERGUNTAS DO PDI
+ * ============================================================
+ */
+
+export function reorderPdiQuestions(modelId, questions) {
+  return updatePdiQuestions(modelId, questions)
 }
 
 /*
@@ -483,79 +695,87 @@ export function getResponsibleTypeLabel(type) {
 export function validateEvaluationModel(model) {
   const errors = []
 
-  if (!String(model?.name || '').trim()) {
+  if (!model || !String(model.name || '').trim()) {
     errors.push('Informe o nome do modelo.')
   }
 
-  if (!model?.type) {
-    errors.push('Selecione o tipo da avaliação.')
+  const pdiQuestions = normalizePdiQuestions(model?.pdiQuestions)
+
+  if (pdiQuestions.length === 0) {
+    errors.push('Cadastre pelo menos uma pergunta para o PDI.')
   }
 
-  if (!Array.isArray(model?.stages) || model.stages.length === 0) {
-    errors.push('Adicione pelo menos uma etapa ao modelo.')
-  }
-
-  ;(model?.stages || []).forEach((stage, stageIndex) => {
-    if (!String(stage.name || '').trim()) {
-      errors.push(`Informe o nome da etapa ${stageIndex + 1}.`)
+  pdiQuestions.forEach((question, index) => {
+    if (!String(question.text || '').trim()) {
+      errors.push(`Informe o texto da pergunta ${index + 1} do PDI.`)
     }
-
-    if (!stage.responsibleType) {
-      errors.push(`Informe o responsável pela etapa ${stageIndex + 1}.`)
-    }
-
-    if (stage.responsibleType === 'specific_user' && !stage.responsibleUserId) {
-      errors.push(
-        `Selecione o usuário responsável pela etapa ${stageIndex + 1}.`
-      )
-    }
-
-    if (!Array.isArray(stage.questions) || stage.questions.length === 0) {
-      errors.push(`Adicione pelo menos uma pergunta à etapa ${stageIndex + 1}.`)
-    }
-
-    ;(stage.questions || []).forEach((question, questionIndex) => {
-      if (!String(question.text || '').trim()) {
-        errors.push(
-          `Informe o texto da pergunta ${questionIndex + 1} da etapa ${stageIndex + 1}.`
-        )
-      }
-
-      if (!question.type) {
-        errors.push(
-          `Informe o tipo da pergunta ${questionIndex + 1} da etapa ${stageIndex + 1}.`
-        )
-      }
-    })
   })
 
-  if (model?.evaluation180?.enabled) {
-    if (
-      !Array.isArray(model.evaluation180.questions) ||
-      model.evaluation180.questions.length === 0
-    ) {
-      errors.push('Adicione pelo menos uma pergunta para a avaliação 180°.')
-    }
-
-    ;(model.evaluation180.questions || []).forEach(
-      (question, questionIndex) => {
-        if (!String(question.text || '').trim()) {
-          errors.push(
-            `Informe o texto da pergunta ${questionIndex + 1} da avaliação 180°.`
-          )
-        }
-
-        if (!question.type) {
-          errors.push(
-            `Informe o tipo da pergunta ${questionIndex + 1} da avaliação 180°.`
-          )
-        }
-      }
-    )
+  if (
+    model?.evaluation180Enabled &&
+    (!Array.isArray(model.evaluation180Questions) ||
+      model.evaluation180Questions.length === 0)
+  ) {
+    errors.push('Cadastre pelo menos uma pergunta para a avaliação 180°.')
   }
 
   return {
     valid: errors.length === 0,
+
     errors
   }
+}
+
+/*
+ * ============================================================
+ * GARANTIR COMPATIBILIDADE DOS MODELOS EXISTENTES
+ * ============================================================
+ *
+ * Essa função deve ser chamada quando necessário para migrar
+ * modelos antigos para a nova estrutura.
+ *
+ * Ela NÃO altera as perguntas existentes que já foram
+ * personalizadas.
+ * ============================================================
+ */
+
+export function migrateEvaluationModels() {
+  const models = getStoredArray(STORAGE_KEY)
+
+  if (!Array.isArray(models)) {
+    return []
+  }
+
+  const migratedModels = models.map((model) => {
+    const normalized = normalizeEvaluationModel(model)
+
+    /*
+     * Só adicionamos as perguntas padrão quando o modelo
+     * antigo realmente não possuía nenhuma configuração.
+     */
+
+    if (!Array.isArray(model.pdiQuestions)) {
+      normalized.pdiQuestions = DEFAULT_PDI_QUESTIONS.map((question) => ({
+        ...question
+      }))
+    }
+
+    return normalized
+  })
+
+  setStored(STORAGE_KEY, migratedModels)
+
+  return migratedModels
+}
+
+/*
+ * ============================================================
+ * EXPORTAÇÃO DE COMPATIBILIDADE
+ * ============================================================
+ */
+
+export function getDefaultPdiQuestions() {
+  return DEFAULT_PDI_QUESTIONS.map((question) => ({
+    ...question
+  }))
 }

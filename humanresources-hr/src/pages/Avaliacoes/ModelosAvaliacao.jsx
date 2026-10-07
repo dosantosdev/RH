@@ -1,190 +1,387 @@
-import { useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import {
   addEvaluationModel,
   createEvaluationQuestion,
-  createEvaluationStage,
+  createPdiQuestion,
   deleteEvaluationModel,
-  duplicateEvaluationModel,
-  EVALUATION_MODEL_TYPES,
-  EVALUATION_QUESTION_TYPES,
-  EVALUATION_RESPONSIBLE_TYPES,
-  getEvaluationModelTypeLabel,
+  deletePdiQuestion,
   getEvaluationModels,
-  getResponsibleTypeLabel,
-  setEvaluationModelActive,
+  normalizePdiQuestions,
   updateEvaluationModel,
-  validateEvaluationModel
+  updatePdiQuestion
 } from '../../services/evaluationModels'
-
-import { getStoredArray } from '../../services/storage'
 
 import './avaliacoes.css'
 
-function createInitialModel() {
-  return {
-    name: '',
-    description: '',
-    type: 'performance',
-    active: true,
-    stages: [],
-    evaluation180Enabled: false,
-    evaluation180Questions: []
-  }
-}
-
-function createInitialStage() {
-  return {
-    name: '',
-    description: '',
-    responsibleType: 'specific_user',
-    responsibleUserId: '',
-    responsibleUserName: '',
-    questions: []
-  }
-}
+/*
+ * ============================================================
+ * COMPONENTE
+ * ============================================================
+ */
 
 export default function ModelosAvaliacao() {
-  const [models, setModels] = useState(getEvaluationModels)
+  const [models, setModels] = useState([])
 
-  const [users] = useState(() =>
-    getStoredArray('users').filter((user) => user.active !== false)
-  )
+  const [selectedModelId, setSelectedModelId] = useState(null)
 
-  const [model, setModel] = useState(createInitialModel())
+  const [isEditing, setIsEditing] = useState(false)
 
-  const [editingId, setEditingId] = useState(null)
-
-  const [search, setSearch] = useState('')
-
-  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState(createEmptyForm())
 
   const [error, setError] = useState('')
 
-  const filteredModels = useMemo(() => {
-    const value = search.trim().toLowerCase()
+  const [success, setSuccess] = useState('')
 
-    if (!value) {
-      return models
+  /*
+   * ----------------------------------------------------------
+   * CARREGAR MODELOS
+   * ----------------------------------------------------------
+   */
+
+  useEffect(() => {
+    loadModels()
+  }, [])
+
+  function loadModels() {
+    const storedModels = getEvaluationModels()
+
+    setModels(storedModels)
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * NOVO FORMULÁRIO
+   * ----------------------------------------------------------
+   */
+
+  function createEmptyForm() {
+    return {
+      name: '',
+
+      description: '',
+
+      type: 'performance',
+
+      active: true,
+
+      stages: [],
+
+      evaluation180Enabled: false,
+
+      evaluation180Questions: [],
+
+      pdiQuestions: normalizePdiQuestions()
     }
+  }
 
-    return models.filter(
-      (item) =>
-        item.name?.toLowerCase().includes(value) ||
-        item.description?.toLowerCase().includes(value)
-    )
-  }, [models, search])
+  /*
+   * ----------------------------------------------------------
+   * ABRIR NOVO
+   * ----------------------------------------------------------
+   */
 
-  function openNewModel() {
-    setModel(createInitialModel())
+  function handleNewModel() {
+    setSelectedModelId(null)
 
-    setEditingId(null)
+    setForm(createEmptyForm())
+
+    setIsEditing(true)
 
     setError('')
 
-    setShowForm(true)
+    setSuccess('')
   }
 
-  function openEditModel(selectedModel) {
-    setModel({
-      name: selectedModel.name || '',
+  /*
+   * ----------------------------------------------------------
+   * EDITAR MODELO
+   * ----------------------------------------------------------
+   */
 
-      description: selectedModel.description || '',
+  function handleEditModel(model) {
+    setSelectedModelId(model.id)
 
-      type: selectedModel.type || 'performance',
+    setForm({
+      ...model,
 
-      active: selectedModel.active !== false,
+      stages: Array.isArray(model.stages) ? model.stages.map(cloneStage) : [],
 
-      stages: (selectedModel.stages || []).map((stage) => ({
-        ...stage,
+      evaluation180Questions: Array.isArray(model.evaluation180Questions)
+        ? model.evaluation180Questions.map(cloneQuestion)
+        : [],
 
-        questions: (stage.questions || []).map((question) => ({
-          ...question
-        }))
-      })),
-
-      evaluation180Enabled: selectedModel.evaluation180?.enabled === true,
-
-      evaluation180Questions: (
-        selectedModel.evaluation180?.questions || []
-      ).map((question) => ({
-        ...question
-      }))
+      pdiQuestions: normalizePdiQuestions(model.pdiQuestions).map(cloneQuestion)
     })
 
-    setEditingId(selectedModel.id)
+    setIsEditing(true)
 
     setError('')
 
-    setShowForm(true)
+    setSuccess('')
   }
 
-  function closeForm() {
-    setModel(createInitialModel())
+  /*
+   * ----------------------------------------------------------
+   * CANCELAR
+   * ----------------------------------------------------------
+   */
 
-    setEditingId(null)
+  function handleCancel() {
+    setIsEditing(false)
+
+    setSelectedModelId(null)
 
     setError('')
 
-    setShowForm(false)
+    setSuccess('')
   }
 
-  function handleModelChange(event) {
+  /*
+   * ----------------------------------------------------------
+   * CAMPOS PRINCIPAIS
+   * ----------------------------------------------------------
+   */
+
+  function handleChange(event) {
     const { name, value, type, checked } = event.target
 
-    setModel((current) => ({
+    setForm((current) => ({
       ...current,
 
       [name]: type === 'checkbox' ? checked : value
     }))
   }
 
-  function addStage() {
-    setModel((current) => ({
+  /*
+   * ==========================================================
+   * PDI
+   * ==========================================================
+   */
+
+  /*
+   * ----------------------------------------------------------
+   * ALTERAR TEXTO DE PERGUNTA
+   * ----------------------------------------------------------
+   */
+
+  function handlePdiQuestionTextChange(questionId, value) {
+    setForm((current) => ({
       ...current,
 
-      stages: [...current.stages, createEvaluationStage(createInitialStage())]
+      pdiQuestions: current.pdiQuestions.map((question) =>
+        String(question.id) === String(questionId)
+          ? {
+              ...question,
+
+              text: value
+            }
+          : question
+      )
     }))
   }
 
-  function updateStage(stageIndex, field, value) {
-    setModel((current) => ({
+  /*
+   * ----------------------------------------------------------
+   * ALTERAR OBRIGATORIEDADE
+   * ----------------------------------------------------------
+   */
+
+  function handlePdiQuestionRequiredChange(questionId, checked) {
+    setForm((current) => ({
       ...current,
 
-      stages: current.stages.map((stage, index) =>
-        index === stageIndex
+      pdiQuestions: current.pdiQuestions.map((question) =>
+        String(question.id) === String(questionId)
+          ? {
+              ...question,
+
+              required: checked
+            }
+          : question
+      )
+    }))
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * ADICIONAR PERGUNTA
+   * ----------------------------------------------------------
+   */
+
+  function handleAddPdiQuestion() {
+    const newQuestion = createPdiQuestion({
+      text: '',
+      required: true
+    })
+
+    setForm((current) => ({
+      ...current,
+
+      pdiQuestions: [...current.pdiQuestions, newQuestion]
+    }))
+
+    setError('')
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * EXCLUIR PERGUNTA
+   * ----------------------------------------------------------
+   */
+
+  function handleDeletePdiQuestion(questionId) {
+    /*
+     * A empresa pode ter quantas perguntas quiser, mas o PDI
+     * precisa ter pelo menos uma.
+     */
+    if (form.pdiQuestions.length <= 1) {
+      setError('O PDI precisa ter pelo menos uma pergunta.')
+
+      return
+    }
+
+    setForm((current) => ({
+      ...current,
+
+      pdiQuestions: current.pdiQuestions.filter(
+        (question) => String(question.id) !== String(questionId)
+      )
+    }))
+
+    setError('')
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * MOVER PERGUNTA PARA CIMA
+   * ----------------------------------------------------------
+   */
+
+  function handleMovePdiQuestionUp(index) {
+    if (index <= 0) {
+      return
+    }
+
+    setForm((current) => {
+      const questions = [...current.pdiQuestions]
+
+      const previous = questions[index - 1]
+
+      questions[index - 1] = questions[index]
+
+      questions[index] = previous
+
+      return {
+        ...current,
+
+        pdiQuestions: questions
+      }
+    })
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * MOVER PERGUNTA PARA BAIXO
+   * ----------------------------------------------------------
+   */
+
+  function handleMovePdiQuestionDown(index) {
+    if (index >= form.pdiQuestions.length - 1) {
+      return
+    }
+
+    setForm((current) => {
+      const questions = [...current.pdiQuestions]
+
+      const next = questions[index + 1]
+
+      questions[index + 1] = questions[index]
+
+      questions[index] = next
+
+      return {
+        ...current,
+
+        pdiQuestions: questions
+      }
+    })
+  }
+
+  /*
+   * ==========================================================
+   * ETAPAS
+   * ==========================================================
+   */
+
+  function handleAddStage() {
+    const stage = {
+      id: `stage-${Date.now()}`,
+
+      name: '',
+
+      description: '',
+
+      responsibleType: 'department_supervisor',
+
+      responsibleUserId: '',
+
+      responsibleUserName: '',
+
+      questions: []
+    }
+
+    setForm((current) => ({
+      ...current,
+
+      stages: [...current.stages, stage]
+    }))
+  }
+
+  function handleRemoveStage(stageId) {
+    setForm((current) => ({
+      ...current,
+
+      stages: current.stages.filter(
+        (stage) => String(stage.id) !== String(stageId)
+      )
+    }))
+  }
+
+  function handleStageChange(stageId, field, value) {
+    setForm((current) => ({
+      ...current,
+
+      stages: current.stages.map((stage) =>
+        String(stage.id) === String(stageId)
           ? {
               ...stage,
-              [field]: value,
 
-              ...(field === 'responsibleType' && value !== 'specific_user'
-                ? {
-                    responsibleUserId: '',
-                    responsibleUserName: ''
-                  }
-                : {})
+              [field]: value
             }
           : stage
       )
     }))
   }
 
-  function removeStage(stageIndex) {
-    setModel((current) => ({
+  /*
+   * ----------------------------------------------------------
+   * PERGUNTAS DAS ETAPAS
+   * ----------------------------------------------------------
+   */
+
+  function handleAddStageQuestion(stageId) {
+    const question = createEvaluationQuestion({
+      text: '',
+      type: 'scale',
+      required: true
+    })
+
+    setForm((current) => ({
       ...current,
 
-      stages: current.stages.filter((_, index) => index !== stageIndex)
-    }))
-  }
-
-  function addQuestion(stageIndex) {
-    const question = createEvaluationQuestion()
-
-    setModel((current) => ({
-      ...current,
-
-      stages: current.stages.map((stage, index) =>
-        index === stageIndex
+      stages: current.stages.map((stage) =>
+        String(stage.id) === String(stageId)
           ? {
               ...stage,
 
@@ -195,40 +392,43 @@ export default function ModelosAvaliacao() {
     }))
   }
 
-  function updateQuestion(stageIndex, questionIndex, field, value) {
-    setModel((current) => ({
+  function handleStageQuestionChange(stageId, questionId, field, value) {
+    setForm((current) => ({
       ...current,
 
-      stages: current.stages.map((stage, stagePosition) =>
-        stagePosition === stageIndex
-          ? {
-              ...stage,
+      stages: current.stages.map((stage) => {
+        if (String(stage.id) !== String(stageId)) {
+          return stage
+        }
 
-              questions: stage.questions.map((question, questionPosition) =>
-                questionPosition === questionIndex
-                  ? {
-                      ...question,
-                      [field]: value
-                    }
-                  : question
-              )
-            }
-          : stage
-      )
+        return {
+          ...stage,
+
+          questions: stage.questions.map((question) =>
+            String(question.id) === String(questionId)
+              ? {
+                  ...question,
+
+                  [field]: value
+                }
+              : question
+          )
+        }
+      })
     }))
   }
 
-  function removeQuestion(stageIndex, questionIndex) {
-    setModel((current) => ({
+  function handleRemoveStageQuestion(stageId, questionId) {
+    setForm((current) => ({
       ...current,
 
-      stages: current.stages.map((stage, stagePosition) =>
-        stagePosition === stageIndex
+      stages: current.stages.map((stage) =>
+        String(stage.id) === String(stageId)
           ? {
               ...stage,
 
               questions: stage.questions.filter(
-                (_, questionPosition) => questionPosition !== questionIndex
+                (question) => String(question.id) !== String(questionId)
               )
             }
           : stage
@@ -236,733 +436,1019 @@ export default function ModelosAvaliacao() {
     }))
   }
 
-  function add180Question() {
-    const question = createEvaluationQuestion()
+  /*
+   * ==========================================================
+   * 180°
+   * ==========================================================
+   */
 
-    setModel((current) => ({
+  function handleToggle180(event) {
+    const enabled = event.target.checked
+
+    setForm((current) => ({
       ...current,
 
-      evaluation180Questions: [...current.evaluation180Questions, question]
+      evaluation180Enabled: enabled,
+
+      evaluation180Questions: enabled
+        ? current.evaluation180Questions.length > 0
+          ? current.evaluation180Questions
+          : [
+              createEvaluationQuestion({
+                text: '',
+                type: 'scale',
+                required: true
+              })
+            ]
+        : current.evaluation180Questions
     }))
   }
 
-  function update180Question(questionIndex, field, value) {
-    setModel((current) => ({
+  function handleAdd180Question() {
+    setForm((current) => ({
       ...current,
 
-      evaluation180Questions: current.evaluation180Questions.map(
-        (question, index) =>
-          index === questionIndex
-            ? {
-                ...question,
-                [field]: value
-              }
-            : question
+      evaluation180Questions: [
+        ...current.evaluation180Questions,
+        createEvaluationQuestion({
+          text: '',
+          type: 'scale',
+          required: true
+        })
+      ]
+    }))
+  }
+
+  function handle180QuestionChange(questionId, field, value) {
+    setForm((current) => ({
+      ...current,
+
+      evaluation180Questions: current.evaluation180Questions.map((question) =>
+        String(question.id) === String(questionId)
+          ? {
+              ...question,
+
+              [field]: value
+            }
+          : question
       )
     }))
   }
 
-  function remove180Question(questionIndex) {
-    setModel((current) => ({
+  function handleRemove180Question(questionId) {
+    setForm((current) => ({
       ...current,
 
       evaluation180Questions: current.evaluation180Questions.filter(
-        (_, index) => index !== questionIndex
+        (question) => String(question.id) !== String(questionId)
       )
     }))
   }
 
-  function handleSubmit(event) {
+  /*
+   * ==========================================================
+   * SALVAR
+   * ==========================================================
+   */
+
+  function validateForm() {
+    const errors = []
+
+    if (!String(form.name || '').trim()) {
+      errors.push('Informe o nome do modelo.')
+    }
+
+    if (!Array.isArray(form.pdiQuestions) || form.pdiQuestions.length === 0) {
+      errors.push('Cadastre pelo menos uma pergunta no PDI.')
+    }
+
+    form.pdiQuestions.forEach((question, index) => {
+      if (!String(question.text || '').trim()) {
+        errors.push(`Informe o texto da pergunta ${index + 1} do PDI.`)
+      }
+    })
+
+    form.stages.forEach((stage, stageIndex) => {
+      if (!String(stage.name || '').trim()) {
+        errors.push(`Informe o nome da etapa ${stageIndex + 1}.`)
+      }
+
+      stage.questions.forEach((question, questionIndex) => {
+        if (!String(question.text || '').trim()) {
+          errors.push(
+            `Informe a pergunta ${questionIndex + 1} da etapa "${stage.name}".`
+          )
+        }
+      })
+    })
+
+    if (form.evaluation180Enabled) {
+      if (form.evaluation180Questions.length === 0) {
+        errors.push('Cadastre pelo menos uma pergunta para a avaliação 180°.')
+      }
+
+      form.evaluation180Questions.forEach((question, index) => {
+        if (!String(question.text || '').trim()) {
+          errors.push(
+            `Informe o texto da pergunta ${index + 1} da avaliação 180°.`
+          )
+        }
+      })
+    }
+
+    return errors
+  }
+
+  function handleSave(event) {
     event.preventDefault()
 
     setError('')
 
-    const validation = validateEvaluationModel(model)
+    setSuccess('')
 
-    if (!validation.valid) {
-      setError(validation.errors.join(' '))
+    const errors = validateForm()
+
+    if (errors.length > 0) {
+      setError(errors[0])
 
       return
     }
 
-    if (editingId) {
-      const updated = updateEvaluationModel({
-        ...model,
-        id: editingId
-      })
+    const data = {
+      ...form,
 
-      if (!updated) {
-        setError('Não foi possível atualizar o modelo.')
+      name: String(form.name).trim(),
 
-        return
-      }
-    } else {
-      addEvaluationModel(model)
+      description: String(form.description || '').trim(),
+
+      pdiRequired: true,
+
+      pdiQuestions: form.pdiQuestions.map((question) => ({
+        ...question,
+
+        text: String(question.text || '').trim(),
+
+        type: 'text',
+
+        required: question.required !== false
+      })),
+
+      stages: form.stages.map((stage) => ({
+        ...stage,
+
+        name: String(stage.name || '').trim(),
+
+        description: String(stage.description || '').trim(),
+
+        questions: stage.questions.map((question) => ({
+          ...question,
+
+          text: String(question.text || '').trim()
+        }))
+      })),
+
+      evaluation180Questions: form.evaluation180Questions.map((question) => ({
+        ...question,
+
+        text: String(question.text || '').trim()
+      }))
     }
 
-    setModels(getEvaluationModels())
+    try {
+      let updatedModels
 
-    closeForm()
+      if (selectedModelId) {
+        updatedModels = updateEvaluationModel({
+          ...data,
+
+          id: selectedModelId
+        })
+      } else {
+        updatedModels = addEvaluationModel(data)
+      }
+
+      setModels(updatedModels)
+
+      setSuccess('Modelo de avaliação salvo com sucesso.')
+
+      setIsEditing(false)
+
+      setSelectedModelId(null)
+    } catch (saveError) {
+      console.error(saveError)
+
+      setError('Não foi possível salvar o modelo.')
+    }
   }
 
-  function handleDelete(modelId) {
-    const confirmed = window.confirm('Deseja realmente excluir este modelo?')
+  /*
+   * ==========================================================
+   * EXCLUIR
+   * ==========================================================
+   */
+
+  function handleDeleteModel(model) {
+    const confirmed = window.confirm(
+      `Deseja realmente excluir o modelo "${model.name}"?`
+    )
 
     if (!confirmed) {
       return
     }
 
-    deleteEvaluationModel(modelId)
+    const updatedModels = deleteEvaluationModel(model.id)
 
-    setModels(getEvaluationModels())
+    setModels(updatedModels)
+
+    if (selectedModelId === model.id) {
+      handleCancel()
+    }
   }
 
-  function handleDuplicate(modelId) {
-    duplicateEvaluationModel(modelId)
+  /*
+   * ==========================================================
+   * RENDER
+   * ==========================================================
+   */
 
-    setModels(getEvaluationModels())
-  }
+  if (isEditing) {
+    return (
+      <div className="avaliacoes-page">
+        <div className="avaliacoes-header">
+          <div>
+            <span className="avaliacoes-kicker">CONFIGURAÇÃO</span>
 
-  function handleToggleActive(selectedModel) {
-    setEvaluationModelActive(selectedModel.id, selectedModel.active === false)
+            <h1>
+              {selectedModelId
+                ? 'Editar modelo de avaliação'
+                : 'Novo modelo de avaliação'}
+            </h1>
 
-    setModels(getEvaluationModels())
-  }
-
-  return (
-    <div className="evaluations-page">
-      <header className="evaluations-header">
-        <div>
-          <span className="evaluations-eyebrow">AVALIAÇÕES</span>
-
-          <h1>Modelos de avaliação</h1>
-
-          <p>
-            Crie modelos personalizados para definir etapas, responsáveis e
-            perguntas.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          className="evaluations-primary-button"
-          onClick={openNewModel}
-        >
-          + Novo modelo
-        </button>
-      </header>
-
-      <section className="evaluations-card">
-        <div className="evaluations-toolbar">
-          <input
-            type="text"
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Buscar modelo..."
-          />
-        </div>
-
-        {filteredModels.length === 0 ? (
-          <div className="evaluations-empty">
-            <strong>Nenhum modelo encontrado.</strong>
-
-            <p>Crie o primeiro modelo de avaliação para começar.</p>
+            <p>
+              Configure as etapas, perguntas e o Plano de Desenvolvimento
+              Individual.
+            </p>
           </div>
-        ) : (
-          <div className="evaluation-model-grid">
-            {filteredModels.map((item) => (
-              <article className="evaluation-model-card" key={item.id}>
-                <div className="evaluation-model-card-top">
-                  <span>{getEvaluationModelTypeLabel(item.type)}</span>
 
-                  <span
-                    className={
-                      item.active !== false
-                        ? 'evaluation-status completed'
-                        : 'evaluation-status cancelled'
-                    }
-                  >
-                    {item.active !== false ? 'Ativo' : 'Inativo'}
-                  </span>
-                </div>
+          <button
+            type="button"
+            className="avaliacoes-secondary-button"
+            onClick={handleCancel}
+          >
+            Voltar
+          </button>
+        </div>
 
-                <h3>{item.name}</h3>
+        {error && (
+          <div className="avaliacoes-alert avaliacao-alert-error">{error}</div>
+        )}
 
-                <p>{item.description || 'Sem descrição.'}</p>
-
-                <div className="evaluation-model-info">
-                  <span>
-                    <strong>{item.stages?.length || 0}</strong> etapa(s)
-                  </span>
-
-                  <span>
-                    <strong>
-                      {item.stages?.reduce(
-                        (total, stage) =>
-                          total + (stage.questions?.length || 0),
-                        0
-                      )}
-                    </strong>{' '}
-                    pergunta(s)
-                  </span>
-
-                  <span>PDI obrigatório</span>
-
-                  <span>
-                    180°:{' '}
-                    {item.evaluation180?.enabled ? 'Ativo' : 'Não utilizado'}
-                  </span>
-                </div>
-
-                <div className="evaluation-actions">
-                  <button type="button" onClick={() => openEditModel(item)}>
-                    Editar
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDuplicate(item.id)}
-                  >
-                    Duplicar
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleToggleActive(item)}
-                  >
-                    {item.active !== false ? 'Desativar' : 'Ativar'}
-                  </button>
-
-                  <button
-                    type="button"
-                    className="danger"
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    Excluir
-                  </button>
-                </div>
-              </article>
-            ))}
+        {success && (
+          <div className="avaliacoes-alert avaliacao-alert-success">
+            {success}
           </div>
         )}
-      </section>
 
-      {showForm && (
-        <div className="evaluations-modal-overlay">
-          <div className="evaluations-modal evaluations-modal-large">
-            <header className="evaluations-modal-header">
+        <form className="avaliacoes-form" onSubmit={handleSave}>
+          {/* =================================================
+              DADOS DO MODELO
+          ================================================== */}
+
+          <section className="avaliacoes-section">
+            <div className="avaliacoes-section-header">
               <div>
-                <span className="evaluations-eyebrow">
-                  {editingId ? 'EDITAR MODELO' : 'NOVO MODELO'}
-                </span>
+                <span className="avaliacoes-section-number">01</span>
 
-                <h2>
-                  {editingId ? 'Editar modelo' : 'Criar modelo de avaliação'}
-                </h2>
+                <div>
+                  <h2>Dados do modelo</h2>
 
-                <p>Configure as etapas e responsáveis do processo.</p>
+                  <p>Defina as informações básicas da avaliação.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="avaliacoes-form-grid">
+              <div className="avaliacoes-field">
+                <label htmlFor="evaluation-name">Nome do modelo</label>
+
+                <input
+                  id="evaluation-name"
+                  name="name"
+                  value={form.name}
+                  onChange={handleChange}
+                  placeholder="Ex.: Avaliação anual de desempenho"
+                />
+              </div>
+
+              <div className="avaliacoes-field">
+                <label htmlFor="evaluation-type">Tipo</label>
+
+                <select
+                  id="evaluation-type"
+                  name="type"
+                  value={form.type}
+                  onChange={handleChange}
+                >
+                  <option value="performance">Avaliação de desempenho</option>
+
+                  <option value="periodic">Avaliação periódica</option>
+
+                  <option value="probationary">Avaliação de experiência</option>
+
+                  <option value="feedback">Feedback</option>
+
+                  <option value="other">Outra</option>
+                </select>
+              </div>
+
+              <div className="avaliacoes-field avaliacoes-field-full">
+                <label htmlFor="evaluation-description">Descrição</label>
+
+                <textarea
+                  id="evaluation-description"
+                  name="description"
+                  value={form.description}
+                  onChange={handleChange}
+                  rows={4}
+                  placeholder="Descreva a finalidade deste modelo."
+                />
+              </div>
+
+              <label className="avaliacoes-checkbox">
+                <input
+                  type="checkbox"
+                  name="active"
+                  checked={form.active}
+                  onChange={handleChange}
+                />
+
+                <span>Modelo ativo</span>
+              </label>
+            </div>
+          </section>
+
+          {/* =================================================
+              PDI
+          ================================================== */}
+
+          <section className="avaliacoes-section avaliacoes-pdi-section">
+            <div className="avaliacoes-section-header">
+              <div>
+                <span className="avaliacoes-section-number">02</span>
+
+                <div>
+                  <h2>Plano de Desenvolvimento Individual</h2>
+
+                  <p>
+                    A empresa define as perguntas que serão utilizadas no PDI
+                    deste modelo.
+                  </p>
+                </div>
+              </div>
+
+              <span className="avaliacoes-section-badge">Configurável</span>
+            </div>
+
+            <div className="avaliacoes-info-box">
+              <strong>Como funciona o PDI?</strong>
+
+              <p>
+                As perguntas abaixo serão copiadas para cada nova avaliação
+                criada com este modelo. Alterações futuras no modelo não
+                modificam avaliações que já foram iniciadas.
+              </p>
+            </div>
+
+            <div className="avaliacoes-pdi-list">
+              {form.pdiQuestions.map((question, index) => (
+                <div className="avaliacoes-pdi-question" key={question.id}>
+                  <div className="avaliacoes-pdi-question-top">
+                    <div className="avaliacoes-pdi-question-number">
+                      {index + 1}
+                    </div>
+
+                    <div className="avaliacoes-pdi-question-content">
+                      <label>Pergunta</label>
+
+                      <textarea
+                        value={question.text}
+                        onChange={(event) =>
+                          handlePdiQuestionTextChange(
+                            question.id,
+                            event.target.value
+                          )
+                        }
+                        rows={3}
+                        placeholder="Digite a pergunta que a empresa deseja utilizar no PDI..."
+                      />
+                    </div>
+                  </div>
+
+                  <div className="avaliacoes-pdi-question-footer">
+                    <label className="avaliacoes-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={question.required !== false}
+                        onChange={(event) =>
+                          handlePdiQuestionRequiredChange(
+                            question.id,
+                            event.target.checked
+                          )
+                        }
+                      />
+
+                      <span>Pergunta obrigatória</span>
+                    </label>
+
+                    <div className="avaliacoes-pdi-question-actions">
+                      <button
+                        type="button"
+                        className="avaliacoes-icon-button"
+                        disabled={index === 0}
+                        onClick={() => handleMovePdiQuestionUp(index)}
+                        title="Mover para cima"
+                      >
+                        ↑
+                      </button>
+
+                      <button
+                        type="button"
+                        className="avaliacoes-icon-button"
+                        disabled={index === form.pdiQuestions.length - 1}
+                        onClick={() => handleMovePdiQuestionDown(index)}
+                        title="Mover para baixo"
+                      >
+                        ↓
+                      </button>
+
+                      <button
+                        type="button"
+                        className="avaliacoes-danger-button"
+                        onClick={() => handleDeletePdiQuestion(question.id)}
+                      >
+                        Excluir
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className="avaliacoes-add-button"
+              onClick={handleAddPdiQuestion}
+            >
+              + Adicionar pergunta ao PDI
+            </button>
+          </section>
+
+          {/* =================================================
+              ETAPAS
+          ================================================== */}
+
+          <section className="avaliacoes-section">
+            <div className="avaliacoes-section-header">
+              <div>
+                <span className="avaliacoes-section-number">03</span>
+
+                <div>
+                  <h2>Etapas da avaliação</h2>
+
+                  <p>
+                    Configure quem responde e quais perguntas fazem parte de
+                    cada etapa.
+                  </p>
+                </div>
               </div>
 
               <button
                 type="button"
-                className="evaluations-modal-close"
-                onClick={closeForm}
+                className="avaliacoes-add-button"
+                onClick={handleAddStage}
               >
-                ×
+                + Adicionar etapa
               </button>
-            </header>
+            </div>
 
-            <form className="evaluations-modal-body" onSubmit={handleSubmit}>
-              {error && <div className="evaluation-error">{error}</div>}
+            {form.stages.length === 0 ? (
+              <div className="avaliacoes-empty-box">
+                <strong>Nenhuma etapa configurada</strong>
 
-              <section className="evaluation-form-section">
-                <div className="evaluation-section-heading">
-                  <div>
-                    <span>CONFIGURAÇÃO</span>
+                <p>
+                  Adicione uma etapa caso este modelo precise de uma avaliação
+                  antes do PDI.
+                </p>
+              </div>
+            ) : (
+              <div className="avaliacoes-stages-list">
+                {form.stages.map((stage, stageIndex) => (
+                  <div className="avaliacoes-stage-card" key={stage.id}>
+                    <div className="avaliacoes-stage-header">
+                      <div>
+                        <span>ETAPA {stageIndex + 1}</span>
 
-                    <h3>Informações do modelo</h3>
-                  </div>
-                </div>
+                        <h3>{stage.name || 'Nova etapa'}</h3>
+                      </div>
 
-                <div className="evaluations-form-grid">
-                  <label>
-                    Nome do modelo *
-                    <input
-                      name="name"
-                      value={model.name}
-                      onChange={handleModelChange}
-                      placeholder="Ex.: Avaliação anual"
-                    />
-                  </label>
+                      <button
+                        type="button"
+                        className="avaliacoes-danger-button"
+                        onClick={() => handleRemoveStage(stage.id)}
+                      >
+                        Excluir etapa
+                      </button>
+                    </div>
 
-                  <label>
-                    Tipo *
-                    <select
-                      name="type"
-                      value={model.type}
-                      onChange={handleModelChange}
-                    >
-                      {EVALUATION_MODEL_TYPES.map((type) => (
-                        <option key={type.value} value={type.value}>
-                          {type.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                    <div className="avaliacoes-form-grid">
+                      <div className="avaliacoes-field">
+                        <label>Nome da etapa</label>
 
-                  <label className="evaluations-form-field-full">
-                    Descrição
-                    <textarea
-                      name="description"
-                      value={model.description}
-                      onChange={handleModelChange}
-                      rows="3"
-                      placeholder="Explique para que este modelo será utilizado."
-                    />
-                  </label>
+                        <input
+                          value={stage.name}
+                          onChange={(event) =>
+                            handleStageChange(
+                              stage.id,
+                              'name',
+                              event.target.value
+                            )
+                          }
+                          placeholder="Ex.: Avaliação do supervisor"
+                        />
+                      </div>
 
-                  <label className="evaluation-toggle">
-                    <input
-                      type="checkbox"
-                      name="active"
-                      checked={model.active}
-                      onChange={handleModelChange}
-                    />
-                    Modelo ativo
-                  </label>
-                </div>
-              </section>
+                      <div className="avaliacoes-field">
+                        <label>Responsável</label>
 
-              <section className="evaluation-form-section">
-                <div className="evaluation-section-heading">
-                  <div>
-                    <span>FLUXO</span>
+                        <select
+                          value={stage.responsibleType}
+                          onChange={(event) =>
+                            handleStageChange(
+                              stage.id,
+                              'responsibleType',
+                              event.target.value
+                            )
+                          }
+                        >
+                          <option value="department_supervisor">
+                            Supervisor do setor
+                          </option>
 
-                    <h3>Etapas da avaliação</h3>
+                          <option value="branch_manager">
+                            Gerente da filial
+                          </option>
 
-                    <p>
-                      As etapas serão executadas em ordem. A próxima etapa só
-                      será liberada depois da conclusão da anterior.
-                    </p>
-                  </div>
+                          <option value="manager_or_supervisor">
+                            Superior hierárquico
+                          </option>
 
-                  <button
-                    type="button"
-                    className="evaluations-secondary-button"
-                    onClick={addStage}
-                  >
-                    + Adicionar etapa
-                  </button>
-                </div>
+                          <option value="instructor">Instrutor</option>
 
-                {model.stages.length === 0 ? (
-                  <div className="evaluation-muted">
-                    Nenhuma etapa adicionada.
-                  </div>
-                ) : (
-                  <div className="evaluation-stage-list">
-                    {model.stages.map((stage, stageIndex) => (
-                      <div className="evaluation-stage-builder" key={stage.id}>
-                        <div className="evaluation-stage-heading">
-                          <div>
-                            <span>ETAPA {stageIndex + 1}</span>
+                          <option value="specific_user">
+                            Usuário específico
+                          </option>
+                        </select>
+                      </div>
 
-                            <h4>{stage.name || 'Nova etapa'}</h4>
-                          </div>
+                      <div className="avaliacoes-field avaliacoes-field-full">
+                        <label>Descrição</label>
 
-                          <button
-                            type="button"
-                            className="danger-text-button"
-                            onClick={() => removeStage(stageIndex)}
-                          >
-                            Remover etapa
-                          </button>
+                        <textarea
+                          value={stage.description}
+                          onChange={(event) =>
+                            handleStageChange(
+                              stage.id,
+                              'description',
+                              event.target.value
+                            )
+                          }
+                          rows={3}
+                          placeholder="Explique o objetivo desta etapa."
+                        />
+                      </div>
+                    </div>
+
+                    <div className="avaliacoes-stage-questions">
+                      <div className="avaliacoes-subsection-header">
+                        <div>
+                          <h4>Perguntas</h4>
+
+                          <p>Defina as perguntas desta etapa.</p>
                         </div>
 
-                        <div className="evaluations-form-grid">
-                          <label>
-                            Nome da etapa *
-                            <input
-                              value={stage.name}
-                              onChange={(event) =>
-                                updateStage(
-                                  stageIndex,
-                                  'name',
-                                  event.target.value
-                                )
-                              }
-                              placeholder="Ex.: Avaliação do gerente"
-                            />
-                          </label>
+                        <button
+                          type="button"
+                          className="avaliacoes-add-button"
+                          onClick={() => handleAddStageQuestion(stage.id)}
+                        >
+                          + Adicionar pergunta
+                        </button>
+                      </div>
 
-                          <label>
-                            Responsável *
-                            <select
-                              value={stage.responsibleType}
-                              onChange={(event) =>
-                                updateStage(
-                                  stageIndex,
-                                  'responsibleType',
-                                  event.target.value
-                                )
-                              }
-                            >
-                              {EVALUATION_RESPONSIBLE_TYPES.map(
-                                (responsible) => (
-                                  <option
-                                    key={responsible.value}
-                                    value={responsible.value}
-                                  >
-                                    {responsible.label}
-                                  </option>
-                                )
-                              )}
-                            </select>
-                          </label>
-
-                          {stage.responsibleType === 'specific_user' && (
-                            <label>
-                              Usuário responsável *
-                              <select
-                                value={stage.responsibleUserId}
-                                onChange={(event) => {
-                                  const selectedUser = users.find(
-                                    (user) =>
-                                      String(user.id) ===
-                                      String(event.target.value)
-                                  )
-
-                                  updateStage(
-                                    stageIndex,
-                                    'responsibleUserId',
-                                    event.target.value
-                                  )
-
-                                  updateStage(
-                                    stageIndex,
-                                    'responsibleUserName',
-                                    selectedUser?.name ||
-                                      selectedUser?.username ||
-                                      ''
-                                  )
-                                }}
-                              >
-                                <option value="">Selecione o usuário</option>
-
-                                {users.map((user) => (
-                                  <option key={user.id} value={user.id}>
-                                    {user.name || user.username}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          )}
-
-                          <label className="evaluations-form-field-full">
-                            Descrição
-                            <textarea
-                              value={stage.description}
-                              onChange={(event) =>
-                                updateStage(
-                                  stageIndex,
-                                  'description',
-                                  event.target.value
-                                )
-                              }
-                              rows="2"
-                              placeholder="Explique o objetivo desta etapa."
-                            />
-                          </label>
+                      {stage.questions.length === 0 ? (
+                        <div className="avaliacoes-empty-box small">
+                          Nenhuma pergunta cadastrada.
                         </div>
-
-                        <div className="evaluation-questions-builder">
-                          <div className="evaluation-section-heading">
-                            <div>
-                              <h4>Perguntas</h4>
-
-                              <p>
-                                Defina o que o responsável deverá responder.
-                              </p>
-                            </div>
-
-                            <button
-                              type="button"
-                              className="evaluations-secondary-button"
-                              onClick={() => addQuestion(stageIndex)}
+                      ) : (
+                        <div className="avaliacoes-stage-question-list">
+                          {stage.questions.map((question, questionIndex) => (
+                            <div
+                              className="avaliacoes-stage-question"
+                              key={question.id}
                             >
-                              + Pergunta
-                            </button>
-                          </div>
+                              <div className="avaliacoes-question-number">
+                                {questionIndex + 1}
+                              </div>
 
-                          {stage.questions.length === 0 ? (
-                            <div className="evaluation-muted">
-                              Nenhuma pergunta adicionada.
-                            </div>
-                          ) : (
-                            stage.questions.map((question, questionIndex) => (
-                              <div
-                                className="evaluation-question-builder"
-                                key={question.id}
-                              >
-                                <div className="evaluation-question-number">
-                                  {questionIndex + 1}
-                                </div>
+                              <div className="avaliacoes-stage-question-content">
+                                <input
+                                  value={question.text}
+                                  onChange={(event) =>
+                                    handleStageQuestionChange(
+                                      stage.id,
+                                      question.id,
+                                      'text',
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder="Digite a pergunta..."
+                                />
 
-                                <div className="evaluation-question-fields">
-                                  <input
-                                    value={question.text}
-                                    onChange={(event) =>
-                                      updateQuestion(
-                                        stageIndex,
-                                        questionIndex,
-                                        'text',
-                                        event.target.value
-                                      )
-                                    }
-                                    placeholder="Digite a pergunta..."
-                                  />
-
+                                <div className="avaliacoes-stage-question-options">
                                   <select
                                     value={question.type}
                                     onChange={(event) =>
-                                      updateQuestion(
-                                        stageIndex,
-                                        questionIndex,
+                                      handleStageQuestionChange(
+                                        stage.id,
+                                        question.id,
                                         'type',
                                         event.target.value
                                       )
                                     }
                                   >
-                                    {EVALUATION_QUESTION_TYPES.map((type) => (
-                                      <option
-                                        key={type.value}
-                                        value={type.value}
-                                      >
-                                        {type.label}
-                                      </option>
-                                    ))}
+                                    <option value="scale">
+                                      Nota de 1 a 10
+                                    </option>
+
+                                    <option value="text">Texto</option>
+
+                                    <option value="yes_no">Sim / Não</option>
                                   </select>
 
-                                  <label className="evaluation-checkbox">
+                                  <label className="avaliacoes-checkbox">
                                     <input
                                       type="checkbox"
                                       checked={question.required !== false}
                                       onChange={(event) =>
-                                        updateQuestion(
-                                          stageIndex,
-                                          questionIndex,
+                                        handleStageQuestionChange(
+                                          stage.id,
+                                          question.id,
                                           'required',
                                           event.target.checked
                                         )
                                       }
                                     />
-                                    Obrigatória
+
+                                    <span>Obrigatória</span>
                                   </label>
+
+                                  <button
+                                    type="button"
+                                    className="avaliacoes-danger-button"
+                                    onClick={() =>
+                                      handleRemoveStageQuestion(
+                                        stage.id,
+                                        question.id
+                                      )
+                                    }
+                                  >
+                                    Excluir
+                                  </button>
                                 </div>
-
-                                <button
-                                  type="button"
-                                  className="danger-text-button"
-                                  onClick={() =>
-                                    removeQuestion(stageIndex, questionIndex)
-                                  }
-                                >
-                                  Remover
-                                </button>
                               </div>
-                            ))
-                          )}
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                    ))}
+                      )}
+                    </div>
                   </div>
-                )}
-              </section>
+                ))}
+              </div>
+            )}
+          </section>
 
-              <section className="evaluation-form-section">
-                <div className="evaluation-section-heading">
+          {/* =================================================
+              180°
+          ================================================== */}
+
+          <section className="avaliacoes-section">
+            <div className="avaliacoes-section-header">
+              <div>
+                <span className="avaliacoes-section-number">04</span>
+
+                <div>
+                  <h2>Avaliação 180°</h2>
+
+                  <p>
+                    Permite que o próprio funcionário responda à avaliação
+                    destinada a ele.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <label className="avaliacoes-switch-row">
+              <input
+                type="checkbox"
+                checked={form.evaluation180Enabled}
+                onChange={handleToggle180}
+              />
+
+              <span>Ativar avaliação 180°</span>
+            </label>
+
+            {form.evaluation180Enabled && (
+              <div className="avaliacoes-180-content">
+                <div className="avaliacoes-subsection-header">
                   <div>
-                    <span>PDI</span>
-
-                    <h3>Plano de Desenvolvimento Individual</h3>
+                    <h4>Perguntas da avaliação 180°</h4>
 
                     <p>
-                      O PDI é obrigatório e será preenchido ao final de todas as
-                      etapas.
+                      Cadastre as perguntas que o funcionário deverá responder.
                     </p>
                   </div>
 
-                  <span className="evaluation-fixed-badge">Obrigatório</span>
+                  <button
+                    type="button"
+                    className="avaliacoes-add-button"
+                    onClick={handleAdd180Question}
+                  >
+                    + Adicionar pergunta
+                  </button>
                 </div>
 
-                <div className="evaluation-pdi-fixed">
-                  <div className="evaluation-pdi-question">
-                    <span>1</span>
-
-                    <strong>
-                      Quais são os pontos positivos do funcionário?
-                    </strong>
-                  </div>
-
-                  <div className="evaluation-pdi-question">
-                    <span>2</span>
-
-                    <strong>
-                      Quais são os pontos negativos ou pontos a desenvolver?
-                    </strong>
-                  </div>
-
-                  <div className="evaluation-pdi-question">
-                    <span>3</span>
-
-                    <strong>Quais pontos precisam ser desenvolvidos?</strong>
-                  </div>
-
-                  <div className="evaluation-pdi-question">
-                    <span>4</span>
-
-                    <strong>
-                      Quais ações serão realizadas para o desenvolvimento?
-                    </strong>
-                  </div>
-                </div>
-              </section>
-
-              <section className="evaluation-form-section">
-                <div className="evaluation-section-heading">
-                  <div>
-                    <span>180°</span>
-
-                    <h3>Avaliação do funcionário para o supervisor</h3>
-
-                    <p>Esta etapa é opcional e só será liberada após o PDI.</p>
-                  </div>
-
-                  <label className="evaluation-toggle">
-                    <input
-                      type="checkbox"
-                      checked={model.evaluation180Enabled}
-                      onChange={(event) =>
-                        setModel((current) => ({
-                          ...current,
-
-                          evaluation180Enabled: event.target.checked
-                        }))
-                      }
-                    />
-                    Habilitar 180°
-                  </label>
-                </div>
-
-                {model.evaluation180Enabled && (
-                  <div className="evaluation-180-builder">
-                    <div className="evaluation-section-heading">
-                      <div>
-                        <h4>Perguntas do 180°</h4>
-                      </div>
-
-                      <button
-                        type="button"
-                        className="evaluations-secondary-button"
-                        onClick={add180Question}
-                      >
-                        + Pergunta
-                      </button>
+                {form.evaluation180Questions.map((question, index) => (
+                  <div className="avaliacoes-stage-question" key={question.id}>
+                    <div className="avaliacoes-question-number">
+                      {index + 1}
                     </div>
 
-                    {model.evaluation180Questions.length === 0 ? (
-                      <div className="evaluation-muted">
-                        Nenhuma pergunta adicionada.
+                    <div className="avaliacoes-stage-question-content">
+                      <input
+                        value={question.text}
+                        onChange={(event) =>
+                          handle180QuestionChange(
+                            question.id,
+                            'text',
+                            event.target.value
+                          )
+                        }
+                        placeholder="Digite a pergunta..."
+                      />
+
+                      <div className="avaliacoes-stage-question-options">
+                        <select
+                          value={question.type}
+                          onChange={(event) =>
+                            handle180QuestionChange(
+                              question.id,
+                              'type',
+                              event.target.value
+                            )
+                          }
+                        >
+                          <option value="scale">Nota de 1 a 10</option>
+
+                          <option value="text">Texto</option>
+
+                          <option value="yes_no">Sim / Não</option>
+                        </select>
+
+                        <label className="avaliacoes-checkbox">
+                          <input
+                            type="checkbox"
+                            checked={question.required !== false}
+                            onChange={(event) =>
+                              handle180QuestionChange(
+                                question.id,
+                                'required',
+                                event.target.checked
+                              )
+                            }
+                          />
+
+                          <span>Obrigatória</span>
+                        </label>
+
+                        <button
+                          type="button"
+                          className="avaliacoes-danger-button"
+                          onClick={() => handleRemove180Question(question.id)}
+                        >
+                          Excluir
+                        </button>
                       </div>
-                    ) : (
-                      model.evaluation180Questions.map(
-                        (question, questionIndex) => (
-                          <div
-                            className="evaluation-question-builder"
-                            key={question.id}
-                          >
-                            <div className="evaluation-question-number">
-                              {questionIndex + 1}
-                            </div>
-
-                            <div className="evaluation-question-fields">
-                              <input
-                                value={question.text}
-                                onChange={(event) =>
-                                  update180Question(
-                                    questionIndex,
-                                    'text',
-                                    event.target.value
-                                  )
-                                }
-                                placeholder="Digite a pergunta..."
-                              />
-
-                              <select
-                                value={question.type}
-                                onChange={(event) =>
-                                  update180Question(
-                                    questionIndex,
-                                    'type',
-                                    event.target.value
-                                  )
-                                }
-                              >
-                                {EVALUATION_QUESTION_TYPES.map((type) => (
-                                  <option key={type.value} value={type.value}>
-                                    {type.label}
-                                  </option>
-                                ))}
-                              </select>
-
-                              <label className="evaluation-checkbox">
-                                <input
-                                  type="checkbox"
-                                  checked={question.required !== false}
-                                  onChange={(event) =>
-                                    update180Question(
-                                      questionIndex,
-                                      'required',
-                                      event.target.checked
-                                    )
-                                  }
-                                />
-                                Obrigatória
-                              </label>
-                            </div>
-
-                            <button
-                              type="button"
-                              className="danger-text-button"
-                              onClick={() => remove180Question(questionIndex)}
-                            >
-                              Remover
-                            </button>
-                          </div>
-                        )
-                      )
-                    )}
+                    </div>
                   </div>
-                )}
-              </section>
+                ))}
+              </div>
+            )}
+          </section>
 
-              <footer className="evaluations-modal-footer">
+          {/* =================================================
+              BOTÕES
+          ================================================== */}
+
+          <div className="avaliacoes-form-actions">
+            <button
+              type="button"
+              className="avaliacoes-secondary-button"
+              onClick={handleCancel}
+            >
+              Cancelar
+            </button>
+
+            <button type="submit" className="avaliacoes-primary-button">
+              Salvar modelo
+            </button>
+          </div>
+        </form>
+      </div>
+    )
+  }
+
+  /*
+   * ==========================================================
+   * LISTAGEM
+   * ==========================================================
+   */
+
+  return (
+    <div className="avaliacoes-page">
+      <div className="avaliacoes-header">
+        <div>
+          <span className="avaliacoes-kicker">CONFIGURAÇÃO</span>
+
+          <h1>Modelos de avaliação</h1>
+
+          <p>
+            Crie e configure os modelos utilizados nas avaliações de desempenho.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className="avaliacoes-primary-button"
+          onClick={handleNewModel}
+        >
+          + Novo modelo
+        </button>
+      </div>
+
+      {error && (
+        <div className="avaliacoes-alert avaliacao-alert-error">{error}</div>
+      )}
+
+      {success && (
+        <div className="avaliacoes-alert avaliacao-alert-success">
+          {success}
+        </div>
+      )}
+
+      {models.length === 0 ? (
+        <div className="avaliacoes-empty-page">
+          <div className="avaliacoes-empty-icon">✓</div>
+
+          <h2>Nenhum modelo cadastrado</h2>
+
+          <p>
+            Crie o primeiro modelo para começar a configurar suas avaliações de
+            desempenho.
+          </p>
+
+          <button
+            type="button"
+            className="avaliacoes-primary-button"
+            onClick={handleNewModel}
+          >
+            Criar primeiro modelo
+          </button>
+        </div>
+      ) : (
+        <div className="avaliacoes-models-grid">
+          {models.map((model) => (
+            <article className="avaliacoes-model-card" key={model.id}>
+              <div className="avaliacoes-model-card-header">
+                <div>
+                  <span className="avaliacoes-model-type">
+                    {getModelTypeLabel(model.type)}
+                  </span>
+
+                  <h2>{model.name}</h2>
+                </div>
+
+                <span
+                  className={
+                    model.active
+                      ? 'avaliacoes-status active'
+                      : 'avaliacoes-status inactive'
+                  }
+                >
+                  {model.active ? 'Ativo' : 'Inativo'}
+                </span>
+              </div>
+
+              <p className="avaliacoes-model-description">
+                {model.description || 'Sem descrição cadastrada.'}
+              </p>
+
+              <div className="avaliacoes-model-stats">
+                <div>
+                  <strong>{model.stages?.length || 0}</strong>
+
+                  <span>Etapas</span>
+                </div>
+
+                <div>
+                  <strong>
+                    {normalizePdiQuestions(model.pdiQuestions).length}
+                  </strong>
+
+                  <span>Perguntas PDI</span>
+                </div>
+
+                <div>
+                  <strong>{model.evaluation180Enabled ? 'Sim' : 'Não'}</strong>
+
+                  <span>180°</span>
+                </div>
+              </div>
+
+              <div className="avaliacoes-model-card-actions">
                 <button
                   type="button"
-                  className="evaluations-secondary-button"
-                  onClick={closeForm}
+                  className="avaliacoes-secondary-button"
+                  onClick={() => handleEditModel(model)}
                 >
-                  Cancelar
+                  Editar
                 </button>
 
-                <button type="submit" className="evaluations-primary-button">
-                  {editingId ? 'Salvar alterações' : 'Criar modelo'}
+                <button
+                  type="button"
+                  className="avaliacoes-danger-button"
+                  onClick={() => handleDeleteModel(model)}
+                >
+                  Excluir
                 </button>
-              </footer>
-            </form>
-          </div>
+              </div>
+            </article>
+          ))}
         </div>
       )}
     </div>
   )
+}
+
+/*
+ * ============================================================
+ * CLONAGEM
+ * ============================================================
+ */
+
+function cloneQuestion(question) {
+  return {
+    ...question
+  }
+}
+
+function cloneStage(stage) {
+  return {
+    ...stage,
+
+    questions: Array.isArray(stage.questions)
+      ? stage.questions.map(cloneQuestion)
+      : []
+  }
+}
+
+/*
+ * ============================================================
+ * TIPO DO MODELO
+ * ============================================================
+ */
+
+function getModelTypeLabel(type) {
+  const labels = {
+    performance: 'Avaliação de desempenho',
+
+    periodic: 'Avaliação periódica',
+
+    probationary: 'Avaliação de experiência',
+
+    feedback: 'Feedback',
+
+    other: 'Outra'
+  }
+
+  return labels[type] || 'Avaliação'
 }

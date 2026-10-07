@@ -720,6 +720,35 @@
 }
 
 /* ============================================================
+   CORREÇÃO PONTUAL:
+   BARRA DE PROGRESSO USADA EM AVALIAÇÕES
+   ============================================================ */
+
+.evaluation-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+}
+
+.evaluation-progress-bar {
+  width: 100%;
+  height: 7px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.evaluation-progress-bar::before {
+  content: '';
+  display: block;
+  width: 50%;
+  height: 100%;
+  border-radius: inherit;
+  background: #2563eb;
+}
+
+/* ============================================================
    RESPOSTAS
    ============================================================ */
 
@@ -925,7 +954,725 @@
 }
 
 /* ============================================================
-   RESPONSIVO
+   MODELOS DE AVALIAÇÃO
+   ------------------------------------------------------------
+   A tela ModelosAvaliacao.jsx utiliza a família de classes
+   "avaliacoes-*", diferente da tela principal que utiliza
+   "evaluations-*".
+   ============================================================ */
+
+.avaliacoes-page {
+  width: 100%;
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 30px 24px 50px;
+  box-sizing: border-box;
+}
+
+.avaliacoes-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.avaliacoes-kicker {
+  display: block;
+  margin-bottom: 6px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1.5px;
+}
+
+.avaliacoes-header h1 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.avaliacoes-header p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.avaliacoes-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.avaliacoes-section {
+  margin-bottom: 20px;
+  padding: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.avaliacoes-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.avaliacoes-section-header > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.avaliacoes-section-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.avaliacoes-section-header h2 {
+  margin: 2px 0 0;
+  color: #0f172a;
+  font-size: 16px;
+}
+
+.avaliacoes-section-header p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.avaliacoes-section-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.avaliacoes-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px;
+}
+
+.avaliacoes-field {
+  min-width: 0;
+}
+
+.avaliacoes-field-full {
+  grid-column: 1 / -1;
+}
+
+.avaliacoes-field label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.avaliacoes-page input,
+.avaliacoes-page select,
+.avaliacoes-page textarea {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #0f172a;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.avaliacoes-page input,
+.avaliacoes-page select {
+  min-height: 38px;
+  padding: 0 11px;
+}
+
+.avaliacoes-page textarea {
+  min-height: 80px;
+  padding: 10px 11px;
+  resize: vertical;
+}
+
+.avaliacoes-page input:focus,
+.avaliacoes-page select:focus,
+.avaliacoes-page textarea:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.avaliacoes-primary-button,
+.avaliacoes-secondary-button {
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.avaliacoes-primary-button {
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #fff;
+}
+
+.avaliacoes-primary-button:hover {
+  border-color: #1d4ed8;
+  background: #1d4ed8;
+}
+
+.avaliacoes-secondary-button {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #475569;
+}
+
+.avaliacoes-secondary-button:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.avaliacoes-form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ============================================================
+   ALERTAS
+   ============================================================ */
+
+.avaliacoes-alert {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.avaliacao-alert-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.avaliacao-alert-success {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+/* ============================================================
+   MODELOS - LISTA
+   ============================================================ */
+
+.avaliacoes-models-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.avaliacoes-model-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.avaliacoes-model-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.avaliacoes-model-card-header h2,
+.avaliacoes-model-card-header h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 17px;
+}
+
+.avaliacoes-model-type {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  min-height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.avaliacoes-model-description {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.avaliacoes-model-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.avaliacoes-model-stats > div {
+  padding: 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.avaliacoes-model-stats span {
+  display: block;
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.avaliacoes-model-stats strong {
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.avaliacoes-model-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  padding-top: 3px;
+}
+
+.avaliacoes-add-button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.avaliacoes-add-button:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.avaliacoes-danger-button {
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.avaliacoes-danger-button:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
+.avaliacoes-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #fff;
+  color: #475569;
+  cursor: pointer;
+}
+
+.avaliacoes-icon-button:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.avaliacoes-icon-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ============================================================
+   PDI - EDITOR
+   ============================================================ */
+
+.avaliacoes-pdi-section {
+  background: #fbfdff;
+}
+
+.avaliacoes-pdi-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.avaliacoes-pdi-question {
+  padding: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+}
+
+.avaliacoes-pdi-question-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.avaliacoes-pdi-question-number,
+.avaliacoes-question-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.avaliacoes-pdi-question-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.avaliacoes-pdi-question-content textarea {
+  min-height: 70px;
+}
+
+.avaliacoes-pdi-question-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 9px;
+}
+
+.avaliacoes-pdi-question-footer label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #64748b;
+  font-size: 11px;
+}
+
+.avaliacoes-pdi-question-footer input {
+  width: auto;
+  min-height: auto;
+}
+
+.avaliacoes-pdi-question-actions {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ============================================================
+   ETAPAS
+   ============================================================ */
+
+.avaliacoes-stages-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.avaliacoes-stage-card {
+  padding: 16px;
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.avaliacoes-stage-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 15px;
+  margin-bottom: 15px;
+}
+
+.avaliacoes-stage-header > div:first-child {
+  flex: 1;
+}
+
+.avaliacoes-stage-header h3 {
+  margin: 3px 0 0;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.avaliacoes-stage-header span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.avaliacoes-stage-questions {
+  padding-top: 15px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.avaliacoes-stage-question-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.avaliacoes-stage-question {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.avaliacoes-stage-question-content {
+  min-width: 0;
+}
+
+.avaliacoes-stage-question-options {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.avaliacoes-stage-question-options > * {
+  flex: 1;
+}
+
+.avaliacoes-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.avaliacoes-checkbox input {
+  width: auto;
+  min-height: auto;
+}
+
+.avaliacoes-switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 13px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.avaliacoes-switch-row > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.avaliacoes-switch-row strong {
+  color: #334155;
+  font-size: 12px;
+}
+
+.avaliacoes-switch-row span {
+  color: #64748b;
+  font-size: 11px;
+}
+
+/* ============================================================
+   AVALIAÇÃO 180°
+   ============================================================ */
+
+.avaliacoes-180-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ============================================================
+   ESTADO VAZIO
+   ============================================================ */
+
+.avaliacoes-empty-page {
+  padding: 50px 20px;
+  text-align: center;
+}
+
+.avaliacoes-empty-page h2 {
+  margin: 0;
+  color: #334155;
+  font-size: 16px;
+}
+
+.avaliacoes-empty-page p {
+  margin: 7px 0 0;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.avaliacoes-empty-box {
+  padding: 30px 20px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  text-align: center;
+}
+
+.avaliacoes-empty-box.small {
+  padding: 18px;
+}
+
+.avaliacoes-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: #eff6ff;
+  color: #2563eb;
+  font-weight: 800;
+}
+
+/* ============================================================
+   RESPONSIVO - MODELOS
+   ============================================================ */
+
+@media (max-width: 1100px) {
+  .avaliacoes-models-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 800px) {
+  .avaliacoes-page {
+    padding: 20px 14px 35px;
+  }
+
+  .avaliacoes-header {
+    flex-direction: column;
+  }
+
+  .avaliacoes-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .avaliacoes-field-full {
+    grid-column: auto;
+  }
+
+  .avaliacoes-section-header {
+    flex-direction: column;
+  }
+
+  .avaliacoes-model-card-header {
+    flex-direction: column;
+  }
+
+  .avaliacoes-model-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .avaliacoes-stage-header {
+    flex-direction: column;
+  }
+
+  .avaliacoes-pdi-question-top {
+    flex-direction: column;
+  }
+
+  .avaliacoes-pdi-question-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .avaliacoes-stage-question {
+    grid-template-columns: 1fr;
+  }
+
+  .avaliacoes-stage-question-options {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .avaliacoes-form-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ============================================================
+   CORREÇÃO DO PROGRESSO DA AVALIAÇÃO
+   ============================================================ */
+
+.evaluation-progress-bar.large {
+  height: 10px;
+}
+
+.evaluation-progress-bar.large::before {
+  height: 100%;
+}
+
+/* ============================================================
+   RESPONSIVO ORIGINAL
    ============================================================ */
 
 @media (max-width: 1100px) {

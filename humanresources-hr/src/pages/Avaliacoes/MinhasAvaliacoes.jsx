@@ -1,1106 +1,1090 @@
-import { useState } from 'react'
-
-import { getEmployees } from '../../services/employee'
-import { getCurrentUser } from '../../services/auth'
+import React, { useEffect, useMemo, useState } from 'react'
 
 import {
-  calculateEvaluationProgress,
-  completeEvaluation180,
-  completeEvaluationPdi,
-  completeEvaluationStage,
   getEvaluationWorkflows,
-  isEvaluation180Unlocked,
-  isPdiUnlocked,
-  saveEvaluation180Answer,
-  saveEvaluation180Signature,
-  saveEvaluationAnswer,
-  saveEvaluationPdiAnswer,
-  saveEvaluationPdiSignature,
-  saveEvaluationStageSignature,
-  startEvaluation180,
   startEvaluationPdi,
-  startEvaluationStage
+  answerEvaluationPdiQuestion,
+  completeEvaluationPdi,
+  refreshEvaluationWorkflowStatus
 } from '../../services/evaluationWorkflow'
 
 import {
-  canAnswerEvaluation180,
-  canAnswerEvaluationPdi,
-  canAnswerEvaluationStage,
-  canViewEvaluation180,
-  isEvaluationEmployee,
-  isEvaluationStageResponsible
+  canViewEvaluationPdi,
+  canRespondToPdi
 } from '../../services/evaluationAccess'
 
-import SignaturePad from '../../components/evaluations/SignaturePad'
+import { getStoredArray } from '../../services/storage'
 
 import './avaliacoes.css'
 
 /*
  * ============================================================
- * COMPONENTE PRINCIPAL
+ * MINHAS AVALIAÇÕES
  * ============================================================
+ *
+ * Esta página apresenta as avaliações que estão relacionadas
+ * ao usuário logado.
+ *
+ * O PDI utiliza as perguntas que foram configuradas no modelo
+ * da avaliação.
  */
 
 export default function MinhasAvaliacoes() {
-  const employees = getEmployees()
+  const [currentUser, setCurrentUser] = useState(null)
 
-  const currentUser = getCurrentUser()
+  const [workflows, setWorkflows] = useState([])
 
-  const [workflows, setWorkflows] = useState(getEvaluationWorkflows)
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState(null)
 
   const [selectedWorkflow, setSelectedWorkflow] = useState(null)
 
-  const [message, setMessage] = useState('')
+  const [pdiAnswers, setPdiAnswers] = useState({})
 
-  /*
-   * ============================================================
-   * ATUALIZAR DADOS
-   * ============================================================
-   */
+  const [loading, setLoading] = useState(true)
 
-  function refresh() {
-    const updated = getEvaluationWorkflows()
-
-    setWorkflows(updated)
-
-    if (selectedWorkflow) {
-      setSelectedWorkflow(
-        updated.find(
-          (item) => String(item.id) === String(selectedWorkflow.id)
-        ) || null
-      )
-    }
-  }
-
-  /*
-   * ============================================================
-   * VERIFICAR SE O USUÁRIO PODE ATUAR
-   * ============================================================
-   */
-
-  function canActOnWorkflow(workflow) {
-    if (!currentUser || !workflow) {
-      return false
-    }
-
-    /*
-     * Funcionário avaliado.
-     */
-    if (isEvaluationEmployee(workflow, currentUser)) {
-      return true
-    }
-
-    /*
-     * Responsável por alguma etapa.
-     */
-    if (
-      workflow.stages?.some((stage) =>
-        isEvaluationStageResponsible(workflow, stage, currentUser)
-      )
-    ) {
-      return true
-    }
-
-    /*
-     * Responsável pelo PDI.
-     */
-    if (canAnswerEvaluationPdi(workflow, currentUser)) {
-      return true
-    }
-
-    /*
-     * Funcionário que responderá o 180°.
-     */
-    if (canAnswerEvaluation180(workflow, currentUser)) {
-      return true
-    }
-
-    return false
-  }
-
-  /*
-   * ============================================================
-   * AVALIAÇÕES DISPONÍVEIS
-   * ============================================================
-   */
-
-  const availableWorkflows = workflows.filter(
-    (workflow) => workflow.status !== 'cancelled' && canActOnWorkflow(workflow)
-  )
-
-  /*
-   * ============================================================
-   * NOME DO FUNCIONÁRIO
-   * ============================================================
-   */
-
-  function getEmployeeName(employeeId) {
-    return (
-      employees.find((employee) => Number(employee.id) === Number(employeeId))
-        ?.name || ''
-    )
-  }
-
-  return (
-    <div className="evaluations-page">
-      <header className="evaluations-header">
-        <div>
-          <span className="evaluations-eyebrow">MINHAS AVALIAÇÕES</span>
-
-          <h1>Minhas avaliações</h1>
-
-          <p>Avaliações e etapas que precisam da sua resposta.</p>
-        </div>
-      </header>
-
-      {message && <div className="evaluations-success">{message}</div>}
-
-      {availableWorkflows.length === 0 ? (
-        <section className="evaluations-card">
-          <div className="evaluations-empty">
-            <strong>Nenhuma avaliação pendente.</strong>
-
-            <p>
-              Quando houver uma avaliação atribuída a você, ela aparecerá aqui.
-            </p>
-          </div>
-        </section>
-      ) : (
-        <section className="evaluation-my-list">
-          {availableWorkflows.map((workflow) => {
-            const progress = calculateEvaluationProgress(workflow)
-
-            const currentStage = workflow.stages?.find(
-              (stage) =>
-                stage.status === 'pending' || stage.status === 'in_progress'
-            )
-
-            return (
-              <article className="evaluation-my-card" key={workflow.id}>
-                <div>
-                  <span className="evaluations-eyebrow">AVALIAÇÃO</span>
-
-                  <h2>{workflow.modelName}</h2>
-
-                  <p>
-                    Funcionário:{' '}
-                    {getEmployeeName(workflow.employeeId) ||
-                      workflow.employeeName}
-                  </p>
-                </div>
-
-                <div className="evaluation-my-progress">
-                  <span>{progress.percentage}%</span>
-
-                  <div className="evaluation-progress-bar">
-                    <span
-                      style={{
-                        width: `${progress.percentage}%`
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div className="evaluation-my-current">
-                  {currentStage ? (
-                    <>
-                      <strong>Etapa disponível:</strong>
-
-                      <span>{currentStage.name}</span>
-                    </>
-                  ) : workflow.pdi?.status === 'pending' ? (
-                    <>
-                      <strong>Próxima etapa:</strong>
-
-                      <span>PDI</span>
-                    </>
-                  ) : isEvaluation180Unlocked(workflow) &&
-                    workflow.evaluation180?.status !== 'completed' ? (
-                    <>
-                      <strong>Próxima etapa:</strong>
-
-                      <span>Avaliação 180°</span>
-                    </>
-                  ) : (
-                    <span>Processo concluído.</span>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  className="evaluations-primary-button"
-                  onClick={() => setSelectedWorkflow(workflow)}
-                >
-                  Responder
-                </button>
-              </article>
-            )
-          })}
-        </section>
-      )}
-
-      {selectedWorkflow && (
-        <EvaluationResponseModal
-          workflow={selectedWorkflow}
-          onClose={() => setSelectedWorkflow(null)}
-          onRefresh={refresh}
-          setMessage={setMessage}
-        />
-      )}
-    </div>
-  )
-}
-
-/*
- * ============================================================
- * MODAL DE RESPOSTA
- * ============================================================
- */
-
-function EvaluationResponseModal({ workflow, onClose, onRefresh, setMessage }) {
-  const currentUser = getCurrentUser()
-
-  const currentStage = workflow.stages?.find(
-    (stage) => stage.status === 'pending' || stage.status === 'in_progress'
-  )
-
-  const [activeStage, setActiveStage] = useState(currentStage?.id || null)
-
-  const [answers, setAnswers] = useState({})
-
-  const [stageSignature, setStageSignature] = useState('')
-
-  const [pdiSignature, setPdiSignature] = useState('')
-
-  const [signature180, setSignature180] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const [error, setError] = useState('')
 
+  const [success, setSuccess] = useState('')
+
   /*
-   * ============================================================
-   * RESPOSTA
-   * ============================================================
+   * ----------------------------------------------------------
+   * USUÁRIO LOGADO
+   * ----------------------------------------------------------
    */
 
-  function handleAnswer(questionId, value) {
-    setAnswers((previous) => ({
-      ...previous,
+  useEffect(() => {
+    loadCurrentUser()
+  }, [])
+
+  function loadCurrentUser() {
+    const users = getStoredArray('users')
+
+    /*
+     * O sistema utiliza diferentes nomes dependendo da parte
+     * em que o usuário foi criado.
+     *
+     * Tentamos primeiro os formatos mais comuns.
+     */
+
+    const loggedUser = getLoggedUserFromStorage(users)
+
+    setCurrentUser(loggedUser)
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * CARREGAR AVALIAÇÕES
+   * ----------------------------------------------------------
+   */
+
+  useEffect(() => {
+    if (!currentUser) {
+      setLoading(false)
+
+      return
+    }
+
+    loadWorkflows()
+  }, [currentUser])
+
+  function loadWorkflows() {
+    setLoading(true)
+
+    try {
+      let storedWorkflows = getEvaluationWorkflows()
+
+      /*
+       * Atualiza o status das avaliações antigas antes de
+       * apresentá-las.
+       */
+
+      storedWorkflows = storedWorkflows.map(
+        (workflow) => refreshEvaluationWorkflowStatus(workflow.id) || workflow
+      )
+
+      /*
+       * Depois da atualização, buscamos novamente os dados
+       * armazenados.
+       */
+
+      storedWorkflows = getEvaluationWorkflows()
+
+      const visibleWorkflows = storedWorkflows.filter(
+        (workflow) =>
+          canViewEvaluationPdi(workflow, currentUser) ||
+          isUserParticipant(workflow, currentUser)
+      )
+
+      setWorkflows(visibleWorkflows)
+    } catch (loadError) {
+      console.error(loadError)
+
+      setError('Não foi possível carregar suas avaliações.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * SELECIONAR AVALIAÇÃO
+   * ----------------------------------------------------------
+   */
+
+  function handleSelectWorkflow(workflow) {
+    setSelectedWorkflowId(workflow.id)
+
+    setSelectedWorkflow(workflow)
+
+    setError('')
+
+    setSuccess('')
+
+    /*
+     * Carrega as respostas que já existem no PDI.
+     */
+
+    setPdiAnswers(getExistingPdiAnswers(workflow))
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * VOLTAR PARA LISTA
+   * ----------------------------------------------------------
+   */
+
+  function handleBack() {
+    setSelectedWorkflowId(null)
+
+    setSelectedWorkflow(null)
+
+    setPdiAnswers({})
+
+    setError('')
+
+    setSuccess('')
+  }
+
+  /*
+   * ----------------------------------------------------------
+   * ALTERAR RESPOSTA
+   * ----------------------------------------------------------
+   */
+
+  function handleAnswerChange(questionId, value) {
+    setPdiAnswers((current) => ({
+      ...current,
 
       [questionId]: value
     }))
   }
 
   /*
-   * ============================================================
-   * ETAPA
-   * ============================================================
+   * ----------------------------------------------------------
+   * INICIAR PDI
+   * ----------------------------------------------------------
    */
 
-  function handleStartStage(stage) {
-    if (!canAnswerEvaluationStage(workflow, stage, currentUser)) {
-      setError('Você não é o responsável por esta etapa.')
-
-      return
-    }
-
-    const result = startEvaluationStage(workflow.id, stage.id)
-
-    if (!result.success) {
-      setError(
-        result.error || result.message || 'Não foi possível iniciar a etapa.'
-      )
-
+  function handleStartPdi() {
+    if (!selectedWorkflow || !currentUser) {
       return
     }
 
     setError('')
 
-    setActiveStage(stage.id)
+    try {
+      const updatedWorkflow = startEvaluationPdi(
+        selectedWorkflow.id,
+        currentUser.id
+      )
 
-    setStageSignature('')
+      if (!updatedWorkflow) {
+        setError('Não foi possível iniciar o PDI.')
 
-    setAnswers({})
-
-    onRefresh()
-  }
-
-  /*
-   * ============================================================
-   * CONCLUIR ETAPA
-   * ============================================================
-   */
-
-  function handleSaveStage(stage) {
-    if (!canAnswerEvaluationStage(workflow, stage, currentUser)) {
-      setError('Você não possui permissão para responder esta etapa.')
-
-      return
-    }
-
-    if (!stageSignature) {
-      setError('Faça sua assinatura antes de concluir a etapa.')
-
-      return
-    }
-
-    /*
-     * Salva as respostas.
-     */
-    for (const question of stage.questions || []) {
-      const answer = answers[question.questionId]
-
-      if (answer !== undefined) {
-        saveEvaluationAnswer({
-          workflowId: workflow.id,
-
-          stageId: stage.id,
-
-          questionId: question.questionId,
-
-          answer
-        })
+        return
       }
-    }
 
-    /*
-     * ==========================================================
-     * SALVA A ASSINATURA
-     * ==========================================================
-     *
-     * O componente SignaturePad já transforma o desenho em
-     * Base64 PNG.
-     *
-     * Aqui gravamos a assinatura no workflow antes de chamar
-     * completeEvaluationStage().
-     */
-    const signatureResult = saveEvaluationStageSignature({
-      workflowId: workflow.id,
+      setSelectedWorkflow(updatedWorkflow)
 
-      stageId: stage.id,
-
-      signature: stageSignature,
-
-      signedById: currentUser?.id || '',
-
-      signedByName: currentUser?.name || currentUser?.username || ''
-    })
-
-    if (!signatureResult.success) {
-      setError(
-        signatureResult.error ||
-          signatureResult.message ||
-          'Não foi possível salvar a assinatura da etapa.'
+      setWorkflows((current) =>
+        current.map((workflow) =>
+          workflow.id === updatedWorkflow.id ? updatedWorkflow : workflow
+        )
       )
 
-      return
+      setPdiAnswers(getExistingPdiAnswers(updatedWorkflow))
+
+      setSuccess('PDI iniciado com sucesso.')
+    } catch (startError) {
+      console.error(startError)
+
+      setError(startError.message || 'Não foi possível iniciar o PDI.')
     }
-
-    /*
-     * Agora a etapa pode ser concluída porque a assinatura
-     * já existe no workflow.
-     */
-    const result = completeEvaluationStage(
-      workflow.id,
-
-      stage.id,
-
-      currentUser?.id || '',
-
-      currentUser?.name || currentUser?.username || ''
-    )
-
-    if (!result.success) {
-      setError(
-        result.error || result.message || 'Não foi possível concluir a etapa.'
-      )
-
-      return
-    }
-
-    setError('')
-
-    setMessage('Etapa concluída com sucesso.')
-
-    onRefresh()
-
-    onClose()
   }
 
   /*
-   * ============================================================
-   * PDI
-   * ============================================================
+   * ----------------------------------------------------------
+   * SALVAR RESPOSTAS
+   * ----------------------------------------------------------
    */
 
-  function handlePdi() {
-    if (!canAnswerEvaluationPdi(workflow, currentUser)) {
-      setError(
-        'Você não possui permissão para preencher o PDI desta avaliação.'
-      )
-
+  function handleSavePdi(complete = false) {
+    if (!selectedWorkflow || !currentUser) {
       return
     }
 
-    const result = startEvaluationPdi(workflow.id)
-
-    if (!result.success) {
-      setError(
-        result.error || result.message || 'Não foi possível iniciar o PDI.'
-      )
-
-      return
-    }
+    setSaving(true)
 
     setError('')
 
-    setPdiSignature('')
+    setSuccess('')
 
-    setAnswers({})
+    try {
+      let updatedWorkflow = selectedWorkflow
 
-    onRefresh()
-  }
+      /*
+       * Caso o PDI ainda não tenha sido iniciado, iniciamos
+       * automaticamente antes de salvar.
+       */
 
-  /*
-   * ============================================================
-   * CONCLUIR PDI
-   * ============================================================
-   */
-
-  function handleSavePdi() {
-    if (!canAnswerEvaluationPdi(workflow, currentUser)) {
-      setError(
-        'Você não possui permissão para preencher o PDI desta avaliação.'
-      )
-
-      return
-    }
-
-    if (!pdiSignature) {
-      setError('Faça sua assinatura antes de concluir o PDI.')
-
-      return
-    }
-
-    for (const question of workflow.pdi?.questions || []) {
-      const answer = answers[question.questionId]
-
-      if (answer !== undefined) {
-        saveEvaluationPdiAnswer({
-          workflowId: workflow.id,
-
-          questionId: question.questionId,
-
-          answer
-        })
+      if (!isPdiStarted(updatedWorkflow)) {
+        updatedWorkflow = startEvaluationPdi(
+          selectedWorkflow.id,
+          currentUser.id
+        )
       }
-    }
 
-    /*
-     * Salva a assinatura primeiro.
-     */
-    const signatureResult = saveEvaluationPdiSignature({
-      workflowId: workflow.id,
+      /*
+       * Salva cada resposta no workflow.
+       */
 
-      signature: pdiSignature,
+      Object.entries(pdiAnswers).forEach(([questionId, answer]) => {
+        updatedWorkflow = answerEvaluationPdiQuestion(
+          updatedWorkflow.id,
+          questionId,
+          answer,
+          currentUser.id
+        )
+      })
 
-      signedById: currentUser?.id || '',
+      /*
+       * Se o usuário clicou em concluir, fazemos a validação
+       * final.
+       */
 
-      signedByName: currentUser?.name || currentUser?.username || ''
-    })
+      if (complete) {
+        updatedWorkflow = completeEvaluationPdi(
+          updatedWorkflow.id,
+          currentUser.id
+        )
 
-    if (!signatureResult.success) {
-      setError(
-        signatureResult.error ||
-          signatureResult.message ||
-          'Não foi possível salvar a assinatura do PDI.'
-      )
-
-      return
-    }
-
-    const result = completeEvaluationPdi(
-      workflow.id,
-
-      currentUser?.id || '',
-
-      currentUser?.name || currentUser?.username || ''
-    )
-
-    if (!result.success) {
-      setError(
-        result.error || result.message || 'Não foi possível concluir o PDI.'
-      )
-
-      return
-    }
-
-    setError('')
-
-    setMessage('PDI concluído com sucesso.')
-
-    onRefresh()
-
-    onClose()
-  }
-
-  /*
-   * ============================================================
-   * 180°
-   * ============================================================
-   */
-
-  function handleStart180() {
-    if (!canAnswerEvaluation180(workflow, currentUser)) {
-      setError(
-        'Somente o funcionário avaliado pode responder a avaliação 180°.'
-      )
-
-      return
-    }
-
-    const result = startEvaluation180(workflow.id)
-
-    if (!result.success) {
-      setError(
-        result.error ||
-          result.message ||
-          'Não foi possível iniciar a avaliação 180°.'
-      )
-
-      return
-    }
-
-    setError('')
-
-    setSignature180('')
-
-    setAnswers({})
-
-    onRefresh()
-  }
-
-  /*
-   * ============================================================
-   * CONCLUIR 180°
-   * ============================================================
-   */
-
-  function handleSave180() {
-    if (!canAnswerEvaluation180(workflow, currentUser)) {
-      setError(
-        'Somente o funcionário avaliado pode responder a avaliação 180°.'
-      )
-
-      return
-    }
-
-    if (!signature180) {
-      setError('Faça sua assinatura antes de concluir a avaliação 180°.')
-
-      return
-    }
-
-    for (const question of workflow.evaluation180?.questions || []) {
-      const answer = answers[question.questionId]
-
-      if (answer !== undefined) {
-        saveEvaluation180Answer({
-          workflowId: workflow.id,
-
-          questionId: question.questionId,
-
-          answer
-        })
+        setSuccess('PDI concluído com sucesso.')
+      } else {
+        setSuccess('Respostas salvas com sucesso.')
       }
-    }
 
-    /*
-     * Salva a assinatura primeiro.
-     */
-    const signatureResult = saveEvaluation180Signature({
-      workflowId: workflow.id,
+      setSelectedWorkflow(updatedWorkflow)
 
-      signature: signature180,
-
-      signedById: currentUser?.id || '',
-
-      signedByName: currentUser?.name || currentUser?.username || ''
-    })
-
-    if (!signatureResult.success) {
-      setError(
-        signatureResult.error ||
-          signatureResult.message ||
-          'Não foi possível salvar a assinatura do 180°.'
+      setWorkflows((current) =>
+        current.map((workflow) =>
+          workflow.id === updatedWorkflow.id ? updatedWorkflow : workflow
+        )
       )
 
-      return
+      setPdiAnswers(getExistingPdiAnswers(updatedWorkflow))
+    } catch (saveError) {
+      console.error(saveError)
+
+      setError(saveError.message || 'Não foi possível salvar o PDI.')
+    } finally {
+      setSaving(false)
     }
-
-    const result = completeEvaluation180(
-      workflow.id,
-
-      currentUser?.id || '',
-
-      currentUser?.name || currentUser?.username || ''
-    )
-
-    if (!result.success) {
-      setError(
-        result.error ||
-          result.message ||
-          'Não foi possível concluir a avaliação 180°.'
-      )
-
-      return
-    }
-
-    setError('')
-
-    setMessage('Avaliação 180° concluída.')
-
-    onRefresh()
-
-    onClose()
   }
 
   /*
-   * ============================================================
+   * ----------------------------------------------------------
    * ESTADOS
-   * ============================================================
+   * ----------------------------------------------------------
    */
 
-  const stage = workflow.stages?.find((item) => item.id === activeStage)
+  const pendingWorkflows = useMemo(
+    () => workflows.filter((workflow) => !isPdiCompleted(workflow)),
+    [workflows]
+  )
 
-  const pdiUnlocked = isPdiUnlocked(workflow)
-
-  const evaluation180Unlocked = isEvaluation180Unlocked(workflow)
-
-  const canAnswerCurrentStage = stage
-    ? canAnswerEvaluationStage(workflow, stage, currentUser)
-    : false
-
-  const canAnswerPdi = canAnswerEvaluationPdi(workflow, currentUser)
-
-  const canAnswer180 = canAnswerEvaluation180(workflow, currentUser)
-
-  const canView180 = canViewEvaluation180(workflow, currentUser)
+  const completedWorkflows = useMemo(
+    () => workflows.filter((workflow) => isPdiCompleted(workflow)),
+    [workflows]
+  )
 
   /*
-   * ============================================================
-   * RENDER
-   * ============================================================
+   * ==========================================================
+   * CARREGANDO
+   * ==========================================================
+   */
+
+  if (loading) {
+    return (
+      <div className="avaliacoes-page">
+        <div className="avaliacoes-loading">Carregando avaliações...</div>
+      </div>
+    )
+  }
+
+  /*
+   * ==========================================================
+   * SEM USUÁRIO
+   * ==========================================================
+   */
+
+  if (!currentUser) {
+    return (
+      <div className="avaliacoes-page">
+        <div className="avaliacoes-empty-page">
+          <h2>Usuário não identificado</h2>
+
+          <p>
+            Não foi possível identificar o usuário conectado para carregar as
+            avaliações.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  /*
+   * ==========================================================
+   * DETALHES DA AVALIAÇÃO
+   * ==========================================================
+   */
+
+  if (selectedWorkflow) {
+    return (
+      <EvaluationDetails
+        workflow={selectedWorkflow}
+        currentUser={currentUser}
+        pdiAnswers={pdiAnswers}
+        saving={saving}
+        error={error}
+        success={success}
+        onBack={handleBack}
+        onAnswerChange={handleAnswerChange}
+        onStartPdi={handleStartPdi}
+        onSavePdi={handleSavePdi}
+      />
+    )
+  }
+
+  /*
+   * ==========================================================
+   * LISTA
+   * ==========================================================
    */
 
   return (
-    <div className="evaluations-modal-overlay">
-      <div className="evaluations-modal evaluations-modal-large">
-        <header className="evaluations-modal-header">
+    <div className="avaliacoes-page">
+      <div className="avaliacoes-header">
+        <div>
+          <span className="avaliacoes-kicker">DESEMPENHO</span>
+
+          <h1>Minhas avaliações</h1>
+
+          <p>Consulte suas avaliações e responda aos PDIs disponíveis.</p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="avaliacoes-alert avaliacao-alert-error">{error}</div>
+      )}
+
+      {success && (
+        <div className="avaliacoes-alert avaliacao-alert-success">
+          {success}
+        </div>
+      )}
+
+      {/* =====================================================
+          PENDENTES
+      ====================================================== */}
+
+      <section className="avaliacoes-section">
+        <div className="avaliacoes-section-header">
           <div>
-            <span className="evaluations-eyebrow">MINHAS AVALIAÇÕES</span>
+            <span className="avaliacoes-section-number">01</span>
 
-            <h2>{workflow.modelName}</h2>
+            <div>
+              <h2>Pendentes</h2>
 
-            <p>{workflow.employeeName}</p>
+              <p>Avaliações que ainda precisam da sua atenção.</p>
+            </div>
           </div>
 
-          <button
-            type="button"
-            className="evaluations-modal-close"
-            onClick={onClose}
-          >
-            ×
-          </button>
-        </header>
-
-        <div className="evaluations-modal-body">
-          {error && <div className="evaluation-error">{error}</div>}
-
-          {/* ==================================================
-              ETAPA
-          ================================================== */}
-
-          {stage && (
-            <section className="evaluation-response-section">
-              <div className="evaluation-response-heading">
-                <div>
-                  <span>ETAPA {stage.order}</span>
-
-                  <h3>{stage.name}</h3>
-
-                  <p>{stage.description}</p>
-
-                  {stage.responsibleUserName && (
-                    <small>Responsável: {stage.responsibleUserName}</small>
-                  )}
-                </div>
-
-                {stage.status === 'pending' && canAnswerCurrentStage && (
-                  <button
-                    type="button"
-                    className="evaluations-primary-button"
-                    onClick={() => handleStartStage(stage)}
-                  >
-                    Iniciar etapa
-                  </button>
-                )}
-              </div>
-
-              {stage.status === 'pending' && !canAnswerCurrentStage && (
-                <div className="evaluation-detail-box">
-                  <strong>Esta etapa está aguardando outro responsável.</strong>
-
-                  <p>Você não pode responder esta etapa.</p>
-                </div>
-              )}
-
-              {stage.status === 'in_progress' && canAnswerCurrentStage && (
-                <div className="evaluation-answer-list">
-                  {(stage.questions || []).map((question, index) => (
-                    <QuestionAnswer
-                      key={question.questionId}
-                      question={question}
-                      index={index}
-                      value={answers[question.questionId] ?? question.answer}
-                      onChange={(value) =>
-                        handleAnswer(question.questionId, value)
-                      }
-                    />
-                  ))}
-
-                  <SignaturePad
-                    value={stageSignature}
-                    onChange={setStageSignature}
-                  />
-
-                  <button
-                    type="button"
-                    className="evaluations-primary-button"
-                    onClick={() => handleSaveStage(stage)}
-                  >
-                    Concluir etapa
-                  </button>
-                </div>
-              )}
-
-              {stage.status === 'in_progress' && !canAnswerCurrentStage && (
-                <div className="evaluation-detail-box">
-                  <strong>
-                    Esta etapa está sendo respondida pelo responsável.
-                  </strong>
-
-                  <p>Você não possui permissão para alterar esta etapa.</p>
-                </div>
-              )}
-
-              {stage.status === 'completed' && (
-                <div className="evaluation-detail-box">
-                  <strong>Etapa concluída.</strong>
-
-                  {stage.averageScore !== undefined && (
-                    <p>
-                      Média da etapa: <strong>{stage.averageScore}</strong>
-                    </p>
-                  )}
-
-                  {stage.signedAt && (
-                    <p>Assinada em: {formatDateTime(stage.signedAt)}</p>
-                  )}
-
-                  {stage.signedByName && (
-                    <p>Assinada por: {stage.signedByName}</p>
-                  )}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* ==================================================
-              PDI
-          ================================================== */}
-
-          {pdiUnlocked && (
-            <section className="evaluation-response-section">
-              <div className="evaluation-response-heading">
-                <div>
-                  <span>PDI</span>
-
-                  <h3>Plano de Desenvolvimento Individual</h3>
-
-                  <p>Preenchido pelo gerente ou supervisor do setor.</p>
-                </div>
-
-                {workflow.pdi?.status !== 'completed' &&
-                  workflow.pdi?.status !== 'in_progress' &&
-                  canAnswerPdi && (
-                    <button
-                      type="button"
-                      className="evaluations-primary-button"
-                      onClick={handlePdi}
-                    >
-                      Iniciar PDI
-                    </button>
-                  )}
-              </div>
-
-              {workflow.pdi?.status === 'pending' && !canAnswerPdi && (
-                <div className="evaluation-detail-box">
-                  <strong>
-                    O PDI está aguardando o gerente/supervisor responsável.
-                  </strong>
-                </div>
-              )}
-
-              {workflow.pdi?.status === 'in_progress' && canAnswerPdi && (
-                <div className="evaluation-answer-list">
-                  {(workflow.pdi.questions || []).map((question, index) => (
-                    <div
-                      className="evaluation-answer-card"
-                      key={question.questionId}
-                    >
-                      <label>
-                        {index + 1} — {question.questionText}
-                        {question.required && <span> *</span>}
-                      </label>
-
-                      <textarea
-                        rows="4"
-                        value={answers[question.questionId] ?? question.answer}
-                        onChange={(event) =>
-                          handleAnswer(question.questionId, event.target.value)
-                        }
-                      />
-                    </div>
-                  ))}
-
-                  <SignaturePad
-                    value={pdiSignature}
-                    onChange={setPdiSignature}
-                  />
-
-                  <button
-                    type="button"
-                    className="evaluations-primary-button"
-                    onClick={handleSavePdi}
-                  >
-                    Concluir PDI
-                  </button>
-                </div>
-              )}
-
-              {workflow.pdi?.status === 'in_progress' && !canAnswerPdi && (
-                <div className="evaluation-detail-box">
-                  <strong>O PDI está sendo preenchido pelo responsável.</strong>
-                </div>
-              )}
-
-              {workflow.pdi?.status === 'completed' && (
-                <div className="evaluation-detail-box">
-                  <strong>PDI concluído.</strong>
-
-                  {workflow.pdi?.signedAt && (
-                    <p>Assinado em: {formatDateTime(workflow.pdi.signedAt)}</p>
-                  )}
-
-                  {workflow.pdi?.signedByName && (
-                    <p>Assinado por: {workflow.pdi.signedByName}</p>
-                  )}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* ==================================================
-              180°
-          ================================================== */}
-
-          {evaluation180Unlocked && canView180 && (
-            <section className="evaluation-response-section">
-              <div className="evaluation-response-heading">
-                <div>
-                  <span>180°</span>
-
-                  <h3>Avaliação do supervisor</h3>
-
-                  <p>
-                    Esta avaliação é respondida somente pelo funcionário
-                    avaliado.
-                  </p>
-                </div>
-
-                {workflow.evaluation180?.status === 'pending' &&
-                  canAnswer180 && (
-                    <button
-                      type="button"
-                      className="evaluations-primary-button"
-                      onClick={handleStart180}
-                    >
-                      Iniciar 180°
-                    </button>
-                  )}
-              </div>
-
-              {workflow.evaluation180?.status === 'pending' &&
-                !canAnswer180 && (
-                  <div className="evaluation-detail-box">
-                    <strong>
-                      O 180° será respondido pelo funcionário avaliado.
-                    </strong>
-
-                    <p>
-                      Você pode visualizar o andamento, mas não pode responder
-                      esta etapa.
-                    </p>
-                  </div>
-                )}
-
-              {workflow.evaluation180?.status === 'in_progress' &&
-                canAnswer180 && (
-                  <div className="evaluation-answer-list">
-                    {(workflow.evaluation180.questions || []).map(
-                      (question, index) => (
-                        <QuestionAnswer
-                          key={question.questionId}
-                          question={question}
-                          index={index}
-                          value={
-                            answers[question.questionId] ?? question.answer
-                          }
-                          onChange={(value) =>
-                            handleAnswer(question.questionId, value)
-                          }
-                        />
-                      )
-                    )}
-
-                    <SignaturePad
-                      value={signature180}
-                      onChange={setSignature180}
-                    />
-
-                    <button
-                      type="button"
-                      className="evaluations-primary-button"
-                      onClick={handleSave180}
-                    >
-                      Concluir 180°
-                    </button>
-                  </div>
-                )}
-
-              {workflow.evaluation180?.status === 'in_progress' &&
-                !canAnswer180 && (
-                  <div className="evaluation-detail-box">
-                    <strong>
-                      Esta avaliação está sendo respondida pelo funcionário.
-                    </strong>
-                  </div>
-                )}
-
-              {workflow.evaluation180?.status === 'completed' && (
-                <div className="evaluation-detail-box">
-                  <strong>Avaliação 180° concluída.</strong>
-
-                  <p>
-                    As respostas do 180° são restritas conforme as regras de
-                    acesso da avaliação.
-                  </p>
-
-                  {canView180 && workflow.evaluation180?.signedAt && (
-                    <p>
-                      Assinada em:{' '}
-                      {formatDateTime(workflow.evaluation180.signedAt)}
-                    </p>
-                  )}
-                </div>
-              )}
-            </section>
-          )}
+          <span className="avaliacoes-section-badge">
+            {pendingWorkflows.length}
+          </span>
         </div>
 
-        <footer className="evaluations-modal-footer">
+        {pendingWorkflows.length === 0 ? (
+          <div className="avaliacoes-empty-box">
+            <strong>Nenhuma avaliação pendente</strong>
+
+            <p>Você não possui avaliações pendentes no momento.</p>
+          </div>
+        ) : (
+          <div className="avaliacoes-models-grid">
+            {pendingWorkflows.map((workflow) => (
+              <EvaluationCard
+                key={workflow.id}
+                workflow={workflow}
+                currentUser={currentUser}
+                onSelect={handleSelectWorkflow}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* =====================================================
+          CONCLUÍDAS
+      ====================================================== */}
+
+      <section className="avaliacoes-section">
+        <div className="avaliacoes-section-header">
+          <div>
+            <span className="avaliacoes-section-number">02</span>
+
+            <div>
+              <h2>Concluídas</h2>
+
+              <p>Avaliações que já foram finalizadas.</p>
+            </div>
+          </div>
+
+          <span className="avaliacoes-section-badge">
+            {completedWorkflows.length}
+          </span>
+        </div>
+
+        {completedWorkflows.length === 0 ? (
+          <div className="avaliacoes-empty-box">
+            <strong>Nenhuma avaliação concluída</strong>
+
+            <p>As avaliações concluídas aparecerão aqui.</p>
+          </div>
+        ) : (
+          <div className="avaliacoes-models-grid">
+            {completedWorkflows.map((workflow) => (
+              <EvaluationCard
+                key={workflow.id}
+                workflow={workflow}
+                currentUser={currentUser}
+                onSelect={handleSelectWorkflow}
+              />
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  )
+}
+
+/*
+ * ============================================================
+ * CARD DA AVALIAÇÃO
+ * ============================================================
+ */
+
+function EvaluationCard({ workflow, currentUser, onSelect }) {
+  const completed = isPdiCompleted(workflow)
+
+  const pdi = workflow.pdi || {}
+
+  const questions = Array.isArray(pdi.questions) ? pdi.questions : []
+
+  const answered = questions.filter((question) =>
+    hasAnswer(question.answer)
+  ).length
+
+  const canAnswer = canRespondToPdi(workflow, currentUser)
+
+  return (
+    <article className="avaliacoes-model-card">
+      <div className="avaliacoes-model-card-header">
+        <div>
+          <span className="avaliacoes-model-type">
+            {getWorkflowType(workflow)}
+          </span>
+
+          <h2>{getWorkflowName(workflow)}</h2>
+        </div>
+
+        <span
+          className={
+            completed ? 'avaliacoes-status active' : 'avaliacoes-status pending'
+          }
+        >
+          {completed ? 'Concluída' : 'Pendente'}
+        </span>
+      </div>
+
+      <p className="avaliacoes-model-description">
+        {getEmployeeName(workflow)}
+      </p>
+
+      <div className="avaliacoes-model-stats">
+        <div>
+          <strong>{answered}</strong>
+
+          <span>Respondidas</span>
+        </div>
+
+        <div>
+          <strong>{questions.length}</strong>
+
+          <span>Perguntas PDI</span>
+        </div>
+
+        <div>
+          <strong>{getPdiStatusLabel(pdi)}</strong>
+
+          <span>PDI</span>
+        </div>
+      </div>
+
+      <div className="avaliacoes-model-card-actions">
+        <button
+          type="button"
+          className="avaliacoes-primary-button"
+          onClick={() => onSelect(workflow)}
+        >
+          {completed
+            ? 'Visualizar'
+            : canAnswer
+              ? 'Responder PDI'
+              : 'Visualizar avaliação'}
+        </button>
+      </div>
+    </article>
+  )
+}
+
+/*
+ * ============================================================
+ * DETALHES
+ * ============================================================
+ */
+
+function EvaluationDetails({
+  workflow,
+  currentUser,
+  pdiAnswers,
+  saving,
+  error,
+  success,
+  onBack,
+  onAnswerChange,
+  onStartPdi,
+  onSavePdi
+}) {
+  const pdi = workflow.pdi || {}
+
+  const questions = Array.isArray(pdi.questions) ? pdi.questions : []
+
+  const completed = isPdiCompleted(workflow)
+
+  const started = isPdiStarted(workflow)
+
+  const canAnswer = canRespondToPdi(workflow, currentUser)
+
+  const progress = calculateProgress(questions, pdiAnswers)
+
+  return (
+    <div className="avaliacoes-page">
+      <div className="avaliacoes-header">
+        <div>
           <button
             type="button"
-            className="evaluations-secondary-button"
-            onClick={onClose}
+            className="avaliacoes-back-button"
+            onClick={onBack}
           >
-            Fechar
+            ← Voltar para avaliações
           </button>
-        </footer>
+
+          <span className="avaliacoes-kicker">PDI</span>
+
+          <h1>{getWorkflowName(workflow)}</h1>
+
+          <p>{getEmployeeName(workflow)}</p>
+        </div>
       </div>
+
+      {error && (
+        <div className="avaliacoes-alert avaliacao-alert-error">{error}</div>
+      )}
+
+      {success && (
+        <div className="avaliacoes-alert avaliacao-alert-success">
+          {success}
+        </div>
+      )}
+
+      {/* =====================================================
+          RESUMO
+      ====================================================== */}
+
+      <section className="avaliacoes-section">
+        <div className="avaliacoes-section-header">
+          <div>
+            <span className="avaliacoes-section-number">01</span>
+
+            <div>
+              <h2>Resumo</h2>
+
+              <p>Informações desta avaliação.</p>
+            </div>
+          </div>
+
+          <span
+            className={
+              completed
+                ? 'avaliacoes-status active'
+                : 'avaliacoes-status pending'
+            }
+          >
+            {completed
+              ? 'Concluída'
+              : started
+                ? 'Em andamento'
+                : 'Não iniciada'}
+          </span>
+        </div>
+
+        <div className="avaliacoes-detail-grid">
+          <div>
+            <span>Funcionário</span>
+
+            <strong>{getEmployeeName(workflow)}</strong>
+          </div>
+
+          <div>
+            <span>Modelo</span>
+
+            <strong>{getWorkflowName(workflow)}</strong>
+          </div>
+
+          <div>
+            <span>Responsável pelo PDI</span>
+
+            <strong>{getPdiResponsibleName(workflow)}</strong>
+          </div>
+
+          <div>
+            <span>Progresso</span>
+
+            <strong>{progress}%</strong>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          PDI
+      ====================================================== */}
+
+      <section className="avaliacoes-section avaliacoes-pdi-section">
+        <div className="avaliacoes-section-header">
+          <div>
+            <span className="avaliacoes-section-number">02</span>
+
+            <div>
+              <h2>Plano de Desenvolvimento Individual</h2>
+
+              <p>
+                Responda às perguntas definidas para este modelo de avaliação.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {!started && !completed && canAnswer ? (
+          <div className="avaliacoes-start-box">
+            <div>
+              <h3>PDI ainda não iniciado</h3>
+
+              <p>Inicie o PDI para registrar suas respostas.</p>
+            </div>
+
+            <button
+              type="button"
+              className="avaliacoes-primary-button"
+              onClick={onStartPdi}
+            >
+              Iniciar PDI
+            </button>
+          </div>
+        ) : null}
+
+        {questions.length === 0 ? (
+          <div className="avaliacoes-empty-box">
+            <strong>Nenhuma pergunta encontrada</strong>
+
+            <p>Este PDI não possui perguntas configuradas.</p>
+          </div>
+        ) : (
+          <div className="avaliacoes-pdi-list">
+            {questions.map((question, index) => {
+              const value = pdiAnswers[question.id] ?? question.answer ?? ''
+
+              return (
+                <div className="avaliacoes-pdi-question" key={question.id}>
+                  <div className="avaliacoes-pdi-question-top">
+                    <div className="avaliacoes-pdi-question-number">
+                      {index + 1}
+                    </div>
+
+                    <div className="avaliacoes-pdi-question-content">
+                      <label>
+                        {question.text}
+
+                        {question.required !== false && (
+                          <span className="avaliacoes-required">*</span>
+                        )}
+                      </label>
+
+                      {question.type === 'scale' ? (
+                        <select
+                          value={value}
+                          disabled={!canAnswer || completed}
+                          onChange={(event) =>
+                            onAnswerChange(question.id, event.target.value)
+                          }
+                        >
+                          <option value="">Selecione uma nota</option>
+
+                          {Array.from(
+                            {
+                              length: 10
+                            },
+                            (_, number) => (
+                              <option key={number + 1} value={number + 1}>
+                                {number + 1}
+                              </option>
+                            )
+                          )}
+                        </select>
+                      ) : question.type === 'yes_no' ? (
+                        <select
+                          value={value}
+                          disabled={!canAnswer || completed}
+                          onChange={(event) =>
+                            onAnswerChange(question.id, event.target.value)
+                          }
+                        >
+                          <option value="">Selecione</option>
+
+                          <option value="yes">Sim</option>
+
+                          <option value="no">Não</option>
+                        </select>
+                      ) : (
+                        <textarea
+                          value={value}
+                          disabled={!canAnswer || completed}
+                          onChange={(event) =>
+                            onAnswerChange(question.id, event.target.value)
+                          }
+                          rows={5}
+                          placeholder="Digite sua resposta..."
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
+        {canAnswer && !completed && questions.length > 0 && (
+          <div className="avaliacoes-form-actions">
+            <button
+              type="button"
+              className="avaliacoes-secondary-button"
+              disabled={saving}
+              onClick={() => onSavePdi(false)}
+            >
+              {saving ? 'Salvando...' : 'Salvar respostas'}
+            </button>
+
+            <button
+              type="button"
+              className="avaliacoes-primary-button"
+              disabled={saving}
+              onClick={() => onSavePdi(true)}
+            >
+              {saving ? 'Concluindo...' : 'Concluir PDI'}
+            </button>
+          </div>
+        )}
+
+        {!canAnswer && !completed && (
+          <div className="avaliacoes-info-box">
+            <strong>Você não é o responsável por este PDI.</strong>
+
+            <p>
+              A avaliação pode ser visualizada, mas somente o responsável
+              definido pelo fluxo poderá responder e concluir o PDI.
+            </p>
+          </div>
+        )}
+      </section>
     </div>
   )
 }
 
 /*
  * ============================================================
- * COMPONENTE DE PERGUNTA
+ * USUÁRIO LOGADO
  * ============================================================
  */
 
-function QuestionAnswer({ question, index, value, onChange }) {
+function getLoggedUserFromStorage(users) {
+  /*
+   * Primeiro tentamos localizar uma sessão salva.
+   */
+
+  const possibleSessionKeys = [
+    'currentUser',
+    'loggedUser',
+    'authenticatedUser',
+    'user',
+    'authUser'
+  ]
+
+  for (const key of possibleSessionKeys) {
+    const raw = localStorage.getItem(key)
+
+    if (!raw) {
+      continue
+    }
+
+    try {
+      const parsed = JSON.parse(raw)
+
+      if (parsed && typeof parsed === 'object') {
+        return parsed
+      }
+    } catch {
+      /*
+       * Caso não seja JSON, continuamos procurando.
+       */
+    }
+  }
+
+  /*
+   * Alguns projetos guardam somente o ID ou username.
+   */
+
+  const possibleIdKeys = [
+    'currentUserId',
+    'loggedUserId',
+    'authenticatedUserId',
+    'userId'
+  ]
+
+  for (const key of possibleIdKeys) {
+    const value = localStorage.getItem(key)
+
+    if (!value) {
+      continue
+    }
+
+    const found = users.find(
+      (user) =>
+        String(user.id) === String(value) ||
+        String(user.username) === String(value)
+    )
+
+    if (found) {
+      return found
+    }
+  }
+
+  /*
+   * Último fallback: caso o projeto tenha um único usuário
+   * administrador salvo e não exista uma sessão explícita.
+   *
+   * Não utilizamos isso como primeira opção porque poderia
+   * fazer uma pessoa visualizar a avaliação de outro usuário.
+   */
+
+  return null
+}
+
+/*
+ * ============================================================
+ * PARTICIPAÇÃO
+ * ============================================================
+ */
+
+function isUserParticipant(workflow, user) {
+  if (!workflow || !user) {
+    return false
+  }
+
+  const userId = String(user.id)
+
+  const employeeId = String(user.employeeId || user.employee_id || '')
+
+  const candidates = [
+    workflow.employeeId,
+    workflow.employee?.id,
+    workflow.employeeUserId,
+    workflow.userId,
+    workflow.createdBy,
+    workflow.pdi?.responsibleUserId,
+    workflow.pdi?.employeeId
+  ]
+
+  return candidates.some(
+    (value) =>
+      value !== undefined &&
+      value !== null &&
+      String(value) !== '' &&
+      (String(value) === userId || String(value) === employeeId)
+  )
+}
+
+/*
+ * ============================================================
+ * RESPOSTAS
+ * ============================================================
+ */
+
+function getExistingPdiAnswers(workflow) {
+  const answers = {}
+
+  const questions = workflow?.pdi?.questions
+
+  if (!Array.isArray(questions)) {
+    return answers
+  }
+
+  questions.forEach((question) => {
+    if (question && question.id) {
+      answers[question.id] = question.answer ?? ''
+    }
+  })
+
+  return answers
+}
+
+/*
+ * ============================================================
+ * PROGRESSO
+ * ============================================================
+ */
+
+function calculateProgress(questions, answers) {
+  if (!Array.isArray(questions) || questions.length === 0) {
+    return 0
+  }
+
+  const answered = questions.filter((question) =>
+    hasAnswer(answers[question.id] ?? question.answer)
+  ).length
+
+  return Math.round((answered / questions.length) * 100)
+}
+
+function hasAnswer(value) {
+  return value !== undefined && value !== null && String(value).trim() !== ''
+}
+
+/*
+ * ============================================================
+ * STATUS
+ * ============================================================
+ */
+
+function isPdiStarted(workflow) {
+  const pdi = workflow?.pdi
+
+  if (!pdi) {
+    return false
+  }
+
   return (
-    <div className="evaluation-answer-card">
-      <label>
-        {index + 1}. {question.questionText}
-        {question.required && <span> *</span>}
-      </label>
-
-      {question.questionType === 'scale' && (
-        <select
-          value={value ?? ''}
-          onChange={(event) => onChange(event.target.value)}
-        >
-          <option value="">Selecione uma nota...</option>
-
-          {Array.from({ length: 10 }, (_, index) => index + 1).map((number) => (
-            <option key={number} value={number}>
-              {number}
-            </option>
-          ))}
-        </select>
-      )}
-
-      {question.questionType === 'yes_no' && (
-        <select
-          value={value ?? ''}
-          onChange={(event) => onChange(event.target.value)}
-        >
-          <option value="">Selecione...</option>
-
-          <option value="yes">Sim</option>
-
-          <option value="no">Não</option>
-        </select>
-      )}
-
-      {question.questionType === 'text' && (
-        <textarea
-          rows="4"
-          value={value ?? ''}
-          onChange={(event) => onChange(event.target.value)}
-        />
-      )}
-    </div>
+    Boolean(pdi.startedAt) ||
+    pdi.status === 'in_progress' ||
+    pdi.status === 'completed'
   )
+}
+
+function isPdiCompleted(workflow) {
+  const pdi = workflow?.pdi
+
+  if (!pdi) {
+    return false
+  }
+
+  return (
+    pdi.completed === true ||
+    pdi.status === 'completed' ||
+    Boolean(pdi.completedAt)
+  )
+}
+
+function getPdiStatusLabel(pdi) {
+  if (
+    pdi?.completed === true ||
+    pdi?.status === 'completed' ||
+    pdi?.completedAt
+  ) {
+    return 'OK'
+  }
+
+  if (pdi?.startedAt || pdi?.status === 'in_progress') {
+    return 'Andamento'
+  }
+
+  return 'Pendente'
 }
 
 /*
  * ============================================================
- * DATA/HORA
+ * NOMES / INFORMAÇÕES
  * ============================================================
  */
 
-function formatDateTime(value) {
-  if (!value) {
-    return ''
-  }
+function getWorkflowName(workflow) {
+  return (
+    workflow.modelName ||
+    workflow.evaluationModelName ||
+    workflow.name ||
+    'Avaliação de desempenho'
+  )
+}
 
-  const date = new Date(value)
+function getEmployeeName(workflow) {
+  return (
+    workflow.employeeName ||
+    workflow.employee?.name ||
+    workflow.employee?.fullName ||
+    'Funcionário'
+  )
+}
 
-  if (Number.isNaN(date.getTime())) {
-    return value
-  }
+function getPdiResponsibleName(workflow) {
+  return (
+    workflow.pdi?.responsibleUserName ||
+    workflow.pdi?.responsibleName ||
+    workflow.pdi?.responsible?.name ||
+    'Responsável definido pelo fluxo'
+  )
+}
 
-  return date.toLocaleString('pt-BR')
+function getWorkflowType(workflow) {
+  return workflow.modelType || workflow.type || 'Avaliação'
 }
