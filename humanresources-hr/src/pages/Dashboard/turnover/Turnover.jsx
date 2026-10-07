@@ -4,7 +4,68 @@ import './turnover.css'
 
 export default function Turnover() {
   const [turnoverPeriod, setTurnoverPeriod] = useState('monthly')
+
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const date = new Date()
+
+    return new Date(date.getFullYear(), date.getMonth(), 1)
+  })
+
   const [employees, setEmployees] = useState([])
+
+  /*
+   * ---------------------------------------------------------
+   * CONFIGURAÇÃO DE DATAS
+   * ---------------------------------------------------------
+   */
+
+  const currentDate = new Date()
+
+  const currentYear = currentDate.getFullYear()
+
+  const currentMonth = currentDate.getMonth()
+
+  /*
+   * ---------------------------------------------------------
+   * NOMES DOS MESES
+   * ---------------------------------------------------------
+   */
+
+  const monthNames = [
+    'Janeiro',
+    'Fevereiro',
+    'Março',
+    'Abril',
+    'Maio',
+    'Junho',
+    'Julho',
+    'Agosto',
+    'Setembro',
+    'Outubro',
+    'Novembro',
+    'Dezembro'
+  ]
+
+  const shortMonthNames = [
+    'Jan',
+    'Fev',
+    'Mar',
+    'Abr',
+    'Mai',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Set',
+    'Out',
+    'Nov',
+    'Dez'
+  ]
+
+  /*
+   * ---------------------------------------------------------
+   * CARREGAR FUNCIONÁRIOS
+   * ---------------------------------------------------------
+   */
 
   useEffect(() => {
     loadEmployees()
@@ -18,26 +79,16 @@ export default function Turnover() {
 
   /*
    * ---------------------------------------------------------
-   * CONFIGURAÇÃO DE DATAS
-   * ---------------------------------------------------------
-   */
-
-  const currentDate = new Date()
-  const currentYear = currentDate.getFullYear()
-  const currentMonth = currentDate.getMonth()
-
-  /*
-   * ---------------------------------------------------------
    * CONVERSÃO DE DATAS
    * ---------------------------------------------------------
    *
-   * Aceita datas nos formatos:
+   * Aceita:
    *
    * YYYY-MM-DD
    * DD/MM/YYYY
    *
-   * Isso evita problemas caso os funcionários tenham sido
-   * cadastrados utilizando formatos diferentes.
+   * A data é criada manualmente para evitar problemas
+   * de fuso horário do JavaScript.
    */
 
   function parseDate(value) {
@@ -46,21 +97,51 @@ export default function Turnover() {
     }
 
     if (value instanceof Date) {
-      return value
+      return Number.isNaN(value.getTime()) ? null : value
     }
 
-    const stringValue = String(value)
+    const stringValue = String(value).trim()
+
+    if (!stringValue) {
+      return null
+    }
+
+    /*
+     * DD/MM/YYYY
+     */
 
     if (stringValue.includes('/')) {
-      const [day, month, year] = stringValue.split('/')
+      const parts = stringValue.split('/')
 
-      const date = new Date(Number(year), Number(month) - 1, Number(day))
+      if (parts.length !== 3) {
+        return null
+      }
+
+      const day = Number(parts[0])
+      const month = Number(parts[1])
+      const year = Number(parts[2])
+
+      const date = new Date(year, month - 1, day)
 
       return Number.isNaN(date.getTime()) ? null : date
     }
 
+    /*
+     * YYYY-MM-DD
+     */
+
     if (stringValue.includes('-')) {
-      const date = new Date(stringValue)
+      const parts = stringValue.split('-')
+
+      if (parts.length < 3) {
+        return null
+      }
+
+      const year = Number(parts[0])
+      const month = Number(parts[1])
+      const day = Number(parts[2].slice(0, 2))
+
+      const date = new Date(year, month - 1, day)
 
       return Number.isNaN(date.getTime()) ? null : date
     }
@@ -70,7 +151,7 @@ export default function Turnover() {
 
   /*
    * ---------------------------------------------------------
-   * VERIFICAÇÃO DO PERÍODO
+   * VERIFICAR MÊS
    * ---------------------------------------------------------
    */
 
@@ -84,102 +165,125 @@ export default function Turnover() {
 
   /*
    * ---------------------------------------------------------
-   * DADOS MENSAIS
+   * TIPO DE DESLIGAMENTO
    * ---------------------------------------------------------
-   *
-   * Mostra os 12 meses do ano atual.
+   */
+
+  function getDismissalType(employee) {
+    return (
+      employee.dismissalType ||
+      employee.terminationType ||
+      employee.dismissalReasonType ||
+      ''
+    )
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * DADOS DE UM MÊS
+   * ---------------------------------------------------------
+   */
+
+  function getMonthData(year, month) {
+    let admitted = 0
+
+    let dismissed = 0
+
+    let employeeRequest = 0
+
+    let companyRequest = 0
+
+    let unknownDismissal = 0
+
+    employees.forEach((employee) => {
+      const admissionDate = parseDate(employee.admissionDate)
+
+      const dismissalDate = parseDate(employee.dismissalDate)
+
+      /*
+       * ADMISSÕES
+       */
+
+      if (isSameMonth(admissionDate, year, month)) {
+        admitted += 1
+      }
+
+      /*
+       * DESLIGAMENTOS
+       */
+
+      if (isSameMonth(dismissalDate, year, month)) {
+        dismissed += 1
+
+        const dismissalType = getDismissalType(employee)
+
+        /*
+         * Pedido de demissão
+         */
+
+        if (
+          dismissalType === 'employee' ||
+          dismissalType === 'employeeRequest' ||
+          dismissalType === 'pedido'
+        ) {
+          employeeRequest += 1
+        } else if (
+
+        /*
+         * Desligamento pela empresa
+         */
+          dismissalType === 'company' ||
+          dismissalType === 'companyRequest' ||
+          dismissalType === 'empresa'
+        ) {
+          companyRequest += 1
+        } else {
+
+        /*
+         * Desligamento sem motivo informado.
+         */
+          unknownDismissal += 1
+        }
+      }
+    })
+
+    return {
+      year,
+
+      month,
+
+      label: shortMonthNames[month],
+
+      fullLabel: `${monthNames[month]} ${year}`,
+
+      admitted,
+
+      dismissed,
+
+      employeeRequest,
+
+      companyRequest,
+
+      unknownDismissal,
+
+      totalMovements: admitted + dismissed
+    }
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * DADOS DOS 12 MESES
+   * ---------------------------------------------------------
    */
 
   const monthlyData = useMemo(() => {
-    const months = [
-      'Jan',
-      'Fev',
-      'Mar',
-      'Abr',
-      'Mai',
-      'Jun',
-      'Jul',
-      'Ago',
-      'Set',
-      'Out',
-      'Nov',
-      'Dez'
-    ]
-
-    return months.map((month, index) => {
-      let admitted = 0
-      let dismissed = 0
-      let employeeRequest = 0
-      let companyRequest = 0
-
-      employees.forEach((employee) => {
-        const admissionDate = parseDate(employee.admissionDate)
-        const dismissalDate = parseDate(employee.dismissalDate)
-
-        /*
-         * ADMISSÕES
-         */
-        if (isSameMonth(admissionDate, currentYear, index)) {
-          admitted += 1
-        }
-
-        /*
-         * DESLIGAMENTOS
-         */
-        if (isSameMonth(dismissalDate, currentYear, index)) {
-          dismissed += 1
-
-          /*
-           * Quando chegarmos à entrevista demissional,
-           * podemos utilizar um campo específico para
-           * diferenciar:
-           *
-           * - pedido do funcionário
-           * - desligamento pela empresa
-           *
-           * Por enquanto, verificamos alguns nomes de campos
-           * possíveis para não criar dados fictícios.
-           */
-
-          const dismissalType =
-            employee.dismissalType ||
-            employee.terminationType ||
-            employee.dismissalReasonType
-
-          if (
-            dismissalType === 'employee' ||
-            dismissalType === 'employeeRequest' ||
-            dismissalType === 'pedido'
-          ) {
-            employeeRequest += 1
-          }
-
-          if (
-            dismissalType === 'company' ||
-            dismissalType === 'companyRequest' ||
-            dismissalType === 'empresa'
-          ) {
-            companyRequest += 1
-          }
-        }
-      })
-
-      return {
-        label: month,
-        admitted,
-        dismissed,
-        employeeRequest,
-        companyRequest
-      }
-    })
+    return shortMonthNames.map((_, index) => getMonthData(currentYear, index))
   }, [employees, currentYear])
 
   /*
    * ---------------------------------------------------------
    * DADOS SEMESTRAIS
    * ---------------------------------------------------------
-   *
-   * O semestre apresentado depende do mês atual:
    *
    * Janeiro a Junho  -> primeiro semestre
    * Julho a Dezembro -> segundo semestre
@@ -195,13 +299,39 @@ export default function Turnover() {
    * ---------------------------------------------------------
    * DADOS ANUAIS
    * ---------------------------------------------------------
-   *
-   * No modo anual utilizamos os dados dos 12 meses.
    */
 
   const yearlyData = useMemo(() => {
     return monthlyData
   }, [monthlyData])
+
+  /*
+   * ---------------------------------------------------------
+   * DADOS DO MÊS SELECIONADO
+   * ---------------------------------------------------------
+   */
+
+  const selectedMonthData = useMemo(() => {
+    return getMonthData(selectedMonth.getFullYear(), selectedMonth.getMonth())
+  }, [employees, selectedMonth])
+
+  /*
+   * ---------------------------------------------------------
+   * MÊS ANTERIOR
+   * ---------------------------------------------------------
+   */
+
+  const previousMonth = useMemo(() => {
+    return new Date(
+      selectedMonth.getFullYear(),
+      selectedMonth.getMonth() - 1,
+      1
+    )
+  }, [selectedMonth])
+
+  const previousMonthData = useMemo(() => {
+    return getMonthData(previousMonth.getFullYear(), previousMonth.getMonth())
+  }, [employees, previousMonth])
 
   /*
    * ---------------------------------------------------------
@@ -212,27 +342,37 @@ export default function Turnover() {
   const currentTurnover = useMemo(() => {
     if (turnoverPeriod === 'semester') {
       return {
-        label: 'Semestral',
+        label: currentMonth < 6 ? '1º semestre' : '2º semestre',
+
         categories: semesterData
       }
     }
 
     if (turnoverPeriod === 'yearly') {
       return {
-        label: 'Anual',
+        label: `Anual ${currentYear}`,
+
         categories: yearlyData
       }
     }
 
     return {
-      label: 'Mensal',
-      categories: monthlyData
+      label: selectedMonthData.fullLabel,
+
+      categories: [selectedMonthData]
     }
-  }, [turnoverPeriod, monthlyData, semesterData, yearlyData])
+  }, [
+    turnoverPeriod,
+    semesterData,
+    yearlyData,
+    selectedMonthData,
+    currentMonth,
+    currentYear
+  ])
 
   /*
    * ---------------------------------------------------------
-   * TOTAIS
+   * TOTAIS DO PERÍODO
    * ---------------------------------------------------------
    */
 
@@ -271,28 +411,262 @@ export default function Turnover() {
 
   /*
    * ---------------------------------------------------------
-   * NAVEGAÇÃO DOS PERÍODOS
+   * PORCENTAGEM
    * ---------------------------------------------------------
+   *
+   * Regra:
+   *
+   * 1 -> 1 = 0%
+   * 1 -> 2 = +100%
+   * 2 -> 1 = -50%
+   * 0 -> 1 = Novo
+   * 0 -> 0 = 0%
    */
 
-  function handlePreviousPeriod() {
-    if (turnoverPeriod === 'monthly') {
-      setTurnoverPeriod('yearly')
-    } else if (turnoverPeriod === 'semester') {
-      setTurnoverPeriod('monthly')
-    } else {
-      setTurnoverPeriod('semester')
+  function calculateVariation(currentValue, previousValue) {
+    if (previousValue === 0) {
+      if (currentValue === 0) {
+        return {
+          value: 0,
+          label: '0%',
+          type: 'neutral'
+        }
+      }
+
+      return {
+        value: null,
+        label: 'Novo',
+        type: 'positive'
+      }
+    }
+
+    const variation = ((currentValue - previousValue) / previousValue) * 100
+
+    return {
+      value: variation,
+
+      label: `${variation > 0 ? '+' : ''}${variation.toFixed(0)}%`,
+
+      type: variation > 0 ? 'positive' : variation < 0 ? 'negative' : 'neutral'
     }
   }
 
-  function handleNextPeriod() {
-    if (turnoverPeriod === 'monthly') {
-      setTurnoverPeriod('semester')
-    } else if (turnoverPeriod === 'semester') {
-      setTurnoverPeriod('yearly')
-    } else {
-      setTurnoverPeriod('monthly')
+  /*
+   * ---------------------------------------------------------
+   * COMPARATIVO MENSAL
+   * ---------------------------------------------------------
+   */
+
+  const monthlyComparison = useMemo(() => {
+    return [
+      {
+        key: 'admitted',
+
+        label: 'Admissões',
+
+        current: selectedMonthData.admitted,
+
+        previous: previousMonthData.admitted
+      },
+
+      {
+        key: 'dismissed',
+
+        label: 'Desligamentos',
+
+        current: selectedMonthData.dismissed,
+
+        previous: previousMonthData.dismissed
+      },
+
+      {
+        key: 'employeeRequest',
+
+        label: 'Pedido de demissão',
+
+        current: selectedMonthData.employeeRequest,
+
+        previous: previousMonthData.employeeRequest
+      },
+
+      {
+        key: 'companyRequest',
+
+        label: 'Desligamento pela empresa',
+
+        current: selectedMonthData.companyRequest,
+
+        previous: previousMonthData.companyRequest
+      }
+    ].map((item) => ({
+      ...item,
+
+      variation: calculateVariation(item.current, item.previous)
+    }))
+  }, [selectedMonthData, previousMonthData])
+
+  /*
+   * ---------------------------------------------------------
+   * GRÁFICO DE PIZZA
+   * ---------------------------------------------------------
+   */
+
+  const monthlyPieData = useMemo(() => {
+    const data = [
+      {
+        key: 'admitted',
+
+        label: 'Admissões',
+
+        value: selectedMonthData.admitted,
+
+        className: 'admitted'
+      },
+
+      {
+        key: 'employeeRequest',
+
+        label: 'Pedido de demissão',
+
+        value: selectedMonthData.employeeRequest,
+
+        className: 'employee-request'
+      },
+
+      {
+        key: 'companyRequest',
+
+        label: 'Desligamento pela empresa',
+
+        value: selectedMonthData.companyRequest,
+
+        className: 'company-request'
+      },
+
+      {
+        key: 'unknownDismissal',
+
+        label: 'Desligamento sem motivo informado',
+
+        value: selectedMonthData.unknownDismissal,
+
+        className: 'unknown'
+      }
+    ]
+
+    return data.filter((item) => item.value > 0)
+  }, [selectedMonthData])
+
+  const monthlyPieTotal = monthlyPieData.reduce(
+    (total, item) => total + item.value,
+    0
+  )
+
+  /*
+   * ---------------------------------------------------------
+   * CORES DO GRÁFICO DE PIZZA
+   * ---------------------------------------------------------
+   */
+
+  function getPieColor(className) {
+    if (className === 'admitted') {
+      return '#4f67c6'
     }
+
+    if (className === 'employee-request') {
+      return '#f0ad4e'
+    }
+
+    if (className === 'company-request') {
+      return '#8e7cc3'
+    }
+
+    return '#94a3b8'
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * GRADIENTE DA PIZZA
+   * ---------------------------------------------------------
+   */
+
+  function buildPieGradient() {
+    if (monthlyPieTotal === 0) {
+      return 'conic-gradient(#e8edf5 0deg 360deg)'
+    }
+
+    let currentDegree = 0
+
+    const gradients = monthlyPieData.map((item) => {
+      const start = currentDegree
+
+      const end = currentDegree + (item.value / monthlyPieTotal) * 360
+
+      currentDegree = end
+
+      return `${getPieColor(item.className)} ${start}deg ${end}deg`
+    })
+
+    return `conic-gradient(${gradients.join(', ')})`
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * VARIAÇÃO DAS CONTRATAÇÕES
+   * ---------------------------------------------------------
+   */
+
+  const admissionVariation = calculateVariation(
+    selectedMonthData.admitted,
+    previousMonthData.admitted
+  )
+
+  /*
+   * ---------------------------------------------------------
+   * VERIFICAR MÊS ATUAL
+   * ---------------------------------------------------------
+   */
+
+  const isCurrentMonth =
+    selectedMonth.getFullYear() === currentYear &&
+    selectedMonth.getMonth() === currentMonth
+
+  /*
+   * ---------------------------------------------------------
+   * NAVEGAR PARA MÊS ANTERIOR
+   * ---------------------------------------------------------
+   */
+
+  function handlePreviousMonth() {
+    setSelectedMonth(
+      (currentSelectedMonth) =>
+        new Date(
+          currentSelectedMonth.getFullYear(),
+          currentSelectedMonth.getMonth() - 1,
+          1
+        )
+    )
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * NAVEGAR PARA PRÓXIMO MÊS
+   * ---------------------------------------------------------
+   */
+
+  function handleNextMonth() {
+    if (isCurrentMonth) {
+      return
+    }
+
+    setSelectedMonth(
+      (currentSelectedMonth) =>
+        new Date(
+          currentSelectedMonth.getFullYear(),
+          currentSelectedMonth.getMonth() + 1,
+          1
+        )
+    )
   }
 
   /*
@@ -303,7 +677,9 @@ export default function Turnover() {
 
   return (
     <section className="turnover-card">
-      {/* CABEÇALHO */}
+      {/* =====================================================
+          CABEÇALHO
+      ===================================================== */}
 
       <div className="turnover-header">
         <div>
@@ -312,28 +688,90 @@ export default function Turnover() {
           <p>Admissões e desligamentos de funcionários</p>
         </div>
 
-        <div className="turnover-period">
-          <button
-            type="button"
-            onClick={handlePreviousPeriod}
-            aria-label="Período anterior"
-          >
-            ‹
-          </button>
+        <div className="turnover-controls">
+          {/* =================================================
+              SELEÇÃO DO PERÍODO
+          ================================================= */}
 
-          <span>{currentTurnover.label}</span>
+          <div className="turnover-period-tabs">
+            <button
+              type="button"
+              className={turnoverPeriod === 'monthly' ? 'active' : ''}
+              onClick={() => setTurnoverPeriod('monthly')}
+            >
+              Mensal
+            </button>
 
-          <button
-            type="button"
-            onClick={handleNextPeriod}
-            aria-label="Próximo período"
-          >
-            ›
-          </button>
+            <button
+              type="button"
+              className={turnoverPeriod === 'semester' ? 'active' : ''}
+              onClick={() => setTurnoverPeriod('semester')}
+            >
+              Semestral
+            </button>
+
+            <button
+              type="button"
+              className={turnoverPeriod === 'yearly' ? 'active' : ''}
+              onClick={() => setTurnoverPeriod('yearly')}
+            >
+              Anual
+            </button>
+          </div>
+
+          {/* =================================================
+              NAVEGAÇÃO MENSAL
+          ================================================= */}
+
+          {turnoverPeriod === 'monthly' && (
+            <div className="turnover-month-navigation">
+              <button
+                type="button"
+                onClick={handlePreviousMonth}
+                aria-label="Mês anterior"
+              >
+                ‹
+              </button>
+
+              <span>
+                {monthNames[selectedMonth.getMonth()]}{' '}
+                {selectedMonth.getFullYear()}
+              </span>
+
+              <button
+                type="button"
+                onClick={handleNextMonth}
+                aria-label="Próximo mês"
+                disabled={isCurrentMonth}
+              >
+                ›
+              </button>
+            </div>
+          )}
+
+          {/* =================================================
+              IDENTIFICAÇÃO DO SEMESTRE
+          ================================================= */}
+
+          {turnoverPeriod === 'semester' && (
+            <div className="turnover-year-label">
+              {currentMonth < 6 ? '1º semestre' : '2º semestre'}
+            </div>
+          )}
+
+          {/* =================================================
+              IDENTIFICAÇÃO DO ANO
+          ================================================= */}
+
+          {turnoverPeriod === 'yearly' && (
+            <div className="turnover-year-label">{currentYear}</div>
+          )}
         </div>
       </div>
 
-      {/* INDICADORES */}
+      {/* =====================================================
+          INDICADORES
+      ===================================================== */}
 
       <div className="turnover-summary">
         <div className="turnover-summary-item">
@@ -367,65 +805,200 @@ export default function Turnover() {
         </div>
       </div>
 
-      {/* GRÁFICO */}
+      {/* =====================================================
+          VISÃO MENSAL
+      ===================================================== */}
 
-      <div className="turnover-chart">
-        <div className="turnover-chart-area">
-          {currentTurnover.categories.map((item) => {
-            const admittedHeight = (item.admitted / maxValue) * 100
+      {turnoverPeriod === 'monthly' ? (
+        <div className="turnover-monthly-content">
+          <div className="turnover-monthly-overview">
+            {/* ===============================================
+                PIZZA
+            =============================================== */}
 
-            const dismissedHeight = (item.dismissed / maxValue) * 100
+            <div className="turnover-pie-section">
+              <div className="turnover-section-title">
+                <div>
+                  <strong>Movimentações do mês</strong>
 
-            return (
-              <div className="turnover-column" key={item.label}>
-                <div className="turnover-bars">
-                  <div
-                    className="turnover-bar admitted"
-                    style={{
-                      height: `${admittedHeight}%`
-                    }}
-                    title={`Admitidos: ${item.admitted}`}
-                  />
+                  <span>{selectedMonthData.fullLabel}</span>
+                </div>
+              </div>
 
-                  <div
-                    className="turnover-bar dismissed"
-                    style={{
-                      height: `${dismissedHeight}%`
-                    }}
-                    title={`Desligados: ${item.dismissed}`}
-                  />
+              <div className="turnover-pie-content">
+                <div
+                  className="turnover-pie"
+                  style={{
+                    background: buildPieGradient()
+                  }}
+                >
+                  <div className="turnover-pie-center">
+                    <strong>{monthlyPieTotal}</strong>
+
+                    <span>movimentações</span>
+                  </div>
                 </div>
 
-                <span className="turnover-month">{item.label}</span>
+                <div className="turnover-pie-legend">
+                  {monthlyPieData.length > 0 ? (
+                    monthlyPieData.map((item) => (
+                      <div key={item.key}>
+                        <span className={`legend-dot ${item.className}`} />
+
+                        <div>
+                          <strong>{item.value}</strong>
+
+                          <span>{item.label}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="turnover-no-data">
+                      Nenhuma movimentação registrada neste mês.
+                    </p>
+                  )}
+                </div>
               </div>
-            )
-          })}
-        </div>
-      </div>
+            </div>
 
-      {/* LEGENDA */}
+            {/* ===============================================
+                COMPARATIVO
+            =============================================== */}
 
-      <div className="turnover-legend">
-        <div>
-          <span className="legend-dot admitted" />
-          Admitidos
-        </div>
+            <div className="turnover-comparison">
+              <div className="turnover-section-title">
+                <div>
+                  <strong>Comparativo com o mês anterior</strong>
 
-        <div>
-          <span className="legend-dot dismissed" />
-          Desligados
-        </div>
+                  <span>{previousMonthData.fullLabel}</span>
+                </div>
+              </div>
 
-        <div>
-          <span className="legend-dot employee-request" />
-          Pedido de demissão
-        </div>
+              <div className="turnover-comparison-list">
+                {monthlyComparison.map((item) => {
+                  const difference = item.current - item.previous
 
-        <div>
-          <span className="legend-dot company-request" />
-          Desligamento pela empresa
+                  return (
+                    <div className="turnover-comparison-item" key={item.key}>
+                      <div>
+                        <strong>{item.label}</strong>
+
+                        <span>
+                          {item.current} neste mês · {item.previous} no anterior
+                        </span>
+                      </div>
+
+                      <div
+                        className={`turnover-variation ${item.variation.type}`}
+                      >
+                        <strong>
+                          {difference > 0 ? '+' : ''}
+                          {difference}
+                        </strong>
+
+                        <span>{item.variation.label}</span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* ===============================================
+              DESTAQUE DAS CONTRATAÇÕES
+          =============================================== */}
+
+          <div className="turnover-month-highlight">
+            <div>
+              <span>Contratações em {selectedMonthData.fullLabel}</span>
+
+              <strong>{selectedMonthData.admitted}</strong>
+            </div>
+
+            <div>
+              <span>Contratações em {previousMonthData.fullLabel}</span>
+
+              <strong>{previousMonthData.admitted}</strong>
+            </div>
+
+            <div>
+              <span>Variação de contratações</span>
+
+              <strong>{admissionVariation.label}</strong>
+            </div>
+          </div>
         </div>
-      </div>
+      ) : (
+        /* ===================================================
+           VISÃO SEMESTRAL / ANUAL
+        =================================================== */
+
+        <>
+          <div className="turnover-chart">
+            <div className="turnover-chart-area">
+              {currentTurnover.categories.map((item) => {
+                const admittedHeight = (item.admitted / maxValue) * 100
+
+                const dismissedHeight = (item.dismissed / maxValue) * 100
+
+                return (
+                  <div
+                    className="turnover-column"
+                    key={`${item.year}-${item.month}`}
+                  >
+                    <div className="turnover-bars">
+                      <div
+                        className="turnover-bar admitted"
+                        style={{
+                          height: `${admittedHeight}%`
+                        }}
+                        title={`Admitidos: ${item.admitted}`}
+                      />
+
+                      <div
+                        className="turnover-bar dismissed"
+                        style={{
+                          height: `${dismissedHeight}%`
+                        }}
+                        title={`Desligados: ${item.dismissed}`}
+                      />
+                    </div>
+
+                    <span className="turnover-month">{item.label}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* ===============================================
+              LEGENDA
+          =============================================== */}
+
+          <div className="turnover-legend">
+            <div>
+              <span className="legend-dot admitted" />
+              Admitidos
+            </div>
+
+            <div>
+              <span className="legend-dot dismissed" />
+              Desligados
+            </div>
+
+            <div>
+              <span className="legend-dot employee-request" />
+              Pedido de demissão
+            </div>
+
+            <div>
+              <span className="legend-dot company-request" />
+              Desligamento pela empresa
+            </div>
+          </div>
+        </>
+      )}
     </section>
   )
 }

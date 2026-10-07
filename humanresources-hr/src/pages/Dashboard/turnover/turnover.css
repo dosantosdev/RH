@@ -3,28 +3,10 @@
 ========================================================= */
 
 .turnover-card {
-  /*
-   * O Turnover fica na coluna central.
-   */
   grid-column: 2;
 
-  /*
-   * Ocupa exatamente as três linhas dos cards
-   * da lateral esquerda.
-   */
   grid-row: 1 / 4;
 
-  /*
-   * Altura total das três linhas:
-   *
-   * 140px
-   * + 20px gap
-   * + 250px
-   * + 20px gap
-   * + 240px
-   *
-   * = 670px
-   */
   width: 820px;
 
   height: 670px;
@@ -49,10 +31,6 @@
     transform 0.25s ease,
     box-shadow 0.25s ease;
 
-  /*
-   * Mantém o conteúdo visualmente centralizado
-   * dentro do espaço disponível.
-   */
   justify-self: center;
 }
 
@@ -61,6 +39,7 @@
 
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
 }
+
 /* =========================================================
    CABEÇALHO
 ========================================================= */
@@ -96,27 +75,108 @@
 }
 
 /* =========================================================
-   CONTROLE DE PERÍODO
+   CONTROLES
 ========================================================= */
 
-.turnover-period {
+.turnover-controls {
   display: flex;
 
   align-items: center;
 
   gap: 10px;
 
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   ABAS MENSAL / SEMESTRAL / ANUAL
+========================================================= */
+
+.turnover-period-tabs {
+  display: flex;
+
+  align-items: center;
+
+  gap: 2px;
+
+  padding: 4px;
+
   background: #f5f6fa;
 
   border-radius: 10px;
-
-  padding: 5px;
 }
 
-.turnover-period button {
+.turnover-period-tabs button {
+  min-width: 72px;
+
+  height: 32px;
+
+  padding: 0 10px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: #777;
+
+  cursor: pointer;
+
+  font-family: inherit;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.turnover-period-tabs button:hover {
+  color: #4f67c6;
+}
+
+.turnover-period-tabs button.active {
+  background: white;
+
+  color: #444;
+
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* =========================================================
+   NAVEGAÇÃO DOS MESES
+========================================================= */
+
+.turnover-month-navigation {
+  display: flex;
+
+  align-items: center;
+
+  gap: 4px;
+
+  padding: 4px;
+
+  background: #f5f6fa;
+
+  border-radius: 10px;
+}
+
+.turnover-month-navigation button {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
   width: 32px;
 
   height: 32px;
+
+  padding: 0;
 
   border: none;
 
@@ -126,33 +186,63 @@
 
   color: #4f67c6;
 
+  cursor: pointer;
+
   font-size: 22px;
 
   line-height: 1;
-
-  cursor: pointer;
 
   transition:
     background 0.2s ease,
     transform 0.2s ease;
 }
 
-.turnover-period button:hover {
+.turnover-month-navigation button:hover:not(:disabled) {
   background: #e9edff;
 
   transform: scale(1.05);
 }
 
-.turnover-period span {
-  min-width: 75px;
+.turnover-month-navigation button:disabled {
+  opacity: 0.4;
+
+  cursor: not-allowed;
+}
+
+.turnover-month-navigation span {
+  min-width: 110px;
+
+  padding: 0 5px;
 
   text-align: center;
 
-  font-size: 14px;
+  color: #444;
+
+  font-size: 13px;
 
   font-weight: 600;
+}
+
+/* =========================================================
+   IDENTIFICAÇÃO DO SEMESTRE / ANO
+========================================================= */
+
+.turnover-year-label {
+  min-width: 80px;
+
+  padding: 9px 14px;
+
+  border-radius: 9px;
+
+  background: #f5f6fa;
 
   color: #444;
+
+  text-align: center;
+
+  font-size: 13px;
+
+  font-weight: 600;
 }
 
 /* =========================================================
@@ -204,7 +294,7 @@
 }
 
 /* =========================================================
-   GRÁFICO
+   GRÁFICO SEMESTRAL / ANUAL
 ========================================================= */
 
 .turnover-chart {
@@ -359,6 +449,389 @@
   background: #8e7cc3;
 }
 
+.legend-dot.unknown {
+  background: #94a3b8;
+}
+
+/* =========================================================
+   CONTEÚDO MENSAL
+========================================================= */
+
+.turnover-monthly-content {
+  display: flex;
+
+  flex-direction: column;
+
+  flex: 1;
+
+  min-height: 0;
+}
+
+.turnover-monthly-overview {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+
+  gap: 16px;
+
+  flex: 1;
+
+  min-height: 0;
+}
+
+/* =========================================================
+   TÍTULOS DAS SEÇÕES
+========================================================= */
+
+.turnover-section-title {
+  display: flex;
+
+  align-items: flex-start;
+
+  justify-content: space-between;
+
+  margin-bottom: 16px;
+}
+
+.turnover-section-title > div {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.turnover-section-title strong {
+  color: #444;
+
+  font-size: 14px;
+
+  font-weight: 600;
+}
+
+.turnover-section-title span {
+  color: #999;
+
+  font-size: 11px;
+}
+
+/* =========================================================
+   PIZZA
+========================================================= */
+
+.turnover-pie-section {
+  min-width: 0;
+
+  padding: 18px;
+
+  border: 1px solid #eef0f5;
+
+  border-radius: 14px;
+
+  background: #fafbfe;
+
+  box-sizing: border-box;
+}
+
+.turnover-pie-content {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 24px;
+
+  height: 215px;
+}
+
+.turnover-pie {
+  position: relative;
+
+  width: 165px;
+
+  height: 165px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(0, 0, 0, 0.03),
+    0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.turnover-pie-center {
+  width: 92px;
+
+  height: 92px;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  flex-direction: column;
+
+  border-radius: 50%;
+
+  background: white;
+
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.turnover-pie-center strong {
+  color: #2b2b2b;
+
+  font-size: 24px;
+
+  line-height: 1;
+
+  font-weight: 700;
+}
+
+.turnover-pie-center span {
+  margin-top: 5px;
+
+  color: #999;
+
+  font-size: 10px;
+
+  text-align: center;
+}
+
+/* =========================================================
+   LEGENDA DA PIZZA
+========================================================= */
+
+.turnover-pie-legend {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 11px;
+
+  min-width: 150px;
+
+  max-width: 200px;
+}
+
+.turnover-pie-legend > div {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+}
+
+.turnover-pie-legend > div > div {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.turnover-pie-legend strong {
+  color: #444;
+
+  font-size: 14px;
+}
+
+.turnover-pie-legend span:not(.legend-dot) {
+  color: #888;
+
+  font-size: 10px;
+
+  line-height: 1.25;
+}
+
+.turnover-pie-legend .legend-dot {
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   SEM DADOS
+========================================================= */
+
+.turnover-no-data {
+  margin: 0;
+
+  color: #999;
+
+  font-size: 12px;
+
+  line-height: 1.5;
+
+  text-align: left;
+}
+
+/* =========================================================
+   COMPARATIVO MENSAL
+========================================================= */
+
+.turnover-comparison {
+  min-width: 0;
+
+  padding: 18px;
+
+  border: 1px solid #eef0f5;
+
+  border-radius: 14px;
+
+  background: #fff;
+
+  box-sizing: border-box;
+}
+
+.turnover-comparison-list {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.turnover-comparison-item {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 12px;
+
+  border-radius: 9px;
+
+  background: #f8f9fc;
+
+  border: 1px solid #f0f1f5;
+}
+
+.turnover-comparison-item > div:first-child {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 4px;
+
+  min-width: 0;
+}
+
+.turnover-comparison-item > div:first-child strong {
+  color: #444;
+
+  font-size: 12px;
+
+  font-weight: 600;
+}
+
+.turnover-comparison-item > div:first-child span {
+  color: #999;
+
+  font-size: 10px;
+
+  line-height: 1.3;
+}
+
+/* =========================================================
+   VARIAÇÃO
+========================================================= */
+
+.turnover-variation {
+  display: flex;
+
+  align-items: flex-end;
+
+  flex-direction: column;
+
+  gap: 2px;
+
+  flex-shrink: 0;
+}
+
+.turnover-variation strong {
+  font-size: 14px;
+
+  font-weight: 700;
+}
+
+.turnover-variation span {
+  font-size: 10px;
+}
+
+.turnover-variation.positive strong,
+.turnover-variation.positive span {
+  color: #3f8f5f;
+}
+
+.turnover-variation.negative strong,
+.turnover-variation.negative span {
+  color: #d45f5f;
+}
+
+.turnover-variation.neutral strong,
+.turnover-variation.neutral span {
+  color: #999;
+}
+
+/* =========================================================
+   DESTAQUE DAS CONTRATAÇÕES
+========================================================= */
+
+.turnover-month-highlight {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 10px;
+
+  margin-top: 14px;
+}
+
+.turnover-month-highlight > div {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 5px;
+
+  padding: 12px 14px;
+
+  border-radius: 10px;
+
+  background: #f8f9fc;
+
+  border: 1px solid #eef0f5;
+}
+
+.turnover-month-highlight span {
+  color: #888;
+
+  font-size: 10px;
+
+  line-height: 1.3;
+}
+
+.turnover-month-highlight strong {
+  color: #2b2b2b;
+
+  font-size: 19px;
+
+  font-weight: 700;
+}
+
 /* =========================================================
    RESPONSIVIDADE
 ========================================================= */
@@ -366,6 +839,24 @@
 @media (max-width: 1250px) {
   .turnover-summary {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  .turnover-monthly-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .turnover-pie-content {
+    height: auto;
+
+    min-height: 190px;
+  }
+}
+
+@media (max-width: 900px) {
+  .turnover-controls {
+    flex-wrap: wrap;
+
+    justify-content: flex-end;
   }
 }
 
@@ -382,6 +873,28 @@
     align-items: flex-start;
   }
 
+  .turnover-controls {
+    width: 100%;
+
+    justify-content: space-between;
+  }
+
+  .turnover-period-tabs {
+    flex: 1;
+  }
+
+  .turnover-period-tabs button {
+    flex: 1;
+
+    min-width: 0;
+
+    padding: 0 6px;
+  }
+
+  .turnover-month-navigation {
+    flex-shrink: 0;
+  }
+
   .turnover-summary {
     grid-template-columns: 1fr 1fr;
   }
@@ -392,5 +905,71 @@
 
   .turnover-legend {
     justify-content: flex-start;
+  }
+
+  .turnover-pie-content {
+    flex-direction: column;
+
+    gap: 15px;
+
+    padding-bottom: 10px;
+  }
+
+  .turnover-pie {
+    width: 140px;
+
+    height: 140px;
+  }
+
+  .turnover-pie-center {
+    width: 80px;
+
+    height: 80px;
+  }
+
+  .turnover-pie-center strong {
+    font-size: 20px;
+  }
+
+  .turnover-pie-legend {
+    width: 100%;
+
+    max-width: none;
+
+    display: grid;
+
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .turnover-month-highlight {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 500px) {
+  .turnover-controls {
+    flex-direction: column;
+
+    align-items: stretch;
+  }
+
+  .turnover-period-tabs {
+    width: 100%;
+  }
+
+  .turnover-month-navigation {
+    justify-content: center;
+  }
+
+  .turnover-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .turnover-pie-legend {
+    grid-template-columns: 1fr;
+  }
+
+  .turnover-comparison-item {
+    align-items: flex-start;
   }
 }

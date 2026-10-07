@@ -1,4 +1,6 @@
-/* NAVBAR */
+/* ============================================================
+   NAVBAR
+   ============================================================ */
 
 .navbar {
   display: flex;
@@ -18,7 +20,9 @@
   z-index: 1000;
 }
 
-/* AGRUPAMENTO DA ESQUERDA */
+/* ============================================================
+   AGRUPAMENTO DA ESQUERDA
+   ============================================================ */
 
 .nav-left {
   display: flex;
@@ -26,7 +30,9 @@
   gap: 15px;
 }
 
-/* LINKS E BOTÕES */
+/* ============================================================
+   LINKS E BOTÕES
+   ============================================================ */
 
 .nav-link,
 .dropbtn {
@@ -49,14 +55,18 @@
   transition: all 0.3s ease;
 }
 
-/* HOVER */
+/* ============================================================
+   HOVER
+   ============================================================ */
 
 .nav-link:hover,
 .dropbtn:hover {
   background-color: rgba(255, 255, 255, 0.15);
 }
 
-/* DROPDOWN */
+/* ============================================================
+   DROPDOWN
+   ============================================================ */
 
 .dropdown {
   position: relative;
@@ -84,7 +94,9 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* ITENS DO DROPDOWN */
+/* ============================================================
+   ITENS DO DROPDOWN
+   ============================================================ */
 
 .dropdown-content a {
   display: block;
@@ -102,13 +114,17 @@
   background-color: #f1f1f1;
 }
 
-/* MOSTRAR DROPDOWN */
+/* ============================================================
+   MOSTRAR DROPDOWN
+   ============================================================ */
 
 .dropdown:hover .dropdown-content {
   display: block;
 }
 
-/* ÁREA DO USUÁRIO */
+/* ============================================================
+   ÁREA DO USUÁRIO
+   ============================================================ */
 
 .nav-user-area {
   display: flex;
@@ -118,7 +134,9 @@
   gap: 10px;
 }
 
-/* BOTÃO DO PERFIL */
+/* ============================================================
+   BOTÃO DO PERFIL
+   ============================================================ */
 
 .nav-profile-button {
   display: flex;
@@ -146,7 +164,9 @@
   background-color: rgba(255, 255, 255, 0.15);
 }
 
-/* AVATAR */
+/* ============================================================
+   AVATAR
+   ============================================================ */
 
 .nav-profile-avatar {
   width: 32px;
@@ -174,7 +194,9 @@
   flex-shrink: 0;
 }
 
-/* FOTO DO FUNCIONÁRIO */
+/* ============================================================
+   FOTO DO FUNCIONÁRIO - COMPATIBILIDADE
+   ============================================================ */
 
 .nav-profile-avatar img {
   width: 100%;
@@ -184,7 +206,9 @@
   object-fit: cover;
 }
 
-/* NOME DO USUÁRIO */
+/* ============================================================
+   NOME DO USUÁRIO
+   ============================================================ */
 
 .nav-profile-name {
   max-width: 140px;
@@ -198,29 +222,263 @@
   font-size: 13px;
 }
 
-/* BOTÃO SAIR */
+/* ============================================================
+   BOTÃO SAIR
+   ============================================================ */
 
 .logout-btn.primary-btn {
   padding: 8px 16px;
 
   font-size: 13px;
 }
-/* ==============================
-   ÁREA DO USUÁRIO
-   ============================== */
+
+/* ============================================================
+   ÁREA DO USUÁRIO - ESTRUTURA ATUAL DO NAVBAR
+   ============================================================ */
+
+.nav-profile {
+  position: relative;
+
+  display: flex;
+
+  align-items: center;
+
+  margin-left: auto;
+
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   BOTÃO DO USUÁRIO - ESTRUTURA ATUAL
+   ============================================================ */
+
+.nav-profile-button {
+  display: flex;
+
+  align-items: center;
+
+  gap: 8px;
+
+  min-height: 36px;
+
+  padding: 4px 9px;
+
+  border: none;
+
+  border-radius: 8px;
+
+  background: transparent;
+
+  color: white;
+
+  cursor: pointer;
+
+  font-family: inherit;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.nav-profile-button:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* ============================================================
+   FOTO DO PERFIL - ESTRUTURA ATUAL
+   ============================================================ */
+
+.nav-profile-photo {
+  width: 30px;
+
+  height: 30px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  object-fit: cover;
+
+  background-color: #ecf0f1;
+}
+
+/* ============================================================
+   INICIAL DO USUÁRIO
+   ============================================================ */
+
+.nav-profile-initial {
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  width: 30px;
+
+  height: 30px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background-color: #5b6fd8;
+
+  color: white;
+
+  font-size: 13px;
+
+  font-weight: 700;
+}
+
+/* ============================================================
+   MENU DO PERFIL - ESTRUTURA ATUAL
+   ============================================================ */
+
+.nav-profile-menu {
+  position: absolute;
+
+  top: calc(100% + 8px);
+
+  right: 0;
+
+  width: 190px;
+
+  padding: 6px;
+
+  border: 1px solid #e2e8f0;
+
+  border-radius: 10px;
+
+  background: white;
+
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+
+  z-index: 10000;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+/* ============================================================
+   LINKS DO MENU DO PERFIL
+   ============================================================ */
+
+.nav-profile-menu a {
+  display: flex;
+
+  align-items: center;
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 10px 11px;
+
+  border-radius: 7px;
+
+  color: #2c3e50;
+
+  background: transparent;
+
+  text-decoration: none;
+
+  font-size: 13px;
+
+  line-height: 1.2;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.nav-profile-menu a:hover {
+  background-color: #f1f4fa;
+
+  color: #1d4ed8;
+}
+
+/* ============================================================
+   BOTÃO SAIR DO MENU
+   ============================================================ */
+
+.nav-profile-menu button {
+  display: flex;
+
+  align-items: center;
+
+  width: 100%;
+
+  box-sizing: border-box;
+
+  padding: 10px 11px;
+
+  border: none;
+
+  border-radius: 7px;
+
+  background: transparent;
+
+  color: #c0392b;
+
+  text-align: left;
+
+  font-family: inherit;
+
+  font-size: 13px;
+
+  line-height: 1.2;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.nav-profile-menu button:hover {
+  background: #fdf0ef;
+
+  color: #a93226;
+}
+
+/* ============================================================
+   DIVISOR VISUAL ANTES DO SAIR
+   ============================================================ */
+
+.nav-profile-menu button {
+  margin-top: 3px;
+
+  border-top: 1px solid #eeeeee;
+
+  border-radius: 0 0 7px 7px;
+
+  padding-top: 11px;
+}
+
+/* ============================================================
+   COMPATIBILIDADE COM ESTRUTURA ANTIGA
+   ============================================================ */
 
 .navbar-user-area {
   position: relative;
+
   margin-left: auto;
+
   margin-right: 10px;
 }
 
 .navbar-user-button {
   display: flex;
+
   align-items: center;
+
   gap: 8px;
 
   border: none;
+
   background: transparent;
 
   color: white;
@@ -240,6 +498,7 @@
 
 .navbar-user-avatar {
   width: 32px;
+
   height: 32px;
 
   border-radius: 50%;
@@ -247,7 +506,9 @@
   object-fit: cover;
 
   display: flex;
+
   align-items: center;
+
   justify-content: center;
 }
 
@@ -261,23 +522,27 @@
 
 .navbar-user-name {
   font-size: 13px;
+
   font-weight: 500;
 
   max-width: 120px;
 
   overflow: hidden;
+
   text-overflow: ellipsis;
+
   white-space: nowrap;
 }
 
-/* ==============================
-   MENU DO PERFIL
-   ============================== */
+/* ============================================================
+   MENU DE PERFIL ANTIGO
+   ============================================================ */
 
 .profile-dropdown {
   position: absolute;
 
   top: calc(100% + 8px);
+
   right: 0;
 
   width: 260px;
@@ -293,10 +558,13 @@
   z-index: 10000;
 }
 
-/* CABEÇALHO DO PERFIL */
+/* ============================================================
+   CABEÇALHO DO PERFIL ANTIGO
+   ============================================================ */
 
 .profile-dropdown-header {
   display: flex;
+
   align-items: center;
 
   gap: 10px;
@@ -306,6 +574,7 @@
 
 .profile-dropdown-avatar {
   width: 42px;
+
   height: 42px;
 
   border-radius: 50%;
@@ -315,7 +584,9 @@
 
 .profile-dropdown-initial {
   display: flex;
+
   align-items: center;
+
   justify-content: center;
 
   background-color: #5b6fd8;
@@ -323,11 +594,13 @@
   color: white;
 
   font-size: 18px;
+
   font-weight: 600;
 }
 
 .profile-dropdown-header div:last-child {
   display: flex;
+
   flex-direction: column;
 
   min-width: 0;
@@ -339,7 +612,9 @@
   font-size: 14px;
 
   overflow: hidden;
+
   text-overflow: ellipsis;
+
   white-space: nowrap;
 }
 
@@ -351,7 +626,9 @@
   margin-top: 3px;
 }
 
-/* DIVISOR */
+/* ============================================================
+   DIVISOR - PERFIL ANTIGO
+   ============================================================ */
 
 .profile-dropdown-divider {
   height: 1px;
@@ -361,10 +638,13 @@
   margin: 10px 0;
 }
 
-/* INFORMAÇÕES */
+/* ============================================================
+   INFORMAÇÕES - PERFIL ANTIGO
+   ============================================================ */
 
 .profile-dropdown-info {
   display: flex;
+
   flex-direction: column;
 
   padding: 4px 8px 10px;
@@ -384,7 +664,9 @@
   margin-top: 2px;
 }
 
-/* BOTÕES */
+/* ============================================================
+   BOTÕES - PERFIL ANTIGO
+   ============================================================ */
 
 .profile-dropdown-item {
   width: 100%;
@@ -412,10 +694,61 @@
 
 .profile-logout-item {
   color: #c0392b;
+
   border-top: none;
 }
 
 .profile-logout-item:hover {
   background: #fdf0ef;
+
   color: #a93226;
+}
+
+/* ============================================================
+   RESPONSIVIDADE
+   ============================================================ */
+
+@media (max-width: 900px) {
+  .navbar {
+    padding: 8px 12px;
+
+    margin: 10px 12px;
+  }
+
+  .nav-left {
+    gap: 7px;
+  }
+
+  .nav-link,
+  .dropbtn {
+    padding: 6px 7px;
+
+    font-size: 12px;
+  }
+
+  .nav-profile-name {
+    max-width: 100px;
+  }
+}
+
+@media (max-width: 700px) {
+  .navbar {
+    align-items: flex-start;
+
+    overflow-x: auto;
+  }
+
+  .nav-left {
+    flex-shrink: 0;
+  }
+
+  .nav-profile {
+    margin-left: 10px;
+
+    flex-shrink: 0;
+  }
+
+  .nav-profile-name {
+    display: none;
+  }
 }
