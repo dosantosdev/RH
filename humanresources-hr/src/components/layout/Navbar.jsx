@@ -102,6 +102,14 @@ export default function Navbar() {
 
   /*
    * ============================================================
+   * PERMISSÕES DO FINANCEIRO
+   * ============================================================
+   */
+
+  const canViewSalaries = hasPermission('finance_salary_view')
+
+  /*
+   * ============================================================
    * RENDER
    * ============================================================
    */
@@ -248,15 +256,29 @@ export default function Navbar() {
             FINANCEIRO
         ====================================================== */}
 
-        <div className="dropdown">
-          <button className="dropbtn">Financeiro</button>
+        {(hasPermission('finance_salary_view') ||
+          hasPermission('finance_events_view') ||
+          hasPermission('finance_payroll_view')) && (
+          <div className="dropdown">
+            <button className="dropbtn">Financeiro</button>
 
-          <div className="dropdown-content">
-            <Link to="#">Horas</Link>
+            <div className="dropdown-content">
+              {hasPermission('finance_salary_view') && (
+                <Link to="/financeiro/salarios">Salários</Link>
+              )}
 
-            <Link to="#">Folha</Link>
+              {hasPermission('finance_events_view') && (
+                <Link to="/financeiro/proventos-descontos">
+                  Proventos e Descontos
+                </Link>
+              )}
+
+              {hasPermission('finance_payroll_view') && (
+                <Link to="/financeiro/folha">Folha de Pagamento</Link>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ======================================================
             RELATÓRIOS

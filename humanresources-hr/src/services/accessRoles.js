@@ -70,6 +70,12 @@ export const defaultAccessRoles = [
       'employees_edit',
 
       /*
+       * Financeiro
+       */
+      'finance_salary_view',
+      'finance_salary_manage',
+
+      /*
        * Treinamentos
        */
       'trainings_view',
@@ -162,10 +168,55 @@ export function initializeAccessRoles() {
   const storedAccessRoles = getAccessRoles()
 
   /*
-   * Se já existem perfis armazenados,
-   * preservamos os dados existentes.
+   * ==========================================================
+   * PERFIS JÁ EXISTENTES
+   * ==========================================================
+   *
+   * Se os perfis já foram criados anteriormente, não podemos
+   * simplesmente substituí-los.
+   *
+   * Porém, precisamos garantir que o perfil padrão de Gestão
+   * de RH receba as novas permissões do Financeiro.
+   *
+   * Perfis personalizados não são sobrescritos.
    */
+
   if (storedAccessRoles.length > 0) {
+    const financePermissions = ['finance_salary_view', 'finance_salary_manage']
+
+    let changed = false
+
+    const updatedAccessRoles = storedAccessRoles.map((role) => {
+      if (role.name !== 'gestao_rh') {
+        return role
+      }
+
+      const currentPermissions = Array.isArray(role.permissions)
+        ? role.permissions
+        : []
+
+      const missingPermissions = financePermissions.filter(
+        (permission) => !currentPermissions.includes(permission)
+      )
+
+      if (missingPermissions.length === 0) {
+        return role
+      }
+
+      changed = true
+
+      return {
+        ...role,
+        permissions: [...currentPermissions, ...missingPermissions]
+      }
+    })
+
+    if (changed) {
+      setStored('accessRoles', updatedAccessRoles)
+
+      return updatedAccessRoles
+    }
+
     return storedAccessRoles
   }
 
@@ -207,7 +258,12 @@ export function initializeAccessRoles() {
         permissions:
           Array.isArray(legacyRole.permissions) &&
           legacyRole.permissions.length > 0
-            ? legacyRole.permissions
+            ? [
+                ...legacyRole.permissions,
+                ...defaultRole.permissions.filter(
+                  (permission) => !legacyRole.permissions.includes(permission)
+                )
+              ]
             : defaultRole.permissions
       }
     })

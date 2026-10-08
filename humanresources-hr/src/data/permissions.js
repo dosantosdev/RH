@@ -250,6 +250,43 @@ export const permissions = [
 
   /*
    * ============================================================
+   * FINANCEIRO
+   * ============================================================
+   */
+
+  {
+    category: 'Financeiro',
+
+    items: [
+      {
+        key: 'finance_salary_view',
+        label: 'Visualizar informações salariais'
+      },
+      {
+        key: 'finance_salary_manage',
+        label: 'Gerenciar salários e histórico salarial'
+      },
+      {
+        key: 'finance_events_view',
+        label: 'Visualizar proventos e descontos'
+      },
+      {
+        key: 'finance_events_manage',
+        label: 'Gerenciar proventos e descontos'
+      },
+      {
+        key: 'finance_payroll_view',
+        label: 'Visualizar folha de pagamento'
+      },
+      {
+        key: 'finance_payroll_manage',
+        label: 'Gerenciar folha de pagamento'
+      }
+    ]
+  },
+
+  /*
+   * ============================================================
    * PONTO
    * ============================================================
    */

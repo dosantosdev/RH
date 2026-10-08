@@ -64,6 +64,12 @@ import MinhasAvaliacoes from './pages/Avaliacoes/MinhasAvaliacoes'
 
 import HistoricoAvaliacoes from './pages/Avaliacoes/HistoricoAvaliacoes'
 
+import Salarios from './pages/Financeiro/Salarios/Salarios'
+
+import ProventosDescontos from './pages/Financeiro/ProventosDescontos/ProventosDescontos'
+
+import Folha from './pages/Financeiro/Folha/Folha'
+
 import Header from './components/layout/Header'
 
 /*
@@ -449,6 +455,43 @@ function App() {
           <ProtectedRoute>
             <Layout>
               <Relatorios />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ============================================================
+          FINANCEIRO
+      ============================================================ */}
+
+      <Route
+        path="/financeiro/salarios"
+        element={
+          <ProtectedRoute permission="finance_salary_view">
+            <Layout>
+              <Salarios />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/financeiro/proventos-descontos"
+        element={
+          <ProtectedRoute permission="finance_events_view">
+            <Layout>
+              <ProventosDescontos />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/financeiro/folha"
+        element={
+          <ProtectedRoute permission="finance_payroll_view">
+            <Layout>
+              <Folha />
             </Layout>
           </ProtectedRoute>
         }

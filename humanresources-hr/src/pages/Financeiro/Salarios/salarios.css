@@ -1,0 +1,645 @@
+/* ============================================================
+   PÁGINA
+============================================================ */
+
+.salary-page {
+  min-height: calc(100vh - 80px);
+  padding: 30px;
+  background: #f4f5f8;
+}
+
+/* ============================================================
+   CABEÇALHO
+============================================================ */
+
+.salary-header {
+  margin-bottom: 25px;
+}
+
+.salary-kicker {
+  display: block;
+  margin-bottom: 6px;
+  color: #4f67c6;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.salary-header h1 {
+  margin: 0;
+  font-size: 30px;
+  color: #202124;
+}
+
+.salary-header p {
+  margin: 8px 0 0;
+  color: #70757d;
+  font-size: 14px;
+}
+
+/* ============================================================
+   MENSAGEM
+============================================================ */
+
+.salary-message {
+  margin-bottom: 20px;
+  padding: 13px 16px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.salary-message-success {
+  background: #e7f6ec;
+  color: #25743a;
+  border: 1px solid #c7e9d0;
+}
+
+.salary-message-warning {
+  background: #fff6df;
+  color: #8a6500;
+  border: 1px solid #f0dfa9;
+}
+
+/* ============================================================
+   LAYOUT
+============================================================ */
+
+.salary-layout {
+  display: grid;
+  grid-template-columns: 330px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+/* ============================================================
+   CARDS
+============================================================ */
+
+.salary-employees-card,
+.salary-details-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.04);
+}
+
+.salary-employees-card {
+  overflow: hidden;
+}
+
+.salary-details-card {
+  min-width: 0;
+}
+
+/* ============================================================
+   CABEÇALHO DOS CARDS
+============================================================ */
+
+.salary-card-header {
+  padding: 22px 20px 16px;
+}
+
+.salary-card-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #202124;
+}
+
+.salary-card-header p {
+  margin: 6px 0 0;
+  color: #777;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   BUSCA
+============================================================ */
+
+.salary-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 15px 15px;
+  padding: 10px 12px;
+  background: #f6f7fa;
+  border: 1px solid #e2e4e8;
+  border-radius: 9px;
+}
+
+.salary-search span {
+  font-size: 15px;
+}
+
+.salary-search input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+}
+
+/* ============================================================
+   LISTA DE FUNCIONÁRIOS
+============================================================ */
+
+.salary-employees-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 650px;
+  overflow-y: auto;
+  padding: 0 10px 12px;
+}
+
+.salary-employee-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: 0.18s;
+}
+
+.salary-employee-item:hover {
+  background: #f5f6fa;
+}
+
+.salary-employee-item-selected {
+  background: #eef1fb;
+}
+
+.salary-employee-item-selected:hover {
+  background: #eef1fb;
+}
+
+/* ============================================================
+   AVATAR
+============================================================ */
+
+.salary-employee-avatar {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #4f67c6;
+  color: white;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.salary-employee-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ============================================================
+   INFORMAÇÕES
+============================================================ */
+
+.salary-employee-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.salary-employee-info strong {
+  color: #252525;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.salary-employee-info span {
+  color: #777;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.salary-employee-info small {
+  color: #4f67c6;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* ============================================================
+   ESTADOS VAZIOS
+============================================================ */
+
+.salary-empty-small {
+  padding: 25px 15px;
+  text-align: center;
+  color: #777;
+  font-size: 13px;
+}
+
+.salary-empty-state {
+  min-height: 500px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.salary-empty-state span {
+  margin-bottom: 15px;
+  font-size: 46px;
+}
+
+.salary-empty-state h2 {
+  margin: 0 0 8px;
+  color: #303030;
+}
+
+.salary-empty-state p {
+  max-width: 450px;
+  margin: 0;
+  color: #777;
+  line-height: 1.6;
+  font-size: 14px;
+}
+
+/* ============================================================
+   FUNCIONÁRIO SELECIONADO
+============================================================ */
+
+.salary-selected-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 25px;
+  padding: 25px;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.salary-selected-header h2 {
+  margin: 0;
+  color: #202124;
+  font-size: 24px;
+}
+
+.salary-selected-header p {
+  margin: 7px 0 0;
+  color: #777;
+  font-size: 13px;
+}
+
+.salary-current-value {
+  min-width: 210px;
+  padding: 15px 18px;
+  background: #f6f8ff;
+  border: 1px solid #dfe4f7;
+  border-radius: 11px;
+  text-align: right;
+}
+
+.salary-current-value span,
+.salary-current-value small {
+  display: block;
+  color: #777;
+  font-size: 11px;
+}
+
+.salary-current-value strong {
+  display: block;
+  margin: 4px 0;
+  color: #4f67c6;
+  font-size: 22px;
+}
+
+/* ============================================================
+   FORMULÁRIO
+============================================================ */
+
+.salary-form {
+  padding: 25px;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.salary-form-header {
+  margin-bottom: 20px;
+}
+
+.salary-form-header h3 {
+  margin: 0;
+  color: #303030;
+  font-size: 17px;
+}
+
+.salary-form-header p {
+  margin: 5px 0 0;
+  color: #777;
+  font-size: 13px;
+}
+
+.salary-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px;
+}
+
+.salary-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.salary-field-full {
+  grid-column: 1 / -1;
+}
+
+.salary-field label {
+  color: #454545;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.salary-field input,
+.salary-field select,
+.salary-field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d8dbe2;
+  border-radius: 8px;
+  outline: none;
+  background: white;
+  color: #333;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.salary-field textarea {
+  resize: vertical;
+}
+
+.salary-field input:focus,
+.salary-field select:focus,
+.salary-field textarea:focus {
+  border-color: #4f67c6;
+  box-shadow: 0 0 0 3px rgba(79, 103, 198, 0.1);
+}
+
+/* ============================================================
+   AÇÕES DO FORMULÁRIO
+============================================================ */
+
+.salary-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.salary-primary-button,
+.salary-secondary-button,
+.salary-new-button {
+  border-radius: 8px;
+  padding: 10px 15px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  transition: 0.18s;
+}
+
+.salary-primary-button {
+  border: none;
+  background: #4f67c6;
+  color: white;
+}
+
+.salary-primary-button:hover {
+  background: #4058b5;
+}
+
+.salary-secondary-button {
+  border: 1px solid #d5d8df;
+  background: white;
+  color: #555;
+}
+
+.salary-secondary-button:hover {
+  background: #f5f5f5;
+}
+
+/* ============================================================
+   HISTÓRICO
+============================================================ */
+
+.salary-history {
+  padding: 25px;
+}
+
+.salary-history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 18px;
+}
+
+.salary-history-header h3 {
+  margin: 0;
+  color: #303030;
+  font-size: 17px;
+}
+
+.salary-history-header p {
+  margin: 5px 0 0;
+  color: #777;
+  font-size: 13px;
+}
+
+.salary-new-button {
+  border: 1px solid #d8dce8;
+  background: #f6f7fb;
+  color: #4f67c6;
+}
+
+.salary-new-button:hover {
+  background: #eef1fb;
+}
+
+/* ============================================================
+   TABELA
+============================================================ */
+
+.salary-history-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.salary-history-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 650px;
+}
+
+.salary-history-table th {
+  padding: 11px 10px;
+  border-bottom: 1px solid #ddd;
+  background: #fafafa;
+  color: #666;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.salary-history-table td {
+  padding: 13px 10px;
+  border-bottom: 1px solid #eeeeee;
+  color: #555;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.salary-history-table tbody tr:hover {
+  background: #fafbfe;
+}
+
+.salary-history-table td strong {
+  color: #303030;
+}
+
+/* ============================================================
+   AÇÕES
+============================================================ */
+
+.salary-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.salary-actions button {
+  width: 31px;
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 7px;
+  background: #f4f5f8;
+  cursor: pointer;
+  transition: 0.18s;
+}
+
+.salary-actions button:hover {
+  background: #e9ebf2;
+}
+
+/* ============================================================
+   HISTÓRICO VAZIO
+============================================================ */
+
+.salary-history-empty {
+  padding: 40px 20px;
+  border: 1px dashed #d8dbe2;
+  border-radius: 10px;
+  text-align: center;
+}
+
+.salary-history-empty span {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 32px;
+}
+
+.salary-history-empty strong {
+  display: block;
+  color: #444;
+  font-size: 14px;
+}
+
+.salary-history-empty p {
+  margin: 7px 0 0;
+  color: #777;
+  font-size: 13px;
+}
+
+/* ============================================================
+   ACESSO NEGADO
+============================================================ */
+
+.salary-access-denied {
+  max-width: 550px;
+  margin: 80px auto;
+  padding: 45px 30px;
+  background: white;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  text-align: center;
+}
+
+.salary-access-denied span {
+  display: block;
+  margin-bottom: 15px;
+  font-size: 40px;
+}
+
+.salary-access-denied h2 {
+  margin: 0 0 8px;
+}
+
+.salary-access-denied p {
+  margin: 0;
+  color: #777;
+}
+
+/* ============================================================
+   RESPONSIVO
+============================================================ */
+
+@media (max-width: 1000px) {
+  .salary-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .salary-employees-list {
+    max-height: 350px;
+  }
+}
+
+@media (max-width: 650px) {
+  .salary-page {
+    padding: 20px 12px;
+  }
+
+  .salary-selected-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .salary-current-value {
+    width: 100%;
+    text-align: left;
+  }
+
+  .salary-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .salary-field-full {
+    grid-column: auto;
+  }
+
+  .salary-history-header {
+    flex-direction: column;
+  }
+}

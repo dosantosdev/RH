@@ -1,0 +1,580 @@
+/* ============================================================
+   PÁGINA
+============================================================ */
+
+.financial-events-page {
+  min-height: calc(100vh - 80px);
+  padding: 30px;
+  background: #f4f5f8;
+}
+
+/* ============================================================
+   CABEÇALHO
+============================================================ */
+
+.financial-events-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 25px;
+}
+
+.financial-events-kicker {
+  display: block;
+  margin-bottom: 6px;
+  color: #4f67c6;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.financial-events-header h1 {
+  margin: 0;
+  color: #202124;
+  font-size: 30px;
+}
+
+.financial-events-header p {
+  margin: 8px 0 0;
+  color: #70757d;
+  font-size: 14px;
+}
+
+/* ============================================================
+   BOTÃO NOVO
+============================================================ */
+
+.financial-events-new-button {
+  border: none;
+  border-radius: 8px;
+  padding: 11px 16px;
+  background: #4f67c6;
+  color: white;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  transition: 0.18s;
+}
+
+.financial-events-new-button:hover {
+  background: #4058b5;
+}
+
+/* ============================================================
+   MENSAGENS
+============================================================ */
+
+.financial-events-message {
+  margin-bottom: 20px;
+  padding: 13px 16px;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.financial-events-message-success {
+  border: 1px solid #c7e9d0;
+  background: #e7f6ec;
+  color: #25743a;
+}
+
+.financial-events-message-warning {
+  border: 1px solid #f0dfa9;
+  background: #fff6df;
+  color: #8a6500;
+}
+
+/* ============================================================
+   RESUMO
+============================================================ */
+
+.financial-events-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.financial-summary-card {
+  padding: 20px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.04);
+}
+
+.financial-summary-card span {
+  display: block;
+  color: #70757d;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.financial-summary-card strong {
+  display: block;
+  margin: 5px 0;
+  color: #303030;
+  font-size: 28px;
+}
+
+.financial-summary-card small {
+  color: #888;
+  font-size: 12px;
+}
+
+/* ============================================================
+   LAYOUT
+============================================================ */
+
+.financial-events-layout {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+/* ============================================================
+   CARDS
+============================================================ */
+
+.financial-event-form-card,
+.financial-event-list-card {
+  min-width: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: white;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.04);
+}
+
+/* ============================================================
+   CABEÇALHOS
+============================================================ */
+
+.financial-event-form-header,
+.financial-event-list-header {
+  padding: 22px;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.financial-event-form-header h2,
+.financial-event-list-header h2 {
+  margin: 0;
+  color: #303030;
+  font-size: 18px;
+}
+
+.financial-event-form-header p,
+.financial-event-list-header p {
+  margin: 6px 0 0;
+  color: #777;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   FORMULÁRIO
+============================================================ */
+
+.financial-event-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  padding: 22px;
+}
+
+.financial-event-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.financial-event-field-full {
+  grid-column: 1 / -1;
+}
+
+.financial-event-field label {
+  color: #454545;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.financial-event-field input,
+.financial-event-field select,
+.financial-event-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid #d8dbe2;
+  border-radius: 8px;
+  outline: none;
+  background: white;
+  color: #333;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.financial-event-field textarea {
+  resize: vertical;
+}
+
+.financial-event-field input:focus,
+.financial-event-field select:focus,
+.financial-event-field textarea:focus {
+  border-color: #4f67c6;
+  box-shadow: 0 0 0 3px rgba(79, 103, 198, 0.1);
+}
+
+.financial-event-field small {
+  color: #888;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   CHECKBOX
+============================================================ */
+
+.financial-event-field-checkbox {
+  padding: 4px 0;
+}
+
+.financial-event-field-checkbox label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+}
+
+.financial-event-field-checkbox input {
+  width: 16px;
+  height: 16px;
+}
+
+/* ============================================================
+   AÇÕES FORMULÁRIO
+============================================================ */
+
+.financial-event-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 5px;
+}
+
+.financial-event-primary-button,
+.financial-event-secondary-button {
+  border-radius: 8px;
+  padding: 10px 15px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.financial-event-primary-button {
+  border: none;
+  background: #4f67c6;
+  color: white;
+}
+
+.financial-event-primary-button:hover {
+  background: #4058b5;
+}
+
+.financial-event-secondary-button {
+  border: 1px solid #d5d8df;
+  background: white;
+  color: #555;
+}
+
+.financial-event-secondary-button:hover {
+  background: #f5f5f5;
+}
+
+/* ============================================================
+   ABAS
+============================================================ */
+
+.financial-event-tabs {
+  display: flex;
+  padding: 0 20px;
+  border-bottom: 1px solid #eeeeee;
+}
+
+.financial-event-tabs button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  padding: 14px 15px;
+  background: transparent;
+  color: #777;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.financial-event-tabs button::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: transparent;
+}
+
+.financial-event-tabs button.active {
+  color: #4f67c6;
+}
+
+.financial-event-tabs button.active::after {
+  background: #4f67c6;
+}
+
+.financial-event-tabs button span {
+  display: flex;
+  min-width: 21px;
+  height: 21px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: #f0f2f8;
+  color: #666;
+  font-size: 10px;
+}
+
+.financial-event-tabs button.active span {
+  background: #eef1fb;
+  color: #4f67c6;
+}
+
+/* ============================================================
+   BUSCA
+============================================================ */
+
+.financial-event-search {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 18px 20px;
+  padding: 10px 12px;
+  border: 1px solid #e0e2e7;
+  border-radius: 8px;
+  background: #f7f8fa;
+}
+
+.financial-event-search span {
+  font-size: 14px;
+}
+
+.financial-event-search input {
+  width: 100%;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+/* ============================================================
+   TABELA
+============================================================ */
+
+.financial-event-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding-bottom: 10px;
+}
+
+.financial-event-table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+}
+
+.financial-event-table th {
+  padding: 11px 10px;
+  border-bottom: 1px solid #ddd;
+  background: #fafafa;
+  color: #666;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.financial-event-table td {
+  padding: 13px 10px;
+  border-bottom: 1px solid #eeeeee;
+  color: #555;
+  font-size: 13px;
+  vertical-align: middle;
+}
+
+.financial-event-table tbody tr:hover {
+  background: #fafbfe;
+}
+
+.financial-event-table td strong {
+  display: block;
+  color: #303030;
+}
+
+.financial-event-table td small {
+  display: block;
+  max-width: 230px;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #888;
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   STATUS
+============================================================ */
+
+.financial-event-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 20px;
+  padding: 5px 9px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.financial-event-status.active {
+  background: #e7f6ec;
+  color: #25743a;
+}
+
+.financial-event-status.inactive {
+  background: #f1f2f4;
+  color: #777;
+}
+
+/* ============================================================
+   AÇÕES
+============================================================ */
+
+.financial-event-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.financial-event-actions button {
+  width: 31px;
+  height: 31px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 7px;
+  background: #f4f5f8;
+  cursor: pointer;
+  transition: 0.18s;
+}
+
+.financial-event-actions button:hover {
+  background: #e9ebf2;
+}
+
+/* ============================================================
+   ESTADO VAZIO
+============================================================ */
+
+.financial-event-empty {
+  padding: 55px 20px;
+  text-align: center;
+}
+
+.financial-event-empty span {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 35px;
+}
+
+.financial-event-empty strong {
+  display: block;
+  color: #444;
+  font-size: 14px;
+}
+
+.financial-event-empty p {
+  margin: 7px 0 0;
+  color: #777;
+  font-size: 13px;
+}
+
+/* ============================================================
+   ACESSO NEGADO
+============================================================ */
+
+.financial-events-access-denied {
+  max-width: 550px;
+  margin: 80px auto;
+  padding: 45px 30px;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  background: white;
+  text-align: center;
+}
+
+.financial-events-access-denied span {
+  display: block;
+  margin-bottom: 15px;
+  font-size: 40px;
+}
+
+.financial-events-access-denied h2 {
+  margin: 0 0 8px;
+}
+
+.financial-events-access-denied p {
+  margin: 0;
+  color: #777;
+}
+
+/* ============================================================
+   RESPONSIVO
+============================================================ */
+
+@media (max-width: 1000px) {
+  .financial-events-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 650px) {
+  .financial-events-page {
+    padding: 20px 12px;
+  }
+
+  .financial-events-header {
+    flex-direction: column;
+  }
+
+  .financial-events-new-button {
+    width: 100%;
+  }
+
+  .financial-events-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .financial-event-tabs {
+    padding: 0 10px;
+  }
+
+  .financial-event-tabs button {
+    flex: 1;
+    justify-content: center;
+    padding: 13px 8px;
+  }
+}
