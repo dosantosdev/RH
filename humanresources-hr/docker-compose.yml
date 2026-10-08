@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: humanresources-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: humanresources_hr
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - humanresources_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  humanresources_postgres_data:

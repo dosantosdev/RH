@@ -73,3 +73,8 @@ No futuro, o acesso aos dados poderá ser substituído por uma API/banco sem pre
 - Framer Motion para animações pontuais.
 - Next.js como possibilidade de migração futura.
 - Vercel como possibilidade de deploy.
+
+
+## Fundação de infraestrutura
+
+A partir desta etapa, o projeto possui uma API Node/Express e uma estrutura PostgreSQL multiempresa em `server/`. O frontend possui um cliente HTTP em `src/services/api.js`, preparado para a migração gradual do localStorage. Documentos físicos serão armazenados no Firebase Storage e seus metadados no PostgreSQL. Web, Desktop e Mobile consumirão a mesma API.
