@@ -4,23 +4,28 @@ import './folha.css'
 
 import { hasPermission } from '../../../services/permissions'
 
-import { getActiveFinancialEvents } from '../../../services/financialEvents'
+import {
+  calculateFinancialEventAmount,
+  getActiveFinancialEvents
+} from '../../../services/financialEvents'
+
+import { calculateHourlyRate } from '../../../services/overtime'
 
 import {
+  addPayrollEarning,
+  addPayrollDeduction,
+  calculatePayrollSummary,
   closePayroll,
   createPayroll,
+  deletePayroll,
   formatCompetence,
   formatPayrollMinutes,
   formatPayrollMoney,
   getPayrollByCompetence,
   PAYROLL_STATUS,
+  recalculatePayroll,
+  removePayrollItem,
   reopenPayroll
-} from '../../../services/payroll'
-
-import {
-  addPayrollEarning,
-  addPayrollDeduction,
-  removePayrollItem
 } from '../../../services/payroll'
 
 /*
@@ -146,10 +151,10 @@ export default function Folha() {
     const value = search.trim().toLowerCase()
 
     if (!value) {
-      return payroll.employees
+      return payroll.employees || []
     }
 
-    return payroll.employees.filter(
+    return (payroll.employees || []).filter(
       (employee) =>
         String(employee.employeeName || '')
           .toLowerCase()
@@ -171,7 +176,7 @@ export default function Folha() {
       return null
     }
 
-    return payroll.employees.find(
+    return (payroll.employees || []).find(
       (employee) => Number(employee.employeeId) === Number(selectedEmployeeId)
     )
   }, [payroll, selectedEmployeeId])
@@ -182,52 +187,10 @@ export default function Folha() {
    * ==========================================================
    */
 
-  const summary = useMemo(() => {
-    if (!payroll) {
-      return {
-        employees: 0,
-        baseSalary: 0,
-        earnings: 0,
-        grossSalary: 0,
-        deductions: 0,
-        netSalary: 0
-      }
-    }
-
-    return {
-      employees: payroll.employees.length,
-
-      baseSalary: payroll.employees.reduce(
-        (total, employee) => total + Number(employee.baseSalary),
-        0
-      ),
-
-      earnings: payroll.employees.reduce(
-        (total, employee) =>
-          total +
-          employee.earnings.reduce(
-            (subtotal, item) => subtotal + Number(item.amount),
-            0
-          ),
-        0
-      ),
-
-      grossSalary: payroll.employees.reduce(
-        (total, employee) => total + Number(employee.grossSalary),
-        0
-      ),
-
-      deductions: payroll.employees.reduce(
-        (total, employee) => total + Number(employee.totalDeductions),
-        0
-      ),
-
-      netSalary: payroll.employees.reduce(
-        (total, employee) => total + Number(employee.netSalary),
-        0
-      )
-    }
-  }, [payroll])
+  const summary = useMemo(
+    () => calculatePayrollSummary(payroll),
+    [payroll]
+  )
 
   /*
    * ==========================================================
@@ -332,6 +295,100 @@ export default function Folha() {
 
   /*
    * ==========================================================
+   * RECALCULAR FOLHA
+   * ==========================================================
+   */
+
+  function handleRecalculatePayroll() {
+    if (!payroll) {
+      return
+    }
+
+    if (!canManage) {
+      showMessage(
+        'Você não possui permissão para recalcular a folha.',
+        'warning'
+      )
+
+      return
+    }
+
+    if (payroll.status === PAYROLL_STATUS.CLOSED) {
+      showMessage(
+        'A folha está fechada e não pode ser recalculada.',
+        'warning'
+      )
+
+      return
+    }
+
+    const confirmed = window.confirm(
+      'Deseja recalcular a folha? Os lançamentos automáticos serão atualizados e os lançamentos manuais serão preservados.'
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    const updated = recalculatePayroll(payroll.id)
+
+    setPayroll(updated)
+
+    setSelectedEmployeeId(null)
+
+    showMessage('Folha recalculada com sucesso!')
+  }
+
+  /*
+   * ==========================================================
+   * EXCLUIR FOLHA
+   * ==========================================================
+   */
+
+  function handleDeletePayroll() {
+    if (!payroll) {
+      return
+    }
+
+    if (!canManage) {
+      showMessage(
+        'Você não possui permissão para excluir a folha.',
+        'warning'
+      )
+
+      return
+    }
+
+    if (payroll.status === PAYROLL_STATUS.CLOSED) {
+      showMessage(
+        'A folha fechada não pode ser excluída.',
+        'warning'
+      )
+
+      return
+    }
+
+    const confirmed = window.confirm(
+      `Deseja excluir a folha de ${formatCompetence(
+        payroll.competence
+      )}? Esta ação não poderá ser desfeita.`
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    deletePayroll(payroll.id)
+
+    setPayroll(null)
+
+    setSelectedEmployeeId(null)
+
+    showMessage('Folha excluída com sucesso!')
+  }
+
+  /*
+   * ==========================================================
    * REABRIR FOLHA
    * ==========================================================
    */
@@ -423,13 +480,49 @@ export default function Folha() {
       (item) => String(item.id) === String(eventId)
     )
 
-    if (
-      financialEvent &&
-      financialEvent.defaultValue !== '' &&
-      financialEvent.defaultValue !== null &&
-      financialEvent.defaultValue !== undefined
-    ) {
-      setItemAmount(String(financialEvent.defaultValue))
+    /*
+     * Caso o usuário limpe a seleção.
+     */
+
+    if (!financialEvent || !selectedEmployee) {
+      setItemAmount('')
+
+      return
+    }
+
+    /*
+     * ========================================================
+     * CÁLCULO AUTOMÁTICO
+     * ========================================================
+     *
+     * O valor é sugerido automaticamente conforme o tipo
+     * de cálculo configurado no evento.
+     *
+     * Para eventos "Por hora":
+     *
+     * - proventos utilizam as horas extras apuradas no ponto;
+     * - descontos utilizam o déficit de horas apurado no ponto.
+     *
+     * O valor continua editável antes do lançamento.
+     */
+
+    const baseSalary = Number(selectedEmployee.baseSalary) || 0
+
+    const hourlyRate = calculateHourlyRate(baseSalary)
+
+    const minutes =
+      itemModal?.type === 'earning'
+        ? Number(selectedEmployee.timeData?.overtimeMinutes) || 0
+        : Number(selectedEmployee.timeData?.deficitMinutes) || 0
+
+    const calculatedAmount = calculateFinancialEventAmount(financialEvent, {
+      baseSalary,
+      hourlyRate,
+      minutes
+    })
+
+    if (calculatedAmount > 0) {
+      setItemAmount(String(calculatedAmount))
     } else {
       setItemAmount('')
     }
@@ -672,6 +765,46 @@ export default function Folha() {
             </div>
 
             <div className="payroll-summary-card">
+              <span>Horas extras</span>
+
+              <strong>
+                {formatPayrollMinutes(summary.overtimeMinutes)}
+              </strong>
+            </div>
+
+            <div className="payroll-summary-card">
+              <span>Valor horas extras</span>
+
+              <strong>
+                {formatPayrollMoney(summary.overtimeAmount)}
+              </strong>
+            </div>
+
+            <div className="payroll-summary-card">
+              <span>INSS</span>
+
+              <strong>
+                {formatPayrollMoney(summary.inss)}
+              </strong>
+            </div>
+
+            <div className="payroll-summary-card">
+              <span>IRRF</span>
+
+              <strong>
+                {formatPayrollMoney(summary.irrf)}
+              </strong>
+            </div>
+
+            <div className="payroll-summary-card">
+              <span>FGTS empresa</span>
+
+              <strong>
+                {formatPayrollMoney(summary.fgts)}
+              </strong>
+            </div>
+
+            <div className="payroll-summary-card">
               <span>Bruto</span>
 
               <strong>{formatPayrollMoney(summary.grossSalary)}</strong>
@@ -711,13 +844,31 @@ export default function Folha() {
 
             <div className="payroll-toolbar-actions">
               {payroll.status === PAYROLL_STATUS.DRAFT && canManage && (
-                <button
-                  type="button"
-                  className="payroll-close-button"
-                  onClick={handleClosePayroll}
-                >
-                  Fechar folha
-                </button>
+                <>
+                  <button
+                    type="button"
+                    className="payroll-secondary-button"
+                    onClick={handleRecalculatePayroll}
+                  >
+                    ↻ Recalcular
+                  </button>
+
+                  <button
+                    type="button"
+                    className="payroll-danger-button"
+                    onClick={handleDeletePayroll}
+                  >
+                    🗑️ Excluir
+                  </button>
+
+                  <button
+                    type="button"
+                    className="payroll-close-button"
+                    onClick={handleClosePayroll}
+                  >
+                    Fechar folha
+                  </button>
+                </>
               )}
 
               {payroll.status === PAYROLL_STATUS.CLOSED && canManage && (
@@ -785,8 +936,8 @@ export default function Folha() {
 
                   <tbody>
                     {filteredEmployees.map((employee) => {
-                      const earnings = employee.earnings.reduce(
-                        (total, item) => total + Number(item.amount),
+                      const earnings = (employee.earnings || []).reduce(
+                        (total, item) => total + (Number(item.amount) || 0),
                         0
                       )
 
@@ -811,7 +962,7 @@ export default function Folha() {
                           <td>
                             <strong>
                               {formatPayrollMinutes(
-                                employee.timeData.overtimeMinutes
+                                employee.timeData?.overtimeMinutes
                               )}
                             </strong>
                           </td>
@@ -891,7 +1042,7 @@ export default function Folha() {
 
                     <strong>
                       {formatPayrollMinutes(
-                        selectedEmployee.timeData.expectedMinutes
+                        selectedEmployee.timeData?.expectedMinutes
                       )}
                     </strong>
                   </div>
@@ -901,7 +1052,7 @@ export default function Folha() {
 
                     <strong>
                       {formatPayrollMinutes(
-                        selectedEmployee.timeData.workedMinutes
+                        selectedEmployee.timeData?.workedMinutes
                       )}
                     </strong>
                   </div>
@@ -911,7 +1062,7 @@ export default function Folha() {
 
                     <strong>
                       {formatPayrollMinutes(
-                        selectedEmployee.timeData.overtimeMinutes
+                        selectedEmployee.timeData?.overtimeMinutes
                       )}
                     </strong>
                   </div>
@@ -919,7 +1070,9 @@ export default function Folha() {
                   <div>
                     <span>Faltas</span>
 
-                    <strong>{selectedEmployee.timeData.absenceDays}</strong>
+                    <strong>
+                      {selectedEmployee.timeData?.absenceDays || 0}
+                    </strong>
                   </div>
                 </div>
               </div>
@@ -978,13 +1131,13 @@ export default function Folha() {
                   )}
                 </div>
 
-                {selectedEmployee.earnings.length === 0 ? (
+                {(selectedEmployee.earnings || []).length === 0 ? (
                   <div className="payroll-detail-empty">
                     Nenhum provento lançado.
                   </div>
                 ) : (
                   <div className="payroll-items">
-                    {selectedEmployee.earnings.map((item) => (
+                    {(selectedEmployee.earnings || []).map((item) => (
                       <div className="payroll-item" key={item.id}>
                         <div>
                           <strong>{item.eventName}</strong>
@@ -1042,13 +1195,13 @@ export default function Folha() {
                   )}
                 </div>
 
-                {selectedEmployee.deductions.length === 0 ? (
+                {(selectedEmployee.deductions || []).length === 0 ? (
                   <div className="payroll-detail-empty">
                     Nenhum desconto lançado.
                   </div>
                 ) : (
                   <div className="payroll-items">
-                    {selectedEmployee.deductions.map((item) => (
+                    {(selectedEmployee.deductions || []).map((item) => (
                       <div className="payroll-item" key={item.id}>
                         <div>
                           <strong>{item.eventName}</strong>
@@ -1079,6 +1232,60 @@ export default function Folha() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* ==============================================
+                  ENCARGOS
+              ============================================== */}
+
+              <div className="payroll-detail-section">
+                <div className="payroll-detail-section-header">
+                  <div>
+                    <h3>Encargos e retenções</h3>
+
+                    <p>
+                      Cálculos parametrizados para a competência de 2026.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="payroll-tax-grid">
+                  <div>
+                    <span>INSS</span>
+
+                    <strong>
+                      {formatPayrollMoney(
+                        selectedEmployee.taxes?.inss?.amount || 0
+                      )}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>IRRF</span>
+
+                    <strong>
+                      {formatPayrollMoney(
+                        selectedEmployee.taxes?.irrf?.amount || 0
+                      )}
+                    </strong>
+                  </div>
+
+                  <div>
+                    <span>FGTS empresa</span>
+
+                    <strong>
+                      {formatPayrollMoney(
+                        selectedEmployee.taxes?.fgts?.amount || 0
+                      )}
+                    </strong>
+                  </div>
+                </div>
+
+                <small className="payroll-tax-note">
+                  O FGTS é obrigação do empregador e não é descontado do salário.
+                  Os cálculos servem como apoio gerencial e não substituem a
+                  apuração oficial no eSocial/DCTFWeb.
+                </small>
               </div>
 
               {/* ==============================================
@@ -1169,6 +1376,12 @@ export default function Folha() {
                   onChange={(event) => setItemAmount(event.target.value)}
                   placeholder="0,00"
                 />
+
+                <small>
+                  O valor é calculado automaticamente quando o evento possui uma
+                  regra de cálculo. Você pode ajustá-lo antes de lançar na
+                  folha.
+                </small>
               </div>
 
               <div className="payroll-modal-field">

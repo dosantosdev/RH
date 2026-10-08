@@ -1,4 +1,23 @@
-export const permissions = [
+/*
+ * ============================================================
+ * PERMISSÕES DO SISTEMA
+ * ============================================================
+ *
+ * Todas as permissões utilizadas pelo sistema ficam
+ * centralizadas neste arquivo.
+ *
+ * Cada categoria possui uma lista de permissões.
+ *
+ * ============================================================
+ */
+
+export const permissionGroups = [
+  /*
+   * ============================================================
+   * FUNCIONÁRIOS
+   * ============================================================
+   */
+
   {
     category: 'Funcionários',
 
@@ -7,14 +26,17 @@ export const permissions = [
         key: 'employees_view',
         label: 'Visualizar funcionários'
       },
+
       {
         key: 'employees_create',
         label: 'Cadastrar funcionários'
       },
+
       {
         key: 'employees_edit',
         label: 'Editar funcionários'
       },
+
       {
         key: 'employees_delete',
         label: 'Excluir funcionários'
@@ -22,28 +44,11 @@ export const permissions = [
     ]
   },
 
-  {
-    category: 'Cargos',
-
-    items: [
-      {
-        key: 'roles_view',
-        label: 'Visualizar cargos'
-      },
-      {
-        key: 'roles_create',
-        label: 'Cadastrar cargos'
-      },
-      {
-        key: 'roles_edit',
-        label: 'Editar cargos'
-      },
-      {
-        key: 'roles_delete',
-        label: 'Excluir cargos'
-      }
-    ]
-  },
+  /*
+   * ============================================================
+   * USUÁRIOS
+   * ============================================================
+   */
 
   {
     category: 'Usuários',
@@ -53,14 +58,17 @@ export const permissions = [
         key: 'users_view',
         label: 'Visualizar usuários'
       },
+
       {
         key: 'users_create',
         label: 'Cadastrar usuários'
       },
+
       {
         key: 'users_edit',
         label: 'Editar usuários'
       },
+
       {
         key: 'users_delete',
         label: 'Excluir usuários'
@@ -68,22 +76,31 @@ export const permissions = [
     ]
   },
 
+  /*
+   * ============================================================
+   * PERFIS DE ACESSO
+   * ============================================================
+   */
+
   {
-    category: 'Perfis de acesso',
+    category: 'Perfis de Acesso',
 
     items: [
       {
         key: 'access_roles_view',
         label: 'Visualizar perfis de acesso'
       },
+
       {
         key: 'access_roles_create',
-        label: 'Cadastrar perfis de acesso'
+        label: 'Criar perfis de acesso'
       },
+
       {
         key: 'access_roles_edit',
         label: 'Editar perfis de acesso'
       },
+
       {
         key: 'access_roles_delete',
         label: 'Excluir perfis de acesso'
@@ -91,82 +108,111 @@ export const permissions = [
     ]
   },
 
+  /*
+   * ============================================================
+   * ORGANOGRAMA
+   * ============================================================
+   */
+
   {
-    category: 'Filiais',
+    category: 'Organograma',
 
     items: [
       {
         key: 'branches_view',
         label: 'Visualizar filiais'
       },
+
       {
         key: 'branches_create',
-        label: 'Criar filiais'
+        label: 'Cadastrar filiais'
       },
+
       {
         key: 'branches_edit',
         label: 'Editar filiais'
       },
+
       {
         key: 'branches_delete',
         label: 'Excluir filiais'
-      }
-    ]
-  },
+      },
 
-  {
-    category: 'Departamentos',
-
-    items: [
       {
         key: 'departments_view',
         label: 'Visualizar departamentos'
       },
+
       {
         key: 'departments_create',
-        label: 'Criar departamentos'
+        label: 'Cadastrar departamentos'
       },
+
       {
         key: 'departments_edit',
         label: 'Editar departamentos'
       },
+
       {
         key: 'departments_delete',
         label: 'Excluir departamentos'
+      },
+
+      {
+        key: 'roles_view',
+        label: 'Visualizar cargos'
+      },
+
+      {
+        key: 'roles_create',
+        label: 'Cadastrar cargos'
+      },
+
+      {
+        key: 'roles_edit',
+        label: 'Editar cargos'
+      },
+
+      {
+        key: 'roles_delete',
+        label: 'Excluir cargos'
       }
     ]
   },
 
+  /*
+   * ============================================================
+   * TREINAMENTOS
+   * ============================================================
+   */
+
   {
-    category: 'Dashboard',
+    category: 'Treinamentos',
 
     items: [
       {
-        key: 'dashboard_weather',
-        label: 'Visualizar clima'
+        key: 'trainings_view',
+        label: 'Visualizar treinamentos'
       },
-      {
-        key: 'dashboard_birthdays',
-        label: 'Visualizar aniversariantes'
-      }
-    ]
-  },
 
-  {
-    category: 'Perfil',
+      {
+        key: 'trainings_create',
+        label: 'Cadastrar treinamentos'
+      },
 
-    items: [
       {
-        key: 'profile_view',
-        label: 'Visualizar próprio perfil'
+        key: 'trainings_edit',
+        label: 'Editar treinamentos'
       },
+
       {
-        key: 'profile_edit',
-        label: 'Editar próprio perfil'
+        key: 'trainings_delete',
+        label: 'Excluir treinamentos'
       },
+
       {
-        key: 'password_change',
-        label: 'Alterar própria senha'
+        key: 'my_trainings_view',
+        label: 'Visualizar meus treinamentos'
       }
     ]
   },
@@ -262,25 +308,40 @@ export const permissions = [
         key: 'finance_salary_view',
         label: 'Visualizar informações salariais'
       },
+
       {
         key: 'finance_salary_manage',
         label: 'Gerenciar salários e histórico salarial'
       },
+
       {
         key: 'finance_events_view',
         label: 'Visualizar proventos e descontos'
       },
+
       {
         key: 'finance_events_manage',
         label: 'Gerenciar proventos e descontos'
       },
+
       {
         key: 'finance_payroll_view',
         label: 'Visualizar folha de pagamento'
       },
+
       {
         key: 'finance_payroll_manage',
         label: 'Gerenciar folha de pagamento'
+      },
+
+      {
+        key: 'finance_advanced_view',
+        label: 'Visualizar gestão financeira'
+      },
+
+      {
+        key: 'finance_advanced_manage',
+        label: 'Gerenciar banco de horas, férias, 13º e rescisões'
       }
     ]
   },
@@ -341,8 +402,18 @@ export const permissions = [
       },
 
       {
+        key: 'ponto_banco_horas_manage',
+        label: 'Gerenciar banco de horas'
+      },
+
+      {
         key: 'ponto_horas_extras_view',
         label: 'Visualizar horas extras'
+      },
+
+      {
+        key: 'ponto_horas_extras_manage',
+        label: 'Gerenciar horas extras'
       },
 
       {
@@ -351,8 +422,28 @@ export const permissions = [
       },
 
       {
+        key: 'ponto_faltas_manage',
+        label: 'Gerenciar faltas e atrasos'
+      },
+
+      {
+        key: 'ponto_atestados_view',
+        label: 'Visualizar atestados'
+      },
+
+      {
+        key: 'ponto_atestados_manage',
+        label: 'Gerenciar atestados'
+      },
+
+      {
         key: 'ponto_fechamento_view',
         label: 'Visualizar fechamento mensal'
+      },
+
+      {
+        key: 'ponto_fechamento_manage',
+        label: 'Gerenciar fechamento mensal'
       },
 
       {
@@ -360,5 +451,43 @@ export const permissions = [
         label: 'Visualizar relatórios de ponto'
       }
     ]
+  },
+
+  /*
+   * ============================================================
+   * PERFIL
+   * ============================================================
+   */
+
+  {
+    category: 'Perfil',
+
+    items: [
+      {
+        key: 'profile_view',
+        label: 'Visualizar meu perfil'
+      },
+
+      {
+        key: 'password_change',
+        label: 'Alterar senha'
+      }
+    ]
   }
 ]
+
+/*
+ * ============================================================
+ * COMPATIBILIDADE
+ * ============================================================
+ *
+ * Alguns componentes antigos podem importar `permissions`
+ * diretamente.
+ *
+ * Mantemos o alias para evitar quebra de compatibilidade.
+ * ============================================================
+ */
+
+export const permissions = permissionGroups
+
+export default permissionGroups

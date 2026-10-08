@@ -70,6 +70,8 @@ import ProventosDescontos from './pages/Financeiro/ProventosDescontos/ProventosD
 
 import Folha from './pages/Financeiro/Folha/Folha'
 
+import GestaoFinanceira from './pages/Financeiro/GestaoFinanceira'
+
 import Header from './components/layout/Header'
 
 /*
@@ -492,6 +494,17 @@ function App() {
           <ProtectedRoute permission="finance_payroll_view">
             <Layout>
               <Folha />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/financeiro/gestao"
+        element={
+          <ProtectedRoute permission="finance_payroll_view">
+            <Layout>
+              <GestaoFinanceira />
             </Layout>
           </ProtectedRoute>
         }

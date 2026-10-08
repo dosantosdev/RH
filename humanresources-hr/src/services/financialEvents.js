@@ -16,12 +16,15 @@ import { getStoredArray, setStored } from './storage'
  * DESCONTO
  *   → reduz o valor recebido pelo funcionário.
  *
- * IMPORTANTE:
+ * Os eventos também possuem tipos de cálculo:
  *
- * Nesta etapa NÃO fazemos o cálculo da folha.
+ *   valor_fixo
+ *   percentual_salario
+ *   hora
+ *   manual
  *
- * Estamos apenas cadastrando a estrutura que futuramente será
- * utilizada pela Folha de Pagamento.
+ * O serviço é responsável pelo cadastro e também pelo cálculo
+ * do valor sugerido para utilização na folha.
  * ============================================================
  */
 
@@ -67,6 +70,135 @@ export const financialCalculationTypeLabels = {
   percentual_salario: 'Percentual do salário',
   hora: 'Por hora',
   manual: 'Lançamento manual'
+}
+
+/*
+ * ============================================================
+ * CALCULAR VALOR DO EVENTO
+ * ============================================================
+ *
+ * Calcula o valor sugerido de um evento para a folha.
+ *
+ * Regras:
+ *
+ * valor_fixo
+ *   → utiliza o valor padrão cadastrado.
+ *
+ * percentual_salario
+ *   → aplica o percentual sobre o salário-base.
+ *
+ * hora
+ *   → multiplica a quantidade de horas pelo valor da hora.
+ *
+ * manual
+ *   → não realiza cálculo automático.
+ *     Caso exista valor padrão, ele será utilizado como
+ *     sugestão inicial.
+ *
+ * IMPORTANTE:
+ *
+ * Esta função não grava nada no localStorage.
+ *
+ * Ela apenas calcula e devolve um valor.
+ * ============================================================
+ */
+
+export function calculateFinancialEventAmount(
+  event,
+  { baseSalary = 0, hourlyRate = 0, hours = 0, minutes = 0 } = {}
+) {
+  if (!event) {
+    return 0
+  }
+
+  const defaultValue = Number(event.defaultValue)
+
+  const hasDefaultValue =
+    event.defaultValue !== '' &&
+    event.defaultValue !== null &&
+    event.defaultValue !== undefined &&
+    Number.isFinite(defaultValue)
+
+  switch (event.calculationType) {
+    /*
+     * ========================================================
+     * VALOR FIXO
+     * ========================================================
+     */
+
+    case FINANCIAL_CALCULATION_TYPES.FIXED:
+      return hasDefaultValue ? Math.round(defaultValue * 100) / 100 : 0
+
+    /*
+     * ========================================================
+     * PERCENTUAL DO SALÁRIO
+     * ========================================================
+     *
+     * Exemplo:
+     *
+     * Salário = R$ 3.000,00
+     * Percentual = 10
+     *
+     * Resultado = R$ 300,00
+     */
+
+    case FINANCIAL_CALCULATION_TYPES.SALARY_PERCENTAGE: {
+      if (!Number.isFinite(Number(baseSalary)) || Number(baseSalary) < 0) {
+        return 0
+      }
+
+      if (!hasDefaultValue || defaultValue < 0) {
+        return 0
+      }
+
+      return Math.round(((Number(baseSalary) * defaultValue) / 100) * 100) / 100
+    }
+
+    /*
+     * ========================================================
+     * POR HORA
+     * ========================================================
+     *
+     * Se o evento possuir um valor padrão, ele representa
+     * o valor de uma hora.
+     *
+     * Caso contrário, utilizamos o valor da hora do funcionário.
+     *
+     * Exemplo:
+     *
+     * Valor da hora = R$ 15,00
+     * Horas = 2
+     *
+     * Resultado = R$ 30,00
+     */
+
+    case FINANCIAL_CALCULATION_TYPES.HOUR: {
+      const normalizedHourlyRate = hasDefaultValue
+        ? defaultValue
+        : Number(hourlyRate) || 0
+
+      const normalizedHours =
+        Number(hours) > 0
+          ? Number(hours)
+          : Math.max(0, Number(minutes) || 0) / 60
+
+      if (normalizedHourlyRate < 0 || normalizedHours <= 0) {
+        return 0
+      }
+
+      return Math.round(normalizedHourlyRate * normalizedHours * 100) / 100
+    }
+
+    /*
+     * ========================================================
+     * MANUAL
+     * ========================================================
+     */
+
+    case FINANCIAL_CALCULATION_TYPES.MANUAL:
+    default:
+      return hasDefaultValue ? Math.round(defaultValue * 100) / 100 : 0
+  }
 }
 
 /*
@@ -189,6 +321,7 @@ export function toggleFinancialEvent(id) {
 
     return {
       ...event,
+
       active: event.active === false
     }
   })

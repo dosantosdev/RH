@@ -4,23 +4,6 @@ import { getStoredArray, setStored } from './storage'
  * ============================================================
  * PERFIS DE ACESSO PADRÃO
  * ============================================================
- *
- * IMPORTANTE:
- *
- * Esses perfis representam permissões dentro do sistema.
- *
- * Eles não representam cargos profissionais.
- *
- * Cargo:
- *   Motorista
- *   Gerente
- *   Mecânico
- *
- * Perfil de acesso:
- *   Administrador
- *   Gestão de RH
- *   Funcionário
- * ============================================================
  */
 
 export const defaultAccessRoles = [
@@ -65,6 +48,7 @@ export const defaultAccessRoles = [
       /*
        * Funcionários
        */
+
       'employees_view',
       'employees_create',
       'employees_edit',
@@ -72,12 +56,23 @@ export const defaultAccessRoles = [
       /*
        * Financeiro
        */
+
       'finance_salary_view',
       'finance_salary_manage',
+
+      'finance_events_view',
+      'finance_events_manage',
+
+      'finance_payroll_view',
+      'finance_payroll_manage',
+
+      'finance_advanced_view',
+      'finance_advanced_manage',
 
       /*
        * Treinamentos
        */
+
       'trainings_view',
       'trainings_create',
       'trainings_edit',
@@ -86,6 +81,7 @@ export const defaultAccessRoles = [
       /*
        * Jornadas
        */
+
       'work_schedules_view',
       'work_schedules_create',
       'work_schedules_edit',
@@ -94,6 +90,7 @@ export const defaultAccessRoles = [
       /*
        * Avaliações
        */
+
       'evaluations_view',
       'evaluations_create',
       'evaluations_edit',
@@ -135,13 +132,6 @@ export const defaultAccessRoles = [
 
       'my_trainings_view',
 
-      /*
-       * Avaliações próprias.
-       *
-       * O serviço evaluationAccess.js ainda faz a segunda
-       * validação verificando se a avaliação realmente
-       * pertence ao funcionário.
-       */
       'my_evaluations_view',
       'my_evaluations_answer'
     ]
@@ -172,17 +162,26 @@ export function initializeAccessRoles() {
    * PERFIS JÁ EXISTENTES
    * ==========================================================
    *
-   * Se os perfis já foram criados anteriormente, não podemos
-   * simplesmente substituí-los.
+   * Não substituímos perfis personalizados.
    *
-   * Porém, precisamos garantir que o perfil padrão de Gestão
-   * de RH receba as novas permissões do Financeiro.
-   *
-   * Perfis personalizados não são sobrescritos.
+   * Apenas garantimos que o perfil Gestão de RH possua as
+   * permissões financeiras novas.
    */
 
   if (storedAccessRoles.length > 0) {
-    const financePermissions = ['finance_salary_view', 'finance_salary_manage']
+    const financePermissions = [
+      'finance_salary_view',
+      'finance_salary_manage',
+
+      'finance_events_view',
+      'finance_events_manage',
+
+      'finance_payroll_view',
+      'finance_payroll_manage',
+
+      'finance_advanced_view',
+      'finance_advanced_manage'
+    ]
 
     let changed = false
 
@@ -207,6 +206,7 @@ export function initializeAccessRoles() {
 
       return {
         ...role,
+
         permissions: [...currentPermissions, ...missingPermissions]
       }
     })
@@ -244,27 +244,22 @@ export function initializeAccessRoles() {
         return defaultRole
       }
 
-      /*
-       * Mantém o ID antigo.
-       *
-       * Porém, caso o perfil antigo não possua permissões,
-       * utiliza as permissões atuais do perfil padrão.
-       */
+      const legacyPermissions = Array.isArray(legacyRole.permissions)
+        ? legacyRole.permissions
+        : []
+
       return {
         ...defaultRole,
 
         id: legacyRole.id,
 
-        permissions:
-          Array.isArray(legacyRole.permissions) &&
-          legacyRole.permissions.length > 0
-            ? [
-                ...legacyRole.permissions,
-                ...defaultRole.permissions.filter(
-                  (permission) => !legacyRole.permissions.includes(permission)
-                )
-              ]
-            : defaultRole.permissions
+        permissions: [
+          ...legacyPermissions,
+
+          ...defaultRole.permissions.filter(
+            (permission) => !legacyPermissions.includes(permission)
+          )
+        ]
       }
     })
   } else {

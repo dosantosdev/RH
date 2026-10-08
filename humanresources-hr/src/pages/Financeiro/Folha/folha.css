@@ -837,3 +837,83 @@
     gap: 5px;
   }
 }
+
+
+/* ============================================================
+   ENCARGOS / IMPOSTOS
+============================================================ */
+
+.payroll-tax-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 15px;
+}
+
+.payroll-tax-grid > div {
+  padding: 14px;
+  background: #f7f8fb;
+  border: 1px solid #e4e6ec;
+  border-radius: 10px;
+}
+
+.payroll-tax-grid span {
+  display: block;
+  color: #777;
+  font-size: 12px;
+}
+
+.payroll-tax-grid strong {
+  display: block;
+  margin-top: 5px;
+  color: #333;
+  font-size: 17px;
+}
+
+.payroll-tax-note {
+  display: block;
+  margin-top: 12px;
+  color: #777;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   BOTÃO DE EXCLUSÃO
+============================================================ */
+
+.payroll-danger-button {
+  border: 1px solid #e3bcbc;
+  background: #fff5f5;
+  color: #a83232;
+  border-radius: 8px;
+  padding: 10px 15px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  transition: 0.18s;
+}
+
+.payroll-danger-button:hover {
+  background: #ffeaea;
+  border-color: #d99b9b;
+}
+
+/* ============================================================
+   RESUMO FINANCEIRO EXPANDIDO
+============================================================ */
+
+.payroll-summary-card small {
+  display: block;
+  margin-top: 5px;
+  color: #858585;
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+@media (max-width: 900px) {
+  .payroll-tax-grid {
+    grid-template-columns: 1fr;
+  }
+}

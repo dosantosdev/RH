@@ -66,6 +66,12 @@ export default function Navbar() {
     }
   }, [])
 
+  /*
+   * ============================================================
+   * LOGOUT
+   * ============================================================
+   */
+
   function handleLogout() {
     localStorage.removeItem('loggedUser')
 
@@ -90,7 +96,7 @@ export default function Navbar() {
 
   /*
    * ============================================================
-   * PERMISSÕES DE TREINAMENTOS
+   * TREINAMENTOS
    * ============================================================
    */
 
@@ -102,11 +108,20 @@ export default function Navbar() {
 
   /*
    * ============================================================
-   * PERMISSÕES DO FINANCEIRO
+   * FINANCEIRO
    * ============================================================
    */
 
   const canViewSalaries = hasPermission('finance_salary_view')
+
+  const canViewEvents = hasPermission('finance_events_view')
+
+  const canViewPayroll = hasPermission('finance_payroll_view')
+
+  const canViewAdvancedFinance = hasPermission('finance_advanced_view')
+
+  const canAccessFinance =
+    canViewSalaries || canViewEvents || canViewPayroll || canViewAdvancedFinance
 
   /*
    * ============================================================
@@ -256,25 +271,27 @@ export default function Navbar() {
             FINANCEIRO
         ====================================================== */}
 
-        {(hasPermission('finance_salary_view') ||
-          hasPermission('finance_events_view') ||
-          hasPermission('finance_payroll_view')) && (
+        {canAccessFinance && (
           <div className="dropdown">
             <button className="dropbtn">Financeiro</button>
 
             <div className="dropdown-content">
-              {hasPermission('finance_salary_view') && (
+              {canViewSalaries && (
                 <Link to="/financeiro/salarios">Salários</Link>
               )}
 
-              {hasPermission('finance_events_view') && (
+              {canViewEvents && (
                 <Link to="/financeiro/proventos-descontos">
                   Proventos e Descontos
                 </Link>
               )}
 
-              {hasPermission('finance_payroll_view') && (
+              {canViewPayroll && (
                 <Link to="/financeiro/folha">Folha de Pagamento</Link>
+              )}
+
+              {canViewAdvancedFinance && (
+                <Link to="/financeiro/gestao">Gestão Financeira</Link>
               )}
             </div>
           </div>
