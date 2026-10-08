@@ -305,7 +305,9 @@ export default function Navbar() {
           <button className="dropbtn">Relatórios</button>
 
           <div className="dropdown-content">
-            <Link to="#">Relatórios</Link>
+            <Link to="/relatorios">Relatórios de RH</Link>
+
+            <Link to="/ponto/relatorios">Relatórios de Ponto</Link>
           </div>
         </div>
 
@@ -317,7 +319,19 @@ export default function Navbar() {
           <button className="dropbtn">Área do Candidato</button>
 
           <div className="dropdown-content">
-            <Link to="#">Candidatos</Link>
+            {hasPermission('recruitment_view') && (
+              <>
+                <Link to="/candidatos">Visão geral</Link>
+                <Link to="/candidatos?tab=vacancies">Cadastro de vagas</Link>
+                <Link to="/candidatos?tab=vacancies">Vagas abertas</Link>
+                <Link to="/candidatos?tab=candidates">Candidatos</Link>
+                <Link to="/candidatos?tab=curriculums">Currículos</Link>
+                <Link to="/candidatos?tab=stages">Etapas do processo seletivo</Link>
+                <Link to="/candidatos?tab=interviews">Entrevistas</Link>
+                <Link to="/candidatos?tab=conversion">Aprovação / reprovação</Link>
+                <Link to="/candidatos?tab=conversion">Transformar candidato em funcionário</Link>
+              </>
+            )}
           </div>
         </div>
 

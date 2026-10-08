@@ -1,0 +1,263 @@
+.public-application-page {
+  min-height: 100vh;
+  padding: 32px 16px;
+  background: #f3f6fa;
+  color: #172033;
+}
+
+.public-application-card {
+  width: min(1180px, 100%);
+  margin: 0 auto;
+  background: #fff;
+  border: 1px solid #e1e7ef;
+  border-radius: 18px;
+  padding: 30px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, .08);
+}
+
+.public-application-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e8edf3;
+}
+
+.public-brand {
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .14em;
+}
+
+.public-application-header h1,
+.public-invalid-card h1,
+.public-success-card h1 {
+  margin: 7px 0;
+  font-size: 30px;
+}
+
+.public-application-header p,
+.public-invalid-card p,
+.public-success-card p,
+.public-submit-area p,
+.public-muted {
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.public-expiry {
+  min-width: 210px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 12px;
+  text-align: right;
+}
+
+.public-expiry strong {
+  color: #172033;
+}
+
+.public-warning,
+.public-error {
+  margin: 20px 0;
+  padding: 13px 15px;
+  border-radius: 10px;
+  line-height: 1.5;
+}
+
+.public-warning {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.public-error {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.public-form {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.public-form section {
+  padding-top: 6px;
+}
+
+.public-form h2 {
+  margin: 0 0 15px;
+  font-size: 19px;
+}
+
+.public-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.public-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.public-field span,
+.public-check,
+.public-document-card > span {
+  color: #334155;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.public-field input,
+.public-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #d6dde7;
+  border-radius: 9px;
+  padding: 10px 11px;
+  font: inherit;
+  color: #172033;
+  background: #fff;
+}
+
+.public-field input:focus,
+.public-textarea:focus {
+  outline: 2px solid rgba(37, 99, 235, .14);
+  border-color: #2563eb;
+}
+
+.public-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 13px;
+}
+
+.public-check input {
+  width: auto;
+}
+
+.public-inline-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  align-items: end;
+  margin-top: 14px;
+}
+
+.public-documents-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.public-document-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 110px;
+  padding: 14px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 11px;
+  background: #f8fafc;
+}
+
+.public-document-card input {
+  width: 100%;
+  font-size: 12px;
+}
+
+.public-document-card small {
+  color: #15803d;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.public-textarea {
+  resize: vertical;
+}
+
+.public-submit-area {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding-top: 22px;
+  border-top: 1px solid #e8edf3;
+}
+
+.public-submit-button {
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 22px;
+  background: #172033;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.public-submit-button:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+.public-invalid-card,
+.public-success-card {
+  max-width: 680px;
+  text-align: center;
+  margin-top: 10vh;
+}
+
+.public-success-icon {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 15px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #dcfce7;
+  color: #15803d;
+  font-size: 30px;
+  font-weight: 900;
+}
+
+@media (max-width: 850px) {
+  .public-grid,
+  .public-inline-fields,
+  .public-documents-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .public-application-header,
+  .public-submit-area {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .public-expiry {
+    text-align: left;
+  }
+}
+
+@media (max-width: 600px) {
+  .public-application-page {
+    padding: 12px;
+  }
+
+  .public-application-card {
+    padding: 18px;
+    border-radius: 13px;
+  }
+
+  .public-application-header h1,
+  .public-invalid-card h1,
+  .public-success-card h1 {
+    font-size: 24px;
+  }
+}

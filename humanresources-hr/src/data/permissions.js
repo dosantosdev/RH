@@ -346,6 +346,61 @@ export const permissionGroups = [
     ]
   },
 
+
+  /*
+   * ============================================================
+   * RECRUTAMENTO / ÁREA DO CANDIDATO
+   * ============================================================
+   */
+
+  {
+    category: 'Área do Candidato',
+
+    items: [
+      {
+        key: 'recruitment_view',
+        label: 'Visualizar área do candidato'
+      },
+
+      {
+        key: 'recruitment_create',
+        label: 'Cadastrar vagas, candidatos e entrevistas'
+      },
+
+      {
+        key: 'recruitment_edit',
+        label: 'Editar vagas, candidatos e etapas do processo'
+      },
+
+      {
+        key: 'recruitment_delete',
+        label: 'Excluir vagas, candidatos e entrevistas'
+      },
+
+      {
+        key: 'recruitment_convert',
+        label: 'Transformar candidato aprovado em funcionário'
+      }
+    ]
+  },
+
+  /*
+   * ============================================================
+   * RELATÓRIOS
+   * ============================================================
+   */
+
+  {
+    category: 'Relatórios',
+
+    items: [
+      {
+        key: 'reports_view',
+        label: 'Visualizar relatórios gerais de RH'
+      }
+    ]
+  },
+
   /*
    * ============================================================
    * PONTO

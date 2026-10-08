@@ -72,7 +72,12 @@ import Folha from './pages/Financeiro/Folha/Folha'
 
 import GestaoFinanceira from './pages/Financeiro/GestaoFinanceira'
 
+import RelatoriosRH from './pages/Relatorios/Relatorios'
+
 import Header from './components/layout/Header'
+
+import Candidatos from './pages/Candidatos/Candidatos'
+import CandidaturaPublica from './pages/Candidatos/CandidaturaPublica'
 
 /*
  * ============================================================
@@ -505,6 +510,43 @@ function App() {
           <ProtectedRoute permission="finance_payroll_view">
             <Layout>
               <GestaoFinanceira />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+
+      {/* ============================================================
+          RELATÓRIOS GERAIS DE RH
+      ============================================================ */}
+
+      <Route
+        path="/relatorios"
+        element={
+          <ProtectedRoute permission="reports_view">
+            <Layout>
+              <RelatoriosRH />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+
+      {/* ============================================================
+          ÁREA DO CANDIDATO / RECRUTAMENTO
+      ============================================================ */}
+
+      <Route
+        path="/candidatura"
+        element={<CandidaturaPublica />}
+      />
+
+      <Route
+        path="/candidatos"
+        element={
+          <ProtectedRoute permission="recruitment_view">
+            <Layout>
+              <Candidatos />
             </Layout>
           </ProtectedRoute>
         }

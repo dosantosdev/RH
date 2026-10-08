@@ -70,6 +70,22 @@ export const defaultAccessRoles = [
       'finance_advanced_manage',
 
       /*
+       * Recrutamento
+       */
+
+      'recruitment_view',
+      'recruitment_create',
+      'recruitment_edit',
+      'recruitment_delete',
+      'recruitment_convert',
+
+      /*
+       * Relatórios
+       */
+
+      'reports_view',
+
+      /*
        * Treinamentos
        */
 
@@ -169,6 +185,16 @@ export function initializeAccessRoles() {
    */
 
   if (storedAccessRoles.length > 0) {
+    const reportsPermissions = [
+      'reports_view',
+
+      'recruitment_view',
+      'recruitment_create',
+      'recruitment_edit',
+      'recruitment_delete',
+      'recruitment_convert'
+    ]
+
     const financePermissions = [
       'finance_salary_view',
       'finance_salary_manage',
@@ -194,7 +220,12 @@ export function initializeAccessRoles() {
         ? role.permissions
         : []
 
-      const missingPermissions = financePermissions.filter(
+      const requiredPermissions = [
+        ...financePermissions,
+        ...reportsPermissions
+      ]
+
+      const missingPermissions = requiredPermissions.filter(
         (permission) => !currentPermissions.includes(permission)
       )
 
