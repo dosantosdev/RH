@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import './navbar.css'
 
 import { hasPermission } from '../../services/permissions'
+import { clearApiSession } from '../../services/api'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -73,11 +74,12 @@ export default function Navbar() {
    */
 
   function handleLogout() {
+    // Encerra a sessão local e remove também o token da API.
+    clearApiSession()
     localStorage.removeItem('loggedUser')
-
     localStorage.removeItem('currentUser')
 
-    navigate('/')
+    navigate('/', { replace: true })
   }
 
   function handleProfileClick() {
@@ -343,7 +345,7 @@ export default function Navbar() {
           <button className="dropbtn">Arquivo</button>
 
           <div className="dropdown-content">
-            <Link to="#">Arquivo</Link>
+            <Link to="/arquivo">Arquivo</Link>
           </div>
         </div>
       </div>

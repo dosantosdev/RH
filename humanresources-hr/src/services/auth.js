@@ -6,6 +6,7 @@ import {
 } from './accessRoles'
 
 import { getStoredArray, setStored } from './storage'
+import { clearApiSession } from './api'
 
 // 🔐 Inicializa o sistema com os dados mínimos necessários para o login.
 export function initializeSystem() {
@@ -320,7 +321,7 @@ export function getCurrentUser() {
  */
 
 export function logout() {
+  clearApiSession()
   localStorage.removeItem('loggedUser')
-
   localStorage.removeItem('currentUser')
 }

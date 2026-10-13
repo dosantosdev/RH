@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { pool } from './pool.js'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const sqlDir = path.resolve(__dirname, '../sql')
+const sqlDir = path.resolve(__dirname, '../../sql')
 
 await pool.query(`
   CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -32,10 +32,9 @@ for (const filename of files) {
   await pool.query('BEGIN')
   try {
     await pool.query(sql)
-    await pool.query(
-      'INSERT INTO schema_migrations (filename) VALUES ($1)',
-      [filename]
-    )
+    await pool.query('INSERT INTO schema_migrations (filename) VALUES ($1)', [
+      filename
+    ])
     await pool.query('COMMIT')
     console.log(`Migration applied: ${filename}`)
   } catch (error) {

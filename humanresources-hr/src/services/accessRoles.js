@@ -85,6 +85,11 @@ export const defaultAccessRoles = [
 
       'reports_view',
 
+      'documents_view',
+      'documents_upload',
+      'documents_edit',
+      'documents_delete',
+
       /*
        * Treinamentos
        */
@@ -187,6 +192,11 @@ export function initializeAccessRoles() {
   if (storedAccessRoles.length > 0) {
     const reportsPermissions = [
       'reports_view',
+
+      'documents_view',
+      'documents_upload',
+      'documents_edit',
+      'documents_delete',
 
       'recruitment_view',
       'recruitment_create',

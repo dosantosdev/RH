@@ -45,6 +45,10 @@ A API Node/Express já possui:
 - `GET /api/employees/:id`
 - `POST /api/employees`
 - `PATCH /api/employees/:id`
+- `GET /api/documents` (central de documentos com filtros)
+- `GET /api/documents/owners?type=employee|candidate` (cadastros vinculáveis)
+- `POST /api/documents` (upload vinculado a funcionário/candidato)
+- `PATCH /api/documents/:id` (metadados)
 - `GET /api/documents/employee/:employeeId`
 - `POST /api/documents/employee/:employeeId`
 - `GET /api/documents/:id/download`

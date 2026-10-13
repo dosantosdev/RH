@@ -510,6 +510,35 @@ export const permissionGroups = [
 
   /*
    * ============================================================
+   * ARQUIVO
+   * ============================================================
+   */
+
+  {
+    category: 'Arquivo',
+
+    items: [
+      {
+        key: 'documents_view',
+        label: 'Visualizar documentos do arquivo'
+      },
+      {
+        key: 'documents_upload',
+        label: 'Enviar documentos'
+      },
+      {
+        key: 'documents_edit',
+        label: 'Editar metadados de documentos'
+      },
+      {
+        key: 'documents_delete',
+        label: 'Excluir documentos'
+      }
+    ]
+  },
+
+  /*
+   * ============================================================
    * PERFIL
    * ============================================================
    */

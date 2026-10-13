@@ -1,6 +1,9 @@
 import EmployeeProfile from './pages/EmployeeProfile/EmployeeProfile'
 
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, useLocation } from 'react-router-dom'
+import { useEffect } from 'react'
+import { WorkspaceProvider, useWorkspace } from './contexts/WorkspaceContext'
+import WorkspaceHost from './components/layout/WorkspaceHost'
 
 import Navbar from './components/layout/Navbar'
 
@@ -77,6 +80,7 @@ import RelatoriosRH from './pages/Relatorios/Relatorios'
 import Header from './components/layout/Header'
 
 import Candidatos from './pages/Candidatos/Candidatos'
+import Arquivo from './pages/Arquivo/Arquivo'
 import CandidaturaPublica from './pages/Candidatos/CandidaturaPublica'
 
 /*
@@ -88,14 +92,65 @@ import CandidaturaPublica from './pages/Candidatos/CandidaturaPublica'
  *
  */
 
+const WORKSPACE_ROUTE_TITLES = {
+  '/dashboard': 'Dashboard',
+  '/buscar': 'Buscar funcionários',
+  '/cadastrar': 'Cadastro de funcionário',
+  '/usuarios': 'Usuários',
+  '/perfis-acesso': 'Perfis de acesso',
+  '/organograma': 'Organograma',
+  '/filiais': 'Filiais',
+  '/departamentos': 'Departamentos',
+  '/cargos': 'Cargos',
+  '/treinamentos': 'Treinamentos',
+  '/meus-treinamentos': 'Meus treinamentos',
+  '/avaliacoes': 'Avaliações',
+  '/avaliacoes/minhas': 'Minhas avaliações',
+  '/avaliacoes/modelos': 'Modelos de avaliação',
+  '/avaliacoes/historico': 'Histórico de avaliações',
+  '/ponto/bater': 'Bater ponto',
+  '/ponto/jornadas': 'Jornadas e escalas',
+  '/ponto/espelho': 'Meu espelho',
+  '/ponto/controle': 'Controle de ponto',
+  '/ponto/banco-horas': 'Banco de horas',
+  '/ponto/horas-extras': 'Horas extras',
+  '/ponto/faltas-atrasos': 'Faltas e atrasos',
+  '/ponto/atestados': 'Atestados',
+  '/ponto/fechamento': 'Fechamento mensal',
+  '/ponto/relatorios': 'Relatórios de ponto',
+  '/financeiro/salarios': 'Salários',
+  '/financeiro/proventos-descontos': 'Proventos e descontos',
+  '/financeiro/folha': 'Folha de pagamento',
+  '/financeiro/gestao': 'Gestão financeira',
+  '/relatorios': 'Relatórios de RH',
+  '/candidatos': 'Área do candidato',
+  '/arquivo': 'Arquivo',
+  '/configuracoes': 'Configurações',
+}
+
 function Layout({ children }) {
+  const location = useLocation()
+  const { registerTab } = useWorkspace()
+
+  useEffect(() => {
+    // Cada rota é registrada uma única vez. Ao retornar, a tela permanece montada.
+    if (location.pathname === '/' || location.pathname === '/candidatura') {
+      return
+    }
+
+    const title =
+      WORKSPACE_ROUTE_TITLES[location.pathname] ||
+      (location.pathname.startsWith('/funcionario/')
+        ? 'Perfil do funcionário'
+        : 'Human Resources HR')
+
+    registerTab(location.pathname, title, children)
+  }, [location.pathname, children, registerTab])
+
   return (
     <>
       <Header />
-
       <Navbar />
-
-      {children}
     </>
   )
 }
@@ -106,7 +161,7 @@ function Layout({ children }) {
  * ============================================================
  */
 
-function App() {
+function AppRoutes() {
   return (
     <Routes>
       {/* ======================================================
@@ -366,7 +421,16 @@ function App() {
           PONTO
       ============================================================ */}
 
-      <Route path="/ponto/bater" element={<BaterPonto />} />
+      <Route
+        path="/ponto/bater"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <BaterPonto />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
 
       <Route
         path="/ponto/jornadas"
@@ -553,6 +617,21 @@ function App() {
       />
 
       {/* ======================================================
+          ARQUIVO
+      ====================================================== */}
+
+      <Route
+        path="/arquivo"
+        element={
+          <ProtectedRoute permission="documents_view">
+            <Layout>
+              <Arquivo />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ======================================================
           CONFIGURAÇÕES
       ====================================================== */}
 
@@ -567,6 +646,15 @@ function App() {
         }
       />
     </Routes>
+  )
+}
+
+function App() {
+  return (
+    <WorkspaceProvider>
+      <AppRoutes />
+      <WorkspaceHost />
+    </WorkspaceProvider>
   )
 }
 
