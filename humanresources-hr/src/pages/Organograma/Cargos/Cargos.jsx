@@ -9,8 +9,8 @@ import Toast from '../../../components/ui/Toast'
 import useToast from '../../../hooks/useToast'
 
 import { hasPermission } from '../../../services/permissions'
-import { getStoredArray } from '../../../services/storage'
 import { getAccessRoles } from '../../../services/accessRoles'
+import { listProfessionalRoles, createProfessionalRole, updateProfessionalRole, deleteProfessionalRole } from '../../../services/organizationApi'
 
 export default function Cargos() {
   const initialRole = {
@@ -83,13 +83,12 @@ export default function Cargos() {
    */
 
   useEffect(() => {
-    const storedRoles = getStoredArray('roles')
-
-    const storedAccessRoles = getAccessRoles()
-
-    setRoles(storedRoles)
-
-    setAccessRoles(storedAccessRoles)
+    let active = true
+    setAccessRoles(getAccessRoles())
+    listProfessionalRoles()
+      .then((items) => { if (active) setRoles(items) })
+      .catch((error) => { if (active) showToast(error.message || 'Não foi possível carregar os cargos.', 'error') })
+    return () => { active = false }
   }, [])
 
   /*
@@ -302,7 +301,7 @@ export default function Cargos() {
    * ============================================================
    */
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
 
     if (!editingId && !hasPermission('roles_create')) {
@@ -325,47 +324,27 @@ export default function Cargos() {
       return
     }
 
-    let updated
-
-    /*
-     * ========================================================
-     * EDIÇÃO
-     * ========================================================
-     */
-
-    if (editingId) {
-      updated = roles.map((existingRole) =>
-        existingRole.id === editingId
-          ? {
-              ...role,
-              id: editingId
-            }
-          : existingRole
-      )
-    } else {
-      /*
-       * ======================================================
-       * NOVO CARGO
-       * ======================================================
-       */
-
-      const newRole = {
-        ...role,
-        id: Date.now()
-      }
-
-      updated = [...roles, newRole]
+    const payload = {
+      ...role,
+      name: role.name.trim(),
+      salaryMin: role.salaryMin === '' ? null : Number(role.salaryMin),
+      salaryMax: role.salaryMax === '' ? null : Number(role.salaryMax),
+      dailyHours: role.dailyHours === '' ? null : Number(role.dailyHours),
+      workDaysPerWeek: role.workDaysPerWeek === '' ? null : Number(role.workDaysPerWeek),
+      cycleWorkDays: role.cycleWorkDays === '' ? null : Number(role.cycleWorkDays),
+      cycleRestDays: role.cycleRestDays === '' ? null : Number(role.cycleRestDays)
     }
 
-    localStorage.setItem('roles', JSON.stringify(updated))
-
-    setRoles(updated)
-
-    showToast(editingId ? 'Cargo atualizado!' : 'Cargo cadastrado!', 'success')
-
-    setRole(initialRole)
-
-    setEditingId(null)
+    try {
+      if (editingId) await updateProfessionalRole(editingId, payload)
+      else await createProfessionalRole(payload)
+      setRoles(await listProfessionalRoles())
+      showToast(editingId ? 'Cargo atualizado!' : 'Cargo cadastrado!', 'success')
+      setRole(initialRole)
+      setEditingId(null)
+    } catch (error) {
+      showToast(error.message || 'Não foi possível salvar o cargo.', 'error')
+    }
   }
 
   /*
@@ -456,16 +435,14 @@ export default function Cargos() {
    * ============================================================
    */
 
-  function confirmDeleteRole() {
-    const updated = roles.filter((existingRole) => existingRole.id !== deleteId)
-
-    localStorage.setItem('roles', JSON.stringify(updated))
-
-    setRoles(updated)
-
-    setDeleteId(null)
-
-    showToast('Cargo excluído!', 'success')
+  async function confirmDeleteRole() {
+    try {
+      await deleteProfessionalRole(deleteId)
+      setRoles(await listProfessionalRoles())
+      showToast('Cargo excluído!', 'success')
+    } catch (error) {
+      showToast(error.message || 'Não foi possível excluir o cargo.', 'error')
+    } finally { setDeleteId(null) }
   }
 
   /*

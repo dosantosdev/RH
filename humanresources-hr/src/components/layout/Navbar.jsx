@@ -138,6 +138,10 @@ export default function Navbar() {
           Dashboard
         </Link>
 
+        <Link to="/chat" className="nav-link">
+          Chat
+        </Link>
+
         {/* ======================================================
             CADASTRO
         ====================================================== */}
@@ -348,6 +352,16 @@ export default function Navbar() {
             <Link to="/arquivo">Arquivo</Link>
           </div>
         </div>
+
+        {/* ======================================================
+            CONFIGURAÇÕES DO SISTEMA
+        ====================================================== */}
+
+        {hasPermission('system_settings') && (
+          <Link to="/configuracoes" className="nav-link">
+            Configurações
+          </Link>
+        )}
       </div>
 
       {/* ========================================================

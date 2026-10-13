@@ -9,316 +9,196 @@ import Toast from '../../components/ui/Toast'
 import useToast from '../../hooks/useToast'
 
 import { hasPermission } from '../../services/permissions'
-import { getAccessRoles } from '../../services/accessRoles'
-import { updateUser } from '../../services/auth'
+import { apiRequest } from '../../services/api'
+import {
+  fetchUsers,
+  fetchUserAccessRoles,
+  createApiUser,
+  updateApiUser,
+  deactivateApiUser
+} from '../../services/usersApi'
+
+const initialUser = {
+  name: '',
+  username: '',
+  password: '',
+  email: '',
+  accessRoleId: '',
+  accessRoleName: '',
+  roleId: '',
+  roleName: '',
+  employeeId: '',
+  active: true
+}
 
 export default function Users() {
-  const initialUser = {
-    name: '',
-    username: '',
-    password: '',
-
-    /*
-     * ============================================================
-     * PERFIL DE ACESSO
-     * ============================================================
-     */
-
-    accessRoleId: '',
-    accessRoleName: '',
-
-    /*
-     * Mantidos por compatibilidade com usuários antigos.
-     */
-    roleId: '',
-    roleName: '',
-
-    /*
-     * Funcionário vinculado ao usuário.
-     */
-    employeeId: '',
-
-    active: true
-  }
-
   const [user, setUser] = useState(initialUser)
-
   const [users, setUsers] = useState([])
-
   const [accessRoles, setAccessRoles] = useState([])
-
   const [employees, setEmployees] = useState([])
-
   const [search, setSearch] = useState('')
-
   const [editingId, setEditingId] = useState(null)
-
   const [deleteId, setDeleteId] = useState(null)
-
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
   const { toast, showToast } = useToast()
 
-  /*
-   * ============================================================
-   * CARREGAMENTO
-   * ============================================================
-   */
+  async function loadData() {
+    setLoading(true)
+
+    try {
+      const [usersResult, rolesResult, employeesResult] = await Promise.all([
+        fetchUsers(),
+        fetchUserAccessRoles(),
+        apiRequest('/employees')
+      ])
+
+      setUsers(usersResult)
+      setAccessRoles(rolesResult)
+      setEmployees(employeesResult)
+    } catch (error) {
+      console.error('Erro ao carregar usuários da API:', error)
+      showToast(
+        error.status === 403
+          ? 'Você não tem permissão para consultar usuários.'
+          : error.message || 'Não foi possível carregar os dados do banco.',
+        'error'
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const storedUsers = JSON.parse(localStorage.getItem('users')) || []
-
-    const storedEmployees = JSON.parse(localStorage.getItem('employees')) || []
-
-    const storedAccessRoles = getAccessRoles()
-
-    setUsers(storedUsers)
-
-    setAccessRoles(storedAccessRoles)
-
-    setEmployees(storedEmployees)
+    loadData()
   }, [])
-
-  /*
-   * ============================================================
-   * PERMISSÃO
-   * ============================================================
-   */
 
   if (!hasPermission('users_view')) {
     return <h2>Acesso negado</h2>
   }
 
-  /*
-   * ============================================================
-   * BUSCA DE USUÁRIOS
-   * ============================================================
-   */
-
-  const filteredUsers = users.filter((u) =>
-    u.name?.toLowerCase().includes(search.toLowerCase())
+  const filteredUsers = users.filter((item) =>
+    `${item.name || ''} ${item.username || ''}`
+      .toLowerCase()
+      .includes(search.toLowerCase())
   )
 
-  /*
-   * ============================================================
-   * ALTERAÇÃO DOS CAMPOS
-   * ============================================================
-   */
-
-  function handleChange(e) {
-    const { name, value, type, checked } = e.target
-
-    setUser({
-      ...user,
-
+  function handleChange(event) {
+    const { name, value, type, checked } = event.target
+    setUser((current) => ({
+      ...current,
       [name]: type === 'checkbox' ? checked : value
-    })
+    }))
   }
 
-  /*
-   * ============================================================
-   * SALVAR / ATUALIZAR USUÁRIO
-   * ============================================================
-   */
+  async function handleSubmit(event) {
+    event.preventDefault()
 
-  function handleSubmit(e) {
-    e.preventDefault()
-
-    /*
-     * 🔒 BLOQUEIA CRIAÇÃO
-     */
+    if (saving) return
 
     if (!editingId && !hasPermission('users_create')) {
-      showToast('Você não tem permissão para cadastrar usuários', 'warning')
-
+      showToast('Você não tem permissão para cadastrar usuários.', 'warning')
       return
     }
-
-    /*
-     * 🔒 BLOQUEIA EDIÇÃO
-     */
 
     if (editingId && !hasPermission('users_edit')) {
-      showToast('Você não tem permissão para editar usuários', 'warning')
-
+      showToast('Você não tem permissão para editar usuários.', 'warning')
       return
     }
-
-    /*
-     * PERFIL DE ACESSO É OBRIGATÓRIO.
-     */
 
     if (!user.accessRoleId) {
-      showToast('Selecione um perfil de acesso para o usuário', 'warning')
-
+      showToast('Selecione um perfil de acesso.', 'warning')
       return
     }
 
-    let updated
-
-    /*
-     * ==========================================================
-     * EDIÇÃO
-     * ==========================================================
-     */
-
-    if (editingId) {
-      const updatedUser = {
-        ...user,
-
-        id: editingId
-      }
-
-      /*
-       * Usa o serviço centralizado.
-       *
-       * Além de atualizar "users", ele verifica se este é
-       * o usuário atualmente logado e atualiza a sessão.
-       */
-      updated = updateUser(updatedUser)
-
-      /*
-       * Verifica se o usuário alterado é o usuário atualmente
-       * logado.
-       */
-      const loggedUser = JSON.parse(localStorage.getItem('loggedUser'))
-
-      if (loggedUser && Number(loggedUser.id) === Number(editingId)) {
-        /*
-         * O vínculo de funcionário agora já está disponível
-         * imediatamente na sessão atual.
-         */
-        showToast(
-          'Usuário atualizado! O vínculo foi aplicado imediatamente.',
-          'success'
-        )
-      } else {
-        showToast('Usuário atualizado!', 'success')
-      }
-    } else {
-      /*
-       * ========================================================
-       * NOVO USUÁRIO
-       * ========================================================
-       */
-
-      const newUser = {
-        ...user,
-
-        id: Date.now()
-      }
-
-      updated = [...users, newUser]
-
-      localStorage.setItem('users', JSON.stringify(updated))
-
-      showToast('Usuário cadastrado!', 'success')
+    if (!editingId && !user.password) {
+      showToast('Informe uma senha inicial para o usuário.', 'warning')
+      return
     }
 
-    /*
-     * Atualiza a lista exibida na tela.
-     */
-    setUsers(updated)
+    const payload = {
+      name: user.name.trim(),
+      username: user.username.trim(),
+      email: user.email?.trim() || '',
+      accessRoleId: user.accessRoleId,
+      employeeId: user.employeeId || '',
+      active: Boolean(user.active)
+    }
 
-    /*
-     * Limpa o formulário.
-     */
-    setUser(initialUser)
+    if (user.password) {
+      payload.password = user.password
+    }
 
-    setEditingId(null)
+    setSaving(true)
+
+    try {
+      if (editingId) {
+        await updateApiUser(editingId, payload)
+        showToast('Usuário atualizado no banco de dados.', 'success')
+      } else {
+        await createApiUser(payload)
+        showToast('Usuário cadastrado no banco de dados.', 'success')
+      }
+
+      setUser(initialUser)
+      setEditingId(null)
+      await loadData()
+    } catch (error) {
+      console.error('Erro ao salvar usuário:', error)
+      showToast(error.message || 'Não foi possível salvar o usuário.', 'error')
+    } finally {
+      setSaving(false)
+    }
   }
 
-  /*
-   * ============================================================
-   * EDITAR USUÁRIO
-   * ============================================================
-   */
-
-  function handleEdit(u) {
-    /*
-     * 🔒 BLOQUEIA EDIÇÃO
-     */
-
+  function handleEdit(item) {
     if (!hasPermission('users_edit')) {
-      showToast('Você não tem permissão para editar usuários', 'warning')
-
+      showToast('Você não tem permissão para editar usuários.', 'warning')
       return
     }
 
-    /*
-     * Copiamos todos os dados do usuário para o formulário.
-     *
-     * O employeeId é preservado.
-     */
     setUser({
       ...initialUser,
-
-      ...u,
-
-      employeeId: u.employeeId || '',
-
-      accessRoleId: u.accessRoleId || '',
-
-      accessRoleName: u.accessRoleName || '',
-
-      roleId: u.roleId || '',
-
-      roleName: u.roleName || ''
+      ...item,
+      password: '',
+      employeeId: item.employeeId || '',
+      accessRoleId: item.accessRoleId || '',
+      accessRoleName: item.accessRoleName || ''
     })
-
-    setEditingId(u.id)
+    setEditingId(item.id)
   }
 
-  /*
-   * ============================================================
-   * SOLICITAR EXCLUSÃO
-   * ============================================================
-   */
-
   function handleDelete(id) {
-    /*
-     * 🔒 BLOQUEIA EXCLUSÃO
-     */
-
     if (!hasPermission('users_delete')) {
-      showToast('Você não tem permissão para excluir usuários', 'warning')
+      showToast('Você não tem permissão para desativar usuários.', 'warning')
+      return
+    }
 
+    if (String(id) === String(JSON.parse(localStorage.getItem('loggedUser') || '{}').id)) {
+      showToast('Não é permitido desativar o próprio usuário.', 'warning')
       return
     }
 
     setDeleteId(id)
   }
 
-  /*
-   * ============================================================
-   * CONFIRMAR EXCLUSÃO
-   * ============================================================
-   */
+  async function confirmDeleteUser() {
+    if (!deleteId) return
 
-  function confirmDeleteUser() {
-    const updated = users.filter((u) => u.id !== deleteId)
-
-    localStorage.setItem('users', JSON.stringify(updated))
-
-    /*
-     * Se por algum motivo o usuário excluído estiver logado,
-     * removemos também a sessão para evitar uma sessão inválida.
-     */
-    const loggedUser = JSON.parse(localStorage.getItem('loggedUser'))
-
-    if (loggedUser && Number(loggedUser.id) === Number(deleteId)) {
-      localStorage.removeItem('loggedUser')
-
-      localStorage.removeItem('currentUser')
+    try {
+      await deactivateApiUser(deleteId)
+      setDeleteId(null)
+      showToast('Usuário desativado.', 'success')
+      await loadData()
+    } catch (error) {
+      showToast(error.message || 'Não foi possível desativar o usuário.', 'error')
     }
-
-    setUsers(updated)
-
-    setDeleteId(null)
-
-    showToast('Usuário excluído!', 'success')
   }
 
   return (
     <div className="users-page">
+      {loading && <p>Carregando usuários do banco de dados...</p>}
+
       <UserForm
         user={user}
         search={search}
@@ -329,7 +209,20 @@ export default function Users() {
         handleChange={handleChange}
         handleSubmit={handleSubmit}
         setUser={setUser}
+        saving={saving}
       />
+
+      {editingId && (
+        <button
+          type="button"
+          onClick={() => {
+            setUser(initialUser)
+            setEditingId(null)
+          }}
+        >
+          Cancelar edição
+        </button>
+      )}
 
       <UserList
         users={filteredUsers}
@@ -339,8 +232,8 @@ export default function Users() {
 
       <ConfirmModal
         isOpen={deleteId !== null}
-        title="Excluir usuário"
-        message="Tem certeza que deseja excluir este usuário?"
+        title="Desativar usuário"
+        message="Tem certeza que deseja desativar este usuário? O registro será mantido no banco para preservar o histórico."
         onConfirm={confirmDeleteUser}
         onCancel={() => setDeleteId(null)}
       />

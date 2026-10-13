@@ -1,5 +1,4 @@
 import './userForm.css'
-
 import { hasPermission } from '../../services/permissions'
 
 export default function UserForm({
@@ -11,37 +10,18 @@ export default function UserForm({
   handleSubmit,
   setUser,
   search,
-  setSearch
+  setSearch,
+  saving = false
 }) {
-  /*
-   * ============================================================
-   * PERFIL DE ACESSO
-   * ============================================================
-   *
-   * Aqui não trabalhamos mais com Cargo.
-   *
-   * Cargo profissional:
-   *   Vendedor
-   *   Motorista
-   *   Gerente
-   *
-   * Perfil de acesso:
-   *   Administrador
-   *   Gestão de RH
-   *   Funcionário
-   */
-
-  function handleAccessRoleChange(e) {
-    const selectedAccessRole = accessRoles.find(
-      (role) => Number(role.id) === Number(e.target.value)
+  function handleAccessRoleChange(event) {
+    const selectedRole = accessRoles.find(
+      (role) => String(role.id) === String(event.target.value)
     )
 
     setUser({
       ...user,
-
-      accessRoleId: selectedAccessRole?.id || '',
-
-      accessRoleName: selectedAccessRole?.name || ''
+      accessRoleId: selectedRole?.id || '',
+      accessRoleName: selectedRole?.name || ''
     })
   }
 
@@ -51,10 +31,6 @@ export default function UserForm({
         <h2>Cadastro de Usuários</h2>
 
         <form onSubmit={handleSubmit}>
-          {/* ====================================================
-              INFORMAÇÕES DO USUÁRIO
-          ==================================================== */}
-
           <div className="form-section">
             <div className="user-form-header">
               <h3>Informações do Usuário</h3>
@@ -64,51 +40,60 @@ export default function UserForm({
                   type="text"
                   placeholder="🔍 Buscar usuário..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={(event) => setSearch(event.target.value)}
                 />
               </div>
             </div>
 
             <div className="form-grid">
-              {/* NOME */}
               <input
                 className="field-full"
                 name="name"
                 value={user.name}
                 placeholder="Nome completo"
                 onChange={handleChange}
+                required
               />
 
-              {/* CREDENCIAIS */}
               <div className="user-credentials-grid field-full">
                 <input
                   name="username"
                   value={user.username}
                   placeholder="Usuário"
                   onChange={handleChange}
+                  autoComplete="off"
+                  required
                 />
 
                 <input
                   name="password"
                   type="password"
                   value={user.password}
-                  placeholder="Senha"
+                  placeholder={editingId ? 'Nova senha (opcional)' : 'Senha (mínimo 8 caracteres)'}
                   onChange={handleChange}
+                  autoComplete="new-password"
+                  minLength={editingId && !user.password ? undefined : 8}
+                  required={!editingId}
                 />
               </div>
 
-              {/* ==================================================
-                  PERFIL DE ACESSO
-              ================================================== */}
+              <input
+                className="field-full"
+                name="email"
+                type="email"
+                value={user.email || ''}
+                placeholder="E-mail (opcional)"
+                onChange={handleChange}
+              />
 
               <select
                 className="field-full"
                 name="accessRoleId"
                 value={user.accessRoleId || ''}
                 onChange={handleAccessRoleChange}
+                required
               >
                 <option value="">Selecione o perfil de acesso</option>
-
                 {accessRoles
                   .filter((role) => role.active !== false)
                   .map((role) => (
@@ -118,10 +103,6 @@ export default function UserForm({
                   ))}
               </select>
 
-              {/* ==================================================
-                  FUNCIONÁRIO VINCULADO
-              ================================================== */}
-
               <select
                 className="field-full"
                 name="employeeId"
@@ -129,7 +110,6 @@ export default function UserForm({
                 onChange={handleChange}
               >
                 <option value="">Nenhum funcionário vinculado</option>
-
                 {employees.map((employee) => (
                   <option key={employee.id} value={employee.id}>
                     {employee.name}
@@ -139,31 +119,26 @@ export default function UserForm({
             </div>
           </div>
 
-          {/* ====================================================
-              STATUS
-          ==================================================== */}
-
           <div className="form-section">
             <h3>Status</h3>
-
             <label className="checkbox-field">
               <input
                 type="checkbox"
                 name="active"
-                checked={user.active}
+                checked={Boolean(user.active)}
                 onChange={handleChange}
               />
               Usuário ativo
             </label>
           </div>
 
-          {/* ====================================================
-              SALVAR
-          ==================================================== */}
-
           {(hasPermission('users_create') || hasPermission('users_edit')) && (
-            <button className="save-btn" type="submit">
-              {editingId ? 'Atualizar usuário' : 'Salvar usuário'}
+            <button className="save-btn" type="submit" disabled={saving}>
+              {saving
+                ? 'Salvando...'
+                : editingId
+                  ? 'Atualizar usuário'
+                  : 'Salvar usuário'}
             </button>
           )}
         </form>

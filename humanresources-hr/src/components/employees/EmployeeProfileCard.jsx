@@ -113,9 +113,9 @@ export default function EmployeeProfileCard({ employee, onDelete, onUpdate }) {
     reader.readAsDataURL(file)
   }
 
-  function handleSave() {
-    onUpdate(edited)
-    setIsEditing(false)
+  async function handleSave() {
+    const saved = await onUpdate(edited)
+    if (saved !== false) setIsEditing(false)
   }
 
   if (isEditing) {

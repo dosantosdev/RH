@@ -81,6 +81,7 @@ import Header from './components/layout/Header'
 
 import Candidatos from './pages/Candidatos/Candidatos'
 import Arquivo from './pages/Arquivo/Arquivo'
+import Chat from './pages/Chat/Chat'
 import CandidaturaPublica from './pages/Candidatos/CandidaturaPublica'
 
 /*
@@ -125,6 +126,7 @@ const WORKSPACE_ROUTE_TITLES = {
   '/relatorios': 'Relatórios de RH',
   '/candidatos': 'Área do candidato',
   '/arquivo': 'Arquivo',
+  '/chat': 'Chat corporativo',
   '/configuracoes': 'Configurações',
 }
 
@@ -626,6 +628,21 @@ function AppRoutes() {
           <ProtectedRoute permission="documents_view">
             <Layout>
               <Arquivo />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+
+      {/* ======================================================
+          CHAT CORPORATIVO
+      ====================================================== */}
+
+      <Route
+        path="/chat"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Chat />
             </Layout>
           </ProtectedRoute>
         }

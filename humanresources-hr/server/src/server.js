@@ -8,6 +8,9 @@ import documentRoutes from './routes/documents.js'
 import requestRoutes from './routes/requests.js'
 import healthRoutes from './routes/health.js'
 import meRoutes from './routes/me.js'
+import userRoutes from './routes/users.js'
+import settingsRoutes from './routes/settings.js'
+import organizationRoutes from './routes/organization.js'
 import { pool } from './db/pool.js'
 
 const app = express()
@@ -31,6 +34,9 @@ app.get('/', (_req, res) => {
 
 app.use('/api/health', healthRoutes)
 app.use('/api/auth', authRoutes)
+app.use('/api/users', userRoutes)
+app.use('/api/settings', settingsRoutes)
+app.use('/api/organization', organizationRoutes)
 app.use('/api/employees', employeeRoutes)
 app.use('/api/documents', documentRoutes)
 app.use('/api/employee-requests', requestRoutes)

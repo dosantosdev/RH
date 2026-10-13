@@ -225,3 +225,13 @@
     margin-bottom: 18px;
   }
 }
+
+/* Estado de sincronização das configurações com a API/PostgreSQL. */
+.settings-sync-message {
+  margin: 0 0 14px;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: #f4f6fb;
+  color: #4a5670;
+  font-size: 12px;
+}

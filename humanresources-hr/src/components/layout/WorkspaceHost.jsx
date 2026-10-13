@@ -36,6 +36,7 @@ const ROUTE_TITLES = {
   '/relatorios': 'Relatórios de RH',
   '/candidatos': 'Área do candidato',
   '/arquivo': 'Arquivo',
+  '/chat': 'Chat corporativo',
   '/configuracoes': 'Configurações',
 }
 

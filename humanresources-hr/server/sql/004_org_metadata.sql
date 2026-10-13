@@ -1,0 +1,27 @@
+-- Metadados necessários para preservar os campos já existentes nas telas do organograma.
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS address TEXT;
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS city VARCHAR(120);
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS state VARCHAR(80);
+ALTER TABLE branches ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE departments ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE departments ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS responsibilities TEXT;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS salary_min NUMERIC(12,2);
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS salary_max NUMERIC(12,2);
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS education TEXT;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS experience TEXT;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS skills TEXT;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS work_regime VARCHAR(80);
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS workload VARCHAR(80);
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS schedule_type VARCHAR(40) DEFAULT 'weekly';
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS daily_hours NUMERIC(5,2);
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS work_days_per_week INTEGER;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS cycle_work_days INTEGER;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS cycle_rest_days INTEGER;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS requires_cnh BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS required_cnh_categories JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS required_certificates JSONB NOT NULL DEFAULT '[]'::jsonb;
+ALTER TABLE roles ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+CREATE INDEX IF NOT EXISTS idx_branches_company_name ON branches(company_id, name);
+CREATE INDEX IF NOT EXISTS idx_departments_company_branch ON departments(company_id, branch_id);
+CREATE INDEX IF NOT EXISTS idx_roles_company_name ON roles(company_id, name);

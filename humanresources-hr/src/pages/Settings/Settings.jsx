@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { apiRequest } from '../../services/api'
 
 import {
   getRequiredFields,
@@ -26,21 +27,70 @@ const tabs = [
 export default function Settings() {
   const [activeTab, setActiveTab] = useState('required-fields')
   const [requiredFields, setRequiredFields] = useState(getRequiredFields)
+  const [settingsMessage, setSettingsMessage] = useState('')
+  const [settingsLoading, setSettingsLoading] = useState(true)
 
   const structure = getRequiredFieldsStructure()
 
-  function handleRequiredFieldChange(section, field) {
-    setRequiredFields((prev) => {
-      const updated = {
-        ...prev,
-        [section]: {
-          ...prev[section],
-          [field]: !prev[section]?.[field]
-        }
-      }
+  useEffect(() => {
+    let active = true
 
-      return saveRequiredFields(updated)
-    })
+    async function loadRequiredFields() {
+      try {
+        const result = await apiRequest('/settings/required-fields')
+        if (!active) return
+        const normalized = saveRequiredFields(result.value)
+        setRequiredFields(normalized)
+        setSettingsMessage('Configurações carregadas do PostgreSQL.')
+      } catch (error) {
+        if (!active) return
+        if (error.status === 404) {
+          // Migração inicial: aproveita a configuração local existente apenas
+          // quando a empresa ainda não possui esse registro no banco.
+          const localConfig = getRequiredFields()
+          try {
+            const result = await apiRequest('/settings/required-fields', {
+              method: 'PUT',
+              body: JSON.stringify({ value: localConfig })
+            })
+            const normalized = saveRequiredFields(result.value)
+            setRequiredFields(normalized)
+            setSettingsMessage('Configurações locais copiadas para o PostgreSQL.')
+          } catch (saveError) {
+            setSettingsMessage(`Não foi possível sincronizar as configurações com o banco: ${saveError.message}`)
+          }
+        } else {
+          setSettingsMessage(`Não foi possível carregar as configurações do banco: ${error.message}`)
+        }
+      } finally {
+        if (active) setSettingsLoading(false)
+      }
+    }
+
+    loadRequiredFields()
+    return () => { active = false }
+  }, [])
+
+  async function handleRequiredFieldChange(section, field) {
+    const updated = {
+      ...requiredFields,
+      [section]: {
+        ...requiredFields[section],
+        [field]: !requiredFields[section]?.[field]
+      }
+    }
+    const normalized = saveRequiredFields(updated)
+    setRequiredFields(normalized)
+    setSettingsMessage('Salvando no PostgreSQL...')
+    try {
+      await apiRequest('/settings/required-fields', {
+        method: 'PUT',
+        body: JSON.stringify({ value: normalized })
+      })
+      setSettingsMessage('Configurações salvas no PostgreSQL.')
+    } catch (error) {
+      setSettingsMessage(`A alteração ficou no navegador, mas não foi salva no banco: ${error.message}`)
+    }
   }
 
   if (!hasPermission('system_settings')) {
@@ -80,6 +130,11 @@ export default function Settings() {
 
       {activeTab === 'required-fields' && (
         <section className="settings-card">
+          {(settingsLoading || settingsMessage) && (
+            <p role="status" className="settings-sync-message">
+              {settingsLoading ? 'Carregando configurações...' : settingsMessage}
+            </p>
+          )}
           <div className="settings-card-header">
             <div>
               <h3>Campos obrigatórios</h3>

@@ -7,14 +7,7 @@ import Toast from '../../../components/ui/Toast'
 import useToast from '../../../hooks/useToast'
 
 import { hasPermission } from '../../../services/permissions'
-import {
-  getDepartments,
-  addDepartment,
-  updateDepartment,
-  deleteDepartment
-} from '../../../services/department'
-
-import { getStoredArray } from '../../../services/storage'
+import { listDepartments, createDepartment, updateDepartment, deleteDepartment, listBranches } from '../../../services/organizationApi'
 
 export default function Departamentos() {
   const initialDepartment = {
@@ -34,8 +27,13 @@ export default function Departamentos() {
   const { toast, showToast } = useToast()
 
   useEffect(() => {
-    setDepartments(getDepartments())
-    setBranches(getStoredArray('branches'))
+    let active = true
+    Promise.all([listDepartments(), listBranches()])
+      .then(([departmentItems, branchItems]) => {
+        if (active) { setDepartments(departmentItems); setBranches(branchItems) }
+      })
+      .catch((error) => showToast(error.message || 'Não foi possível carregar os departamentos.', 'error'))
+    return () => { active = false }
   }, [])
 
   if (!hasPermission('departments_view')) {
@@ -55,7 +53,7 @@ export default function Departamentos() {
     }))
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
 
     if (!department.name.trim()) {
@@ -79,41 +77,31 @@ export default function Departamentos() {
     }
 
     const selectedBranch = branches.find(
-      (branch) => branch.id === Number(department.branchId)
+      (branch) => String(branch.id) === String(department.branchId)
     )
 
     const departmentData = {
       ...department,
       name: department.name.trim(),
       description: department.description.trim(),
-      branchId: Number(department.branchId),
+      branchId: department.branchId,
       branchName: selectedBranch?.name || ''
     }
 
-    if (editingId) {
-      const updatedDepartment = updateDepartment({
-        ...departmentData,
-        id: editingId
-      })
-
-      setDepartments(updatedDepartment)
-
-      showToast('Departamento atualizado com sucesso!', 'success')
-    } else {
-      const newDepartment = {
-        ...departmentData,
-        id: Date.now()
+    try {
+      if (editingId) {
+        await updateDepartment(editingId, departmentData)
+        showToast('Departamento atualizado com sucesso!', 'success')
+      } else {
+        await createDepartment(departmentData)
+        showToast('Departamento cadastrado com sucesso!', 'success')
       }
-
-      const updatedDepartments = addDepartment(newDepartment)
-
-      setDepartments(updatedDepartments)
-
-      showToast('Departamento cadastrado com sucesso!', 'success')
+      setDepartments(await listDepartments())
+      setDepartment(initialDepartment)
+      setEditingId(null)
+    } catch (error) {
+      showToast(error.message || 'Não foi possível salvar o departamento.', 'error')
     }
-
-    setDepartment(initialDepartment)
-    setEditingId(null)
   }
 
   function handleEdit(item) {
@@ -125,7 +113,7 @@ export default function Departamentos() {
     setDepartment({
       ...initialDepartment,
       ...item,
-      branchId: item.branchId || ''
+      branchId: item.branchId || item.branch_id || ''
     })
 
     setEditingId(item.id)
@@ -140,13 +128,14 @@ export default function Departamentos() {
     setDeleteId(id)
   }
 
-  function confirmDeleteDepartment() {
-    const updatedDepartments = deleteDepartment(deleteId)
-
-    setDepartments(updatedDepartments)
-    setDeleteId(null)
-
-    showToast('Departamento excluído com sucesso!', 'success')
+  async function confirmDeleteDepartment() {
+    try {
+      await deleteDepartment(deleteId)
+      setDepartments(await listDepartments())
+      showToast('Departamento excluído com sucesso!', 'success')
+    } catch (error) {
+      showToast(error.message || 'Não foi possível excluir o departamento.', 'error')
+    } finally { setDeleteId(null) }
   }
 
   return (
