@@ -1,3 +1,10 @@
+## Etapa mais recente — Relatórios de Ponto via API PostgreSQL
+
+- A tela de Relatórios consulta a rota autenticada `/api/me/timekeeping/report-data` em vez de ler diretamente `employees`, `timeClockRecords` e `medicalCertificates` do navegador.
+- A API limita os dados à empresa autenticada, exige `ponto_controle_view`, valida datas e retorna os dados de marcações, jornadas, atestados, funcionários e filiais para o período solicitado.
+- Os cálculos existentes foram preservados no frontend e agora usam os dados recebidos pela API.
+- Detalhes e testes: `MIGRACAO-RELATORIOS-PONTO-API-POSTGRES.md`.
+
 ## Etapa mais recente — Meu Espelho via API PostgreSQL
 
 - `MeuEspelho.jsx` carrega a identidade autenticada e consulta `GET /api/me/timekeeping/period` para obter as marcações do período e as jornadas atribuídas ao próprio funcionário.

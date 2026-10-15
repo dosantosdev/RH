@@ -1,23 +1,26 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import './relatorios.css'
 
-import { getEmployees } from '../../../services/employee'
-import useOrganizationCache from '../../../Hooks/useOrganizationCache'
+import { apiRequest } from '../../../services/api'
 
 import {
   calculateTimeClockPeriod,
   formatMinutes
 } from '../../../services/timeClock'
 
-import { getEmployeeMedicalCertificates } from '../../../services/medicalCertificates'
 
 export default function Relatorios() {
-  const [employees] = useState(() =>
-    getEmployees().filter((employee) => employee.active !== false)
-  )
-
-  const [branches] = useOrganizationCache('branches', (items) => items.filter((branch) => branch.active !== false))
+  const [employees, setEmployees] = useState([])
+  const [branches, setBranches] = useState([])
+  const [records, setRecords] = useState([])
+  const [scheduleData, setScheduleData] = useState({
+    workSchedules: [],
+    employeeWorkSchedules: []
+  })
+  const [medicalCertificates, setMedicalCertificates] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState('')
 
   const [selectedBranchId, setSelectedBranchId] = useState('')
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
@@ -33,6 +36,66 @@ export default function Relatorios() {
 
   const [endDate, setEndDate] = useState(() => formatDateInput(new Date()))
 
+  useEffect(() => {
+    if (!startDate || !endDate || startDate > endDate) {
+      setLoadError('Informe um período válido. A data inicial não pode ser posterior à final.')
+      setEmployees([])
+      setBranches([])
+      setRecords([])
+      setScheduleData({ workSchedules: [], employeeWorkSchedules: [] })
+      setMedicalCertificates([])
+      setLoading(false)
+      return
+    }
+
+    const start = new Date(`${startDate}T00:00:00`)
+    const end = new Date(`${endDate}T00:00:00`)
+    const days = Math.round((end - start) / 86400000) + 1
+    if (days > 367) {
+      setLoadError('O período máximo para o relatório é de 367 dias.')
+      setLoading(false)
+      return
+    }
+
+    let active = true
+    setLoading(true)
+    setLoadError('')
+
+    async function loadReportData() {
+      try {
+        const params = new URLSearchParams({ startDate, endDate })
+        const result = await apiRequest(`/me/timekeeping/report-data?${params.toString()}`)
+        if (!active) return
+
+        setEmployees((Array.isArray(result.employees) ? result.employees : [])
+          .filter((employee) => employee.active !== false))
+        setBranches((Array.isArray(result.branches) ? result.branches : [])
+          .filter((branch) => branch.active !== false))
+        setRecords(Array.isArray(result.records) ? result.records : [])
+        setScheduleData(result.scheduleData || {
+          workSchedules: [],
+          employeeWorkSchedules: []
+        })
+        setMedicalCertificates(Array.isArray(result.medicalCertificates) ? result.medicalCertificates : [])
+      } catch (error) {
+        if (!active) return
+        setEmployees([])
+        setBranches([])
+        setRecords([])
+        setMedicalCertificates([])
+        setScheduleData({ workSchedules: [], employeeWorkSchedules: [] })
+        setLoadError(error.message || 'Não foi possível carregar os dados do relatório pela API.')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    loadReportData()
+    return () => {
+      active = false
+    }
+  }, [startDate, endDate])
+
   /*
    * ============================================================
    * FUNCIONÁRIOS FILTRADOS
@@ -45,7 +108,7 @@ export default function Relatorios() {
         return true
       }
 
-      return Number(employee.branchId) === Number(selectedBranchId)
+      return String(employee.branchId) === String(selectedBranchId)
     })
   }, [employees, selectedBranchId])
 
@@ -58,7 +121,7 @@ export default function Relatorios() {
   const reportEmployees = useMemo(() => {
     if (selectedEmployeeId) {
       return filteredEmployees.filter(
-        (employee) => Number(employee.id) === Number(selectedEmployeeId)
+        (employee) => String(employee.id) === String(selectedEmployeeId)
       )
     }
 
@@ -80,7 +143,12 @@ export default function Relatorios() {
       const period = calculateTimeClockPeriod(
         employee.id,
         parseDate(startDate),
-        parseDate(endDate)
+        parseDate(endDate),
+        {
+          employee,
+          records,
+          scheduleData
+        }
       )
 
       const days = period?.days || []
@@ -121,17 +189,11 @@ export default function Relatorios() {
         }
       })
 
-      const certificates = getEmployeeMedicalCertificates(employee.id).filter(
-        (certificate) => {
-          if (!certificate.startDate || !certificate.endDate) {
-            return false
-          }
-
-          return (
-            certificate.startDate <= endDate && certificate.endDate >= startDate
-          )
-        }
-      )
+      const certificates = medicalCertificates.filter((certificate) => {
+        if (String(certificate.employeeId) !== String(employee.id)) return false
+        if (!certificate.startDate || !certificate.endDate) return false
+        return certificate.startDate <= endDate && certificate.endDate >= startDate
+      })
 
       return {
         employee,
@@ -144,7 +206,7 @@ export default function Relatorios() {
         certificates
       }
     })
-  }, [reportEmployees, startDate, endDate])
+  }, [reportEmployees, startDate, endDate, records, scheduleData, medicalCertificates])
 
   /*
    * ============================================================
@@ -397,6 +459,8 @@ export default function Relatorios() {
        */}
 
       <section className="relatorios-card">
+        {loading && <p role="status" className="relatorios-loading">Carregando dados do PostgreSQL...</p>}
+        {loadError && <p role="alert" className="relatorios-error">{loadError}</p>}
         <div className="relatorios-card-header">
           <div>
             <span>RELATÓRIO</span>
@@ -412,7 +476,11 @@ export default function Relatorios() {
           <strong>{reportData.length} funcionário(s)</strong>
         </div>
 
-        {reportData.length === 0 ? (
+        {loading ? (
+          <div className="relatorios-empty">
+            <p>Consultando o banco de dados...</p>
+          </div>
+        ) : reportData.length === 0 ? (
           <div className="relatorios-empty">
             <span>📊</span>
 
