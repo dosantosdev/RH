@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import './fechamentoMensal.css'
 
 import { getEmployees } from '../../../services/employee'
-import { getStoredArray } from '../../../services/storage'
+import useOrganizationCache from '../../../Hooks/useOrganizationCache'
 
 import {
   calculateTimeClockPeriod,
@@ -77,9 +77,7 @@ export default function FechamentoMensal() {
     getEmployees().filter((employee) => employee.active !== false)
   )
 
-  const [branches] = useState(() =>
-    getStoredArray('branches').filter((branch) => branch.active !== false)
-  )
+  const [branches] = useOrganizationCache('branches', (items) => items.filter((branch) => branch.active !== false))
 
   const [selectedCompetence, setSelectedCompetence] = useState(
     getCurrentCompetence()
@@ -164,8 +162,6 @@ export default function FechamentoMensal() {
         period?.days?.filter((day) => {
           const expected = Number(day.expectedMinutes || 0)
 
-          const worked = Number(day.workedMinutes || 0)
-
           const punches = day.record?.punches || []
 
           return expected > 0 && punches.length === 0
@@ -203,7 +199,6 @@ export default function FechamentoMensal() {
     employees,
     filteredEmployees,
     selectedEmployeeId,
-    selectedBranchId,
     startDate,
     endDate,
     branches

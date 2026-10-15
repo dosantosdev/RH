@@ -1,7 +1,7 @@
 import express from 'express'
 import bcrypt from 'bcryptjs'
 import { pool } from '../db/pool.js'
-import { createToken } from '../middleware/auth.js'
+import { authenticate, createToken } from '../middleware/auth.js'
 
 const router = express.Router()
 
@@ -77,6 +77,79 @@ router.post('/login', async (req, res, next) => {
         permissions,
         isAdmin
       }
+    })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+
+// Altera a senha do próprio usuário sem expor o hash ao frontend.
+router.post('/change-password', authenticate, async (req, res, next) => {
+  const { currentPassword, newPassword } = req.body || {}
+
+  if (
+    typeof currentPassword !== 'string' ||
+    typeof newPassword !== 'string' ||
+    !currentPassword ||
+    !newPassword
+  ) {
+    return res.status(400).json({
+      message: 'Informe a senha atual e a nova senha.'
+    })
+  }
+
+  if (newPassword.length < 8) {
+    return res.status(400).json({
+      message: 'A nova senha deve possuir pelo menos 8 caracteres.'
+    })
+  }
+
+  if (currentPassword === newPassword) {
+    return res.status(400).json({
+      message: 'A nova senha deve ser diferente da senha atual.'
+    })
+  }
+
+  try {
+    const result = await pool.query(
+      `SELECT id, password_hash
+       FROM users
+       WHERE id = $1 AND company_id = $2 AND active = TRUE
+       LIMIT 1`,
+      [req.user.userId, req.user.companyId]
+    )
+
+    const user = result.rows[0]
+
+    if (!user) {
+      return res.status(404).json({
+        message: 'Usuário não encontrado ou inativo.'
+      })
+    }
+
+    const currentPasswordIsValid = await bcrypt.compare(
+      currentPassword,
+      user.password_hash
+    )
+
+    if (!currentPasswordIsValid) {
+      return res.status(400).json({
+        message: 'A senha atual está incorreta.'
+      })
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12)
+
+    await pool.query(
+      `UPDATE users
+       SET password_hash = $3, updated_at = NOW()
+       WHERE id = $1 AND company_id = $2`,
+      [user.id, req.user.companyId, passwordHash]
+    )
+
+    return res.json({
+      message: 'Senha alterada com sucesso.'
     })
   } catch (error) {
     return next(error)

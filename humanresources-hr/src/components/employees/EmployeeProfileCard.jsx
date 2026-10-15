@@ -3,6 +3,7 @@ import { useState } from 'react'
 import './employeeProfileCard.css'
 
 import EmployeeForm from './EmployeeForm'
+import EmployeeDocumentsPanel from './EmployeeDocumentsPanel'
 
 import { hasPermission } from '../../services/permissions'
 import { getStoredArray } from '../../services/storage'
@@ -319,6 +320,7 @@ export default function EmployeeProfileCard({ employee, onDelete, onUpdate }) {
           <button onClick={() => onDelete(edited)}>🗑️ Excluir</button>
         )}
       </div>
+      <EmployeeDocumentsPanel employee={edited} />
     </div>
   )
 }

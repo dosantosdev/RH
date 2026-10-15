@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { hasPermission } from '../../services/permissions'
@@ -148,6 +148,19 @@ export default function Candidatos() {
     setPositions(getPositions())
     setApplicationLinks(getApplicationLinks())
   }
+
+  useEffect(() => {
+    const refreshPositions = (event) => {
+      if (event?.detail?.key && event.detail.key !== 'positions') return
+      setPositions(getPositions())
+    }
+    window.addEventListener('hr:organization-cache-updated', refreshPositions)
+    window.addEventListener('storage', refreshPositions)
+    return () => {
+      window.removeEventListener('hr:organization-cache-updated', refreshPositions)
+      window.removeEventListener('storage', refreshPositions)
+    }
+  }, [])
 
   function changeTab(nextTab) {
     if (nextTab === 'dashboard') {

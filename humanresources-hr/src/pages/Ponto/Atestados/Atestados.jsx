@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 
 import { getEmployees } from '../../../services/employee'
-import { getStoredArray } from '../../../services/storage'
+import useOrganizationCache from '../../../Hooks/useOrganizationCache'
 
 import {
   addMedicalCertificate,
@@ -17,7 +17,7 @@ import './atestados.css'
 export default function Atestados() {
   const [employees] = useState(() => getEmployees())
 
-  const [branches] = useState(() => getStoredArray('branches'))
+  const [branches] = useOrganizationCache('branches')
 
   const [certificates, setCertificates] = useState(() =>
     getMedicalCertificates()

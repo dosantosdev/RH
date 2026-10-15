@@ -65,11 +65,21 @@ export async function searchEmployees(search, { status } = {}) {
 }
 
 export async function getEmployeeById(id) {
-  const row = await apiRequest(`/employees/${encodeURIComponent(id)}`)
+  if (id === undefined || id === null || !String(id).trim() ||
+      String(id) === 'undefined' || String(id) === 'null') {
+    throw new Error('ID do funcionário inválido. Volte à busca e selecione o cadastro novamente.')
+  }
+
+  const row = await apiRequest(`/employees/${encodeURIComponent(String(id))}`)
   return normalizeEmployee(row)
 }
 
 export async function updateEmployeeInApi(employee) {
+  const employeeId = employee?.databaseId || employee?.id
+  if (!employeeId || String(employeeId) === 'undefined' || String(employeeId) === 'null') {
+    throw new Error('Não foi possível salvar: o funcionário não possui um ID válido.')
+  }
+
   const payload = {
     name: String(employee.name || '').trim(),
     cpf: employee.cpf || null,
@@ -83,7 +93,7 @@ export async function updateEmployeeInApi(employee) {
     registrationData: employee
   }
 
-  const row = await apiRequest(`/employees/${encodeURIComponent(employee.databaseId || employee.id)}`, {
+  const row = await apiRequest(`/employees/${encodeURIComponent(employeeId)}`, {
     method: 'PATCH',
     body: JSON.stringify(payload)
   })

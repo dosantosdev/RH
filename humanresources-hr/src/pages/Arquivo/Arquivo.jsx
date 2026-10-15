@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { apiLogin, apiRequest, clearApiSession, getApiToken } from '../../services/api'
+import { apiLogin, apiRequest, clearApiSession, getApiToken, openApiDocument } from '../../services/api'
 import './arquivo.css'
 
 const EMPTY_UPLOAD = {
@@ -162,8 +162,7 @@ export default function Arquivo() {
   async function handleDownload(document) {
     setError('')
     try {
-      const result = await apiRequest(`/documents/${document.id}/download`)
-      window.open(result.url, '_blank', 'noopener,noreferrer')
+      await openApiDocument(`/documents/${encodeURIComponent(document.id)}/download`)
     } catch (err) {
       setError(err.message || 'Não foi possível abrir o documento.')
     }
@@ -189,7 +188,7 @@ export default function Arquivo() {
         <div>
           <span className="archive-eyebrow">GESTÃO DOCUMENTAL</span>
           <h1>Arquivo</h1>
-          <p>Centralize documentos de funcionários e candidatos, acompanhe vencimentos e controle o acesso aos arquivos.</p>
+          <p>Centralize documentos de funcionários e candidatos no PostgreSQL, acompanhe vencimentos e controle o acesso aos arquivos.</p>
         </div>
         <div className="archive-header-actions">
           {connected && <button className="archive-button archive-button-secondary" onClick={handleDisconnect}>Desconectar API</button>}
@@ -204,13 +203,13 @@ export default function Arquivo() {
         <section className="archive-connect-card">
           <div className="archive-connect-icon">↔</div>
           <h2>Conectar ao banco de dados</h2>
-          <p>O Arquivo consulta a API protegida, que salva os metadados no PostgreSQL e os arquivos no Firebase Storage. Faça login com um usuário cadastrado na API.</p>
+          <p>O Arquivo consulta a API protegida. Metadados e novos arquivos são armazenados no PostgreSQL. Faça login com um usuário cadastrado na API.</p>
           <form onSubmit={handleLogin} className="archive-login-form">
             <label>Usuário<input value={loginForm.username} onChange={(event) => setLoginForm({ ...loginForm, username: event.target.value })} autoComplete="username" required /></label>
             <label>Senha da API<input type="password" value={loginForm.password} onChange={(event) => setLoginForm({ ...loginForm, password: event.target.value })} autoComplete="current-password" required /></label>
             <button className="archive-button" disabled={busy}>{busy ? 'Conectando…' : 'Conectar'}</button>
           </form>
-          <p className="archive-muted">A API/PostgreSQL ainda precisam estar iniciados e configurados. Esta tela não usa os dados antigos do localStorage.</p>
+          <p className="archive-muted">A API/PostgreSQL ainda precisam estar iniciados e configurados. Esta tela não depende do localStorage para os documentos.</p>
         </section>
       ) : (
         <>

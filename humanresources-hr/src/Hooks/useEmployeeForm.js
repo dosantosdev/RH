@@ -38,29 +38,20 @@ export default function useEmployeeForm(formData, setFormData) {
    */
 
   useEffect(() => {
-    /*
-     * Cargos.
-     *
-     * Continuamos carregando os cargos porque eles são
-     * utilizados para descobrir as regras relacionadas
-     * ao funcionário, como certificados e jornada.
-     */
-    setRoles(getStoredArray('roles'))
+    const loadCatalogs = () => {
+      setRoles(getStoredArray('roles'))
+      setBranches(getStoredArray('branches'))
+      setDepartments(getDepartments())
+      setPositions(getPositions())
+    }
 
-    /*
-     * Filiais cadastradas.
-     */
-    setBranches(getStoredArray('branches'))
-
-    /*
-     * Departamentos cadastrados.
-     */
-    setDepartments(getDepartments())
-
-    /*
-     * Posições cadastradas no Organograma.
-     */
-    setPositions(getPositions())
+    loadCatalogs()
+    window.addEventListener('hr:organization-cache-updated', loadCatalogs)
+    window.addEventListener('storage', loadCatalogs)
+    return () => {
+      window.removeEventListener('hr:organization-cache-updated', loadCatalogs)
+      window.removeEventListener('storage', loadCatalogs)
+    }
   }, [])
 
   /*

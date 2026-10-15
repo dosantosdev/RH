@@ -3,6 +3,9 @@ import EmployeeProfile from './pages/EmployeeProfile/EmployeeProfile'
 import { Routes, Route, useLocation } from 'react-router-dom'
 import { useEffect } from 'react'
 import { WorkspaceProvider, useWorkspace } from './contexts/WorkspaceContext'
+import { syncLocalStorageWithPostgres, syncTrainingDataWithPostgres, syncEvaluationDataWithPostgres, syncTimekeepingDataWithPostgres, syncRecruitmentDataWithPostgres, syncFinancialDataWithPostgres } from './services/storage'
+import { syncOrganizationCatalogsWithPostgres } from './services/organizationApi'
+import { getApiToken } from './services/api'
 import WorkspaceHost from './components/layout/WorkspaceHost'
 
 import Navbar from './components/layout/Navbar'
@@ -667,6 +670,27 @@ function AppRoutes() {
 }
 
 function App() {
+  const location = useLocation()
+
+  useEffect(() => {
+    if (!getApiToken()) return
+
+    Promise.all([
+      syncLocalStorageWithPostgres(),
+      syncTrainingDataWithPostgres(),
+      syncEvaluationDataWithPostgres(),
+      syncTimekeepingDataWithPostgres(),
+      syncRecruitmentDataWithPostgres(),
+      syncFinancialDataWithPostgres(),
+      syncOrganizationCatalogsWithPostgres()
+    ]).catch((error) => {
+      console.error(
+        'Não foi possível sincronizar os dados locais com o PostgreSQL.',
+        error
+      )
+    })
+  }, [location.pathname])
+
   return (
     <WorkspaceProvider>
       <AppRoutes />

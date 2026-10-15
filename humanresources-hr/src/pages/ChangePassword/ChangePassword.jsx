@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 
 import Toast from '../../components/ui/Toast'
 import useToast from '../../hooks/useToast'
-
+import { apiRequest } from '../../services/api'
 import { hasPermission } from '../../services/permissions'
 
 import './changePassword.css'
@@ -17,45 +17,33 @@ export default function ChangePassword() {
     newPassword: '',
     confirmPassword: ''
   })
+  const [saving, setSaving] = useState(false)
 
   if (!hasPermission('password_change')) {
     return <h2>Acesso negado</h2>
   }
 
-  function handleChange(e) {
-    const { name, value } = e.target
+  function handleChange(event) {
+    const { name, value } = event.target
 
-    setForm((prev) => ({
-      ...prev,
+    setForm((previous) => ({
+      ...previous,
       [name]: value
     }))
   }
 
-  function handleSubmit(e) {
-    e.preventDefault()
+  async function handleSubmit(event) {
+    event.preventDefault()
 
-    const currentUser = JSON.parse(localStorage.getItem('loggedUser'))
+    if (saving) return
 
-    if (!currentUser) {
-      navigate('/')
+    if (!form.currentPassword || !form.newPassword) {
+      showToast('Informe a senha atual e a nova senha.', 'warning')
       return
     }
 
-    if (form.currentPassword !== currentUser.password) {
-      showToast('A senha atual está incorreta.', 'warning')
-
-      return
-    }
-
-    if (!form.newPassword) {
-      showToast('Informe a nova senha.', 'warning')
-
-      return
-    }
-
-    if (form.newPassword.length < 3) {
-      showToast('A nova senha deve possuir pelo menos 3 caracteres.', 'warning')
-
+    if (form.newPassword.length < 8) {
+      showToast('A nova senha deve possuir pelo menos 8 caracteres.', 'warning')
       return
     }
 
@@ -64,39 +52,39 @@ export default function ChangePassword() {
         'A confirmação da senha não corresponde à nova senha.',
         'warning'
       )
-
       return
     }
 
-    const users = JSON.parse(localStorage.getItem('users')) || []
+    setSaving(true)
 
-    const updatedUsers = users.map((user) =>
-      user.id === currentUser.id
-        ? {
-            ...user,
-            password: form.newPassword
-          }
-        : user
-    )
+    try {
+      const result = await apiRequest('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          currentPassword: form.currentPassword,
+          newPassword: form.newPassword
+        })
+      })
 
-    localStorage.setItem('users', JSON.stringify(updatedUsers))
+      setForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      })
 
-    const updatedLoggedUser = {
-      ...currentUser,
-      password: form.newPassword
+      showToast(result.message || 'Senha alterada com sucesso!', 'success')
+    } catch (error) {
+      if (error.status === 401) {
+        showToast(
+          'Sua sessão expirou. Entre novamente para alterar a senha.',
+          'error'
+        )
+      } else {
+        showToast(error.message || 'Não foi possível alterar a senha.', 'error')
+      }
+    } finally {
+      setSaving(false)
     }
-
-    localStorage.setItem('loggedUser', JSON.stringify(updatedLoggedUser))
-
-    localStorage.setItem('currentUser', JSON.stringify(updatedLoggedUser))
-
-    setForm({
-      currentPassword: '',
-      newPassword: '',
-      confirmPassword: ''
-    })
-
-    showToast('Senha alterada com sucesso!', 'success')
   }
 
   return (
@@ -118,43 +106,55 @@ export default function ChangePassword() {
 
         <form onSubmit={handleSubmit}>
           <div className="password-field">
-            <label>Senha atual</label>
-
+            <label htmlFor="currentPassword">Senha atual</label>
             <input
+              id="currentPassword"
               type="password"
               name="currentPassword"
               value={form.currentPassword}
               onChange={handleChange}
               autoComplete="current-password"
+              disabled={saving}
+              required
             />
           </div>
 
           <div className="password-field">
-            <label>Nova senha</label>
-
+            <label htmlFor="newPassword">Nova senha</label>
             <input
+              id="newPassword"
               type="password"
               name="newPassword"
               value={form.newPassword}
               onChange={handleChange}
               autoComplete="new-password"
+              minLength={8}
+              disabled={saving}
+              required
             />
           </div>
 
           <div className="password-field">
-            <label>Confirmar nova senha</label>
-
+            <label htmlFor="confirmPassword">Confirmar nova senha</label>
             <input
+              id="confirmPassword"
               type="password"
               name="confirmPassword"
               value={form.confirmPassword}
               onChange={handleChange}
               autoComplete="new-password"
+              minLength={8}
+              disabled={saving}
+              required
             />
           </div>
 
-          <button type="submit" className="change-password-btn">
-            Alterar senha
+          <button
+            type="submit"
+            className="change-password-btn"
+            disabled={saving}
+          >
+            {saving ? 'Alterando senha...' : 'Alterar senha'}
           </button>
         </form>
       </div>

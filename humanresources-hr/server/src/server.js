@@ -11,6 +11,9 @@ import meRoutes from './routes/me.js'
 import userRoutes from './routes/users.js'
 import settingsRoutes from './routes/settings.js'
 import organizationRoutes from './routes/organization.js'
+import chatRoutes from './routes/chat.js'
+import appRecordRoutes from './routes/appRecords.js'
+import positionRoutes from './routes/positions.js'
 import { pool } from './db/pool.js'
 
 const app = express()
@@ -36,17 +39,26 @@ app.use('/api/health', healthRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/settings', settingsRoutes)
+app.use('/api/organization/positions', positionRoutes)
 app.use('/api/organization', organizationRoutes)
 app.use('/api/employees', employeeRoutes)
 app.use('/api/documents', documentRoutes)
 app.use('/api/employee-requests', requestRoutes)
 app.use('/api/me', meRoutes)
+app.use('/api/chat', chatRoutes)
+app.use('/api/app-records', appRecordRoutes)
 
 app.use((error, _req, res, _next) => {
   console.error(error)
 
-  return res.status(500).json({
-    message: 'Ocorreu um erro interno no servidor.',
+  const status = Number.isInteger(error.status) && error.status >= 400 && error.status < 600
+    ? error.status
+    : 500
+
+  return res.status(status).json({
+    message: status < 500 && error.message
+      ? error.message
+      : 'Ocorreu um erro interno no servidor.',
     ...(process.env.NODE_ENV !== 'production'
       ? { detail: error.message }
       : {})

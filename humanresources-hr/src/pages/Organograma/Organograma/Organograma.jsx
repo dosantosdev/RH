@@ -3,14 +3,18 @@ import { useEffect, useState } from 'react'
 import './organograma.css'
 
 import { hasPermission } from '../../../services/permissions'
-import { getStoredArray } from '../../../services/storage'
-
 import {
-  getPositions,
-  addPosition,
-  updatePosition,
-  deletePosition
+  listOrganizationPositions,
+  createOrganizationPosition,
+  updateOrganizationPosition,
+  deleteOrganizationPosition
 } from '../../../services/position'
+import {
+  listProfessionalRoles,
+  listBranches,
+  listDepartments
+} from '../../../services/organizationApi'
+import { searchEmployees } from '../../../services/employeeApi'
 
 import ConfirmModal from '../../../components/ui/ConfirmModal'
 import Toast from '../../../components/ui/Toast'
@@ -62,15 +66,41 @@ export default function Organograma() {
   const { toast, showToast } = useToast()
 
   useEffect(() => {
-    setPositions(getPositions())
+    let active = true
 
-    setRoles(getStoredArray('roles'))
+    async function loadOrganograma() {
+      try {
+        const [positionRows, roleRows, branchRows, departmentRows, employeeRows] =
+          await Promise.all([
+            listOrganizationPositions(),
+            listProfessionalRoles(),
+            listBranches(),
+            listDepartments(),
+            searchEmployees('', { status: 'active' })
+          ])
 
-    setBranches(getStoredArray('branches'))
+        if (!active) return
 
-    setDepartments(getStoredArray('departments'))
+        setPositions(positionRows)
+        setRoles(roleRows)
+        setBranches(branchRows)
+        setDepartments(departmentRows)
+        setEmployees(employeeRows)
+      } catch (error) {
+        if (active) {
+          showToast(
+            error.message || 'Não foi possível carregar o organograma pelo PostgreSQL.',
+            'error'
+          )
+        }
+      }
+    }
 
-    setEmployees(getStoredArray('employees'))
+    loadOrganograma()
+
+    return () => {
+      active = false
+    }
   }, [])
 
   if (!hasPermission('roles_view')) {
@@ -101,7 +131,7 @@ export default function Organograma() {
 
   function loadRoleSchedule(roleId) {
     const selectedRole = roles.find(
-      (role) => Number(role.id) === Number(roleId)
+      (role) => String(role.id) === String(roleId)
     )
 
     if (!selectedRole) {
@@ -252,7 +282,7 @@ export default function Organograma() {
    * ============================================================
    */
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
 
     if (!position.cargoId) {
@@ -289,7 +319,7 @@ export default function Organograma() {
     if (
       editingId &&
       position.parentPositionId &&
-      Number(position.parentPositionId) === Number(editingId)
+      String(position.parentPositionId) === String(editingId)
     ) {
       showToast('Uma posição não pode ser superior dela mesma.', 'warning')
 
@@ -308,38 +338,38 @@ export default function Organograma() {
     }
 
     const selectedRole = roles.find(
-      (role) => Number(role.id) === Number(position.cargoId)
+      (role) => String(role.id) === String(position.cargoId)
     )
 
     const selectedBranch = branches.find(
-      (branch) => Number(branch.id) === Number(position.branchId)
+      (branch) => String(branch.id) === String(position.branchId)
     )
 
     const selectedDepartment = departments.find(
-      (department) => Number(department.id) === Number(position.departmentId)
+      (department) => String(department.id) === String(position.departmentId)
     )
 
     const selectedParent = positions.find(
-      (item) => Number(item.id) === Number(position.parentPositionId)
+      (item) => String(item.id) === String(position.parentPositionId)
     )
 
     const positionData = {
       ...position,
 
-      cargoId: Number(position.cargoId),
+      cargoId: String(position.cargoId),
 
       cargoName: selectedRole?.name || '',
 
-      branchId: Number(position.branchId),
+      branchId: String(position.branchId),
 
       branchName: selectedBranch?.name || '',
 
-      departmentId: Number(position.departmentId),
+      departmentId: String(position.departmentId),
 
       departmentName: selectedDepartment?.name || '',
 
       parentPositionId: position.parentPositionId
-        ? Number(position.parentPositionId)
+        ? String(position.parentPositionId)
         : null,
 
       parentPositionName: selectedParent?.cargoName || '',
@@ -381,31 +411,22 @@ export default function Organograma() {
           : Number(selectedRole?.cycleRestDays || 0)
     }
 
-    if (editingId) {
-      const updated = updatePosition({
-        ...positionData,
-        id: editingId
-      })
-
-      setPositions(updated)
-
-      showToast('Posição atualizada com sucesso!', 'success')
-    } else {
-      const newPosition = {
-        ...positionData,
-        id: Date.now()
+    try {
+      if (editingId) {
+        await updateOrganizationPosition(editingId, positionData)
+        showToast('Posição atualizada com sucesso!', 'success')
+      } else {
+        await createOrganizationPosition(positionData)
+        showToast('Posição criada com sucesso!', 'success')
       }
 
-      const updated = addPosition(newPosition)
-
+      const updated = await listOrganizationPositions()
       setPositions(updated)
-
-      showToast('Posição criada com sucesso!', 'success')
+      setPosition(initialPosition)
+      setEditingId(null)
+    } catch (error) {
+      showToast(error.message || 'Não foi possível salvar a posição no PostgreSQL.', 'error')
     }
-
-    setPosition(initialPosition)
-
-    setEditingId(null)
   }
 
   /*
@@ -469,7 +490,7 @@ export default function Organograma() {
      */
 
     const hasChildren = positions.some(
-      (item) => Number(item.parentPositionId) === Number(id)
+      (item) => String(item.parentPositionId) === String(id)
     )
 
     if (hasChildren) {
@@ -490,7 +511,7 @@ export default function Organograma() {
 
     const linkedEmployees = employees.filter(
       (employee) =>
-        employee.positionId && Number(employee.positionId) === Number(id)
+        employee.positionId && String(employee.positionId) === String(id)
     )
 
     if (linkedEmployees.length > 0) {
@@ -518,14 +539,17 @@ export default function Organograma() {
    * ============================================================
    */
 
-  function confirmDelete() {
-    const updated = deletePosition(deleteId)
-
-    setPositions(updated)
-
-    setDeleteId(null)
-
-    showToast('Posição excluída com sucesso!', 'success')
+  async function confirmDelete() {
+    try {
+      await deleteOrganizationPosition(deleteId)
+      const updated = await listOrganizationPositions()
+      setPositions(updated)
+      setDeleteId(null)
+      showToast('Posição excluída com sucesso!', 'success')
+    } catch (error) {
+      showToast(error.message || 'Não foi possível excluir a posição.', 'error')
+      setDeleteId(null)
+    }
   }
 
   /*
@@ -535,7 +559,7 @@ export default function Organograma() {
    */
 
   const availableDepartments = departments.filter(
-    (department) => Number(department.branchId) === Number(position.branchId)
+    (department) => String(department.branchId) === String(position.branchId)
   )
 
   const availableParents = positions.filter((item) => {
@@ -544,8 +568,8 @@ export default function Organograma() {
     }
 
     return (
-      Number(item.branchId) === Number(position.branchId) &&
-      Number(item.departmentId) === Number(position.departmentId)
+      String(item.branchId) === String(position.branchId) &&
+      String(item.departmentId) === String(position.departmentId)
     )
   })
 
@@ -830,7 +854,7 @@ export default function Organograma() {
 
 function TreeNode({ node, positions, employees, onEdit, onDelete }) {
   const children = positions.filter(
-    (position) => Number(position.parentPositionId) === Number(node.id)
+    (position) => String(position.parentPositionId) === String(node.id)
   )
 
   /*
@@ -843,7 +867,7 @@ function TreeNode({ node, positions, employees, onEdit, onDelete }) {
     (employee) =>
       employee.active === true &&
       employee.positionId &&
-      Number(employee.positionId) === Number(node.id)
+      String(employee.positionId) === String(node.id)
   )
 
   return (

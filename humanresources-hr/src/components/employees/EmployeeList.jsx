@@ -5,7 +5,7 @@ export default function EmployeeList({ employees, onSelect }) {
     <div className="employee-list">
       {employees.map((emp, index) => (
         <div
-          key={index}
+          key={emp.databaseId || emp.id || index}
           className="employee-item"
           onClick={() => onSelect(emp)}
         >

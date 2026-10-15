@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import './horasExtras.css'
 
 import { getEmployees } from '../../../services/employee'
-import { getStoredArray } from '../../../services/storage'
+import useOrganizationCache from '../../../Hooks/useOrganizationCache'
 
 import {
   calculateTimeClockPeriod,
@@ -15,8 +15,8 @@ import {
 import { getEmployeeWorkScheduleName } from '../../../services/workSchedule'
 
 export default function HorasExtras() {
-  const [employees, setEmployees] = useState([])
-  const [branches, setBranches] = useState([])
+  const [employees] = useState(() => getEmployees().filter((employee) => employee.active !== false))
+  const [branches] = useOrganizationCache('branches', (items) => items.filter((branch) => branch.active !== false))
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
 
@@ -35,14 +35,6 @@ export default function HorasExtras() {
   )
 
   const [selectedDetails, setSelectedDetails] = useState(null)
-
-  useEffect(() => {
-    setEmployees(getEmployees().filter((employee) => employee.active !== false))
-
-    setBranches(
-      getStoredArray('branches').filter((branch) => branch.active !== false)
-    )
-  }, [])
 
   /*
    * ============================================================

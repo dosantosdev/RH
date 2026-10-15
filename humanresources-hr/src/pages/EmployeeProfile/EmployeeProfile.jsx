@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams } from 'react-router-dom'
 
 import EmployeeProfileCard from '../../components/employees/EmployeeProfileCard'
 import ConfirmModal from '../../components/ui/ConfirmModal'
@@ -10,8 +10,16 @@ import { hasPermission } from '../../services/permissions'
 import { deleteEmployeeFromApi, getEmployeeById, updateEmployeeInApi } from '../../services/employeeApi'
 
 export default function EmployeeProfile() {
-  const { id } = useParams()
+  const { id: routeId } = useParams()
+  const location = useLocation()
   const navigate = useNavigate()
+
+  // O WorkspaceHost mantém as abas montadas fora do contexto direto da rota.
+  // Por isso, useParams pode ficar vazio ao reexibir uma aba já aberta.
+  // O caminho ativo é a fonte de fallback para recuperar o ID do funcionário.
+  const id = routeId || decodeURIComponent(
+    location.pathname.match(/^\/funcionario\/([^/]+)\/?$/)?.[1] || ''
+  )
   const [employee, setEmployee] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -21,6 +29,13 @@ export default function EmployeeProfile() {
   const allowed = hasPermission('employees_view')
 
   const loadEmployee = useCallback(async () => {
+    if (!id || id === 'undefined' || id === 'null') {
+      setEmployee(null)
+      setLoadError('Não foi possível identificar o funcionário. Volte à busca e abra o cadastro novamente.')
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     setLoadError('')
     try {

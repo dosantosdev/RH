@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export default function useToast() {
   const [toast, setToast] = useState({
@@ -9,7 +9,7 @@ export default function useToast() {
 
   const timeoutRef = useRef(null)
 
-  function showToast(message, type = 'success') {
+  const showToast = useCallback((message, type = 'success') => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
@@ -26,7 +26,7 @@ export default function useToast() {
         show: false
       }))
     }, 3000)
-  }
+  }, [])
 
   useEffect(() => {
     return () => {

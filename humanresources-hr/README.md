@@ -21,3 +21,7 @@ If you are developing a production application, we recommend using TypeScript wi
 A base do projeto foi organizada para separar interface, hooks, serviços, utilitários e dados iniciais. A documentação da estrutura está em `docs/ARCHITECTURE.md`.
 
 As tecnologias planejadas para futuras etapas — TanStack Query, Firebase, Tailwind CSS, Framer Motion, Next.js e Vercel — não foram adicionadas como dependências nesta etapa. A prioridade foi organizar a base atual sem causar uma mudança visual ou arquitetural brusca.
+
+
+## Migração para PostgreSQL
+Consulte `docs/MIGRACAO-POSTGRESQL-STATUS.md` para as alterações, instruções e limitações desta revisão.

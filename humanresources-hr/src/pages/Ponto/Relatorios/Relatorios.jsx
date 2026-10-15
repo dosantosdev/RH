@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react'
 import './relatorios.css'
 
 import { getEmployees } from '../../../services/employee'
-import { getStoredArray } from '../../../services/storage'
+import useOrganizationCache from '../../../Hooks/useOrganizationCache'
 
 import {
   calculateTimeClockPeriod,
@@ -17,9 +17,7 @@ export default function Relatorios() {
     getEmployees().filter((employee) => employee.active !== false)
   )
 
-  const [branches] = useState(() =>
-    getStoredArray('branches').filter((branch) => branch.active !== false)
-  )
+  const [branches] = useOrganizationCache('branches', (items) => items.filter((branch) => branch.active !== false))
 
   const [selectedBranchId, setSelectedBranchId] = useState('')
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')

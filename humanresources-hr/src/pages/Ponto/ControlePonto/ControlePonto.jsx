@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import { getEmployees } from '../../../services/employee'
-import { getStoredArray } from '../../../services/storage'
+import useOrganizationCache from '../../../Hooks/useOrganizationCache'
 
 import {
   calculateScheduleWeeklyHours,
@@ -12,11 +12,11 @@ import {
 import './controlePonto.css'
 
 export default function ControlePonto() {
-  const [employees, setEmployees] = useState([])
+  const [employees] = useState(() => getEmployees())
 
-  const [roles, setRoles] = useState([])
+  const [roles] = useOrganizationCache('roles')
 
-  const [branches, setBranches] = useState([])
+  const [branches] = useOrganizationCache('branches')
 
   const [search, setSearch] = useState('')
 
@@ -29,14 +29,6 @@ export default function ControlePonto() {
    * CARREGAMENTO
    * ============================================================
    */
-
-  useEffect(() => {
-    setEmployees(getEmployees())
-
-    setRoles(getStoredArray('roles'))
-
-    setBranches(getStoredArray('branches'))
-  }, [])
 
   /*
    * ============================================================

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 
 import { getEmployees } from '../../../services/employee'
-import { getStoredArray } from '../../../services/storage'
+import useOrganizationCache from '../../../Hooks/useOrganizationCache'
 
 import {
   calculateTimeClockPeriod,
@@ -64,9 +64,9 @@ export default function BancoHoras() {
 
   const [employees] = useState(() => getEmployees())
 
-  const [branches] = useState(() => getStoredArray('branches'))
+  const [branches] = useOrganizationCache('branches')
 
-  const [roles] = useState(() => getStoredArray('roles'))
+  const [roles] = useOrganizationCache('roles')
 
   const [entries, setEntries] = useState(() => getBankHoursEntries())
 

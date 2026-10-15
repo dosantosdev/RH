@@ -78,7 +78,14 @@ export default function EmployeeSearch() {
         <>
           <EmployeeList
             employees={currentEmployees}
-            onSelect={(employee) => navigate(`/funcionario/${employee.id}`)}
+            onSelect={(employee) => {
+              const employeeId = employee.databaseId || employee.id
+              if (!employeeId || employeeId === 'undefined') {
+                setError('Este resultado não possui um identificador válido no banco de dados.')
+                return
+              }
+              navigate(`/funcionario/${encodeURIComponent(employeeId)}`)
+            }}
           />
           {totalPages > 1 && (
             <div className="pagination">

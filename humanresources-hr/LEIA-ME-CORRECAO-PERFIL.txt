@@ -1,0 +1,25 @@
+CORREÇÃO DO PERFIL DE FUNCIONÁRIO
+
+Base: ZIP enviado em 14/10/2026 às 11:41.
+Arquivos alterados:
+- src/pages/EmployeeProfile/EmployeeProfile.jsx
+- src/pages/EmployeeSearch/EmployeeSearch.jsx
+- src/services/employeeApi.js
+- src/components/employees/EmployeeList.jsx
+
+Causa tratada:
+O WorkspaceHost guarda e renderiza o elemento da aba fora do contexto direto da rota. Nessa situação, useParams() pode ficar sem o ID, provocando chamadas /api/employees/undefined.
+A correção recupera o ID da rota ativa como fallback e bloqueia chamadas com ID inválido.
+
+Segurança:
+O serviço apiRequest continua sendo usado, para anexar o token hr_api_token. Não foi alterada a autenticação do backend nem as migrações SQL.
+O pacote não inclui server/.env, node_modules ou dist.
+
+Aplicação:
+1. Faça backup da pasta do projeto.
+2. Extraia o ZIP sobre a raiz do projeto, preservando pastas.
+3. NÃO apague dados nem execute novamente migrações SQL.
+4. Reinicie o frontend e a API.
+5. Se o navegador estiver com sessão antiga, saia e entre novamente pela tela de login.
+6. Busque o funcionário e abra o perfil. Confirme se a URL contém o ID UUID real, e não "undefined".
+7. Caso ainda apareça 401, entre novamente e confira se a sessão API foi renovada. Não compartilhe tokens.
