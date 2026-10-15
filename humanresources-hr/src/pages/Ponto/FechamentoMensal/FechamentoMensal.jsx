@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { apiRequest } from '../../../services/api'
+import { getApiUser } from '../../../services/api'
 
 import './fechamentoMensal.css'
-
-import { getEmployees } from '../../../services/employee'
-import useOrganizationCache from '../../../Hooks/useOrganizationCache'
 
 import {
   calculateTimeClockPeriod,
@@ -73,11 +72,15 @@ function getCompetenceDates(competence) {
  */
 
 export default function FechamentoMensal() {
-  const [employees] = useState(() =>
-    getEmployees().filter((employee) => employee.active !== false)
-  )
-
-  const [branches] = useOrganizationCache('branches', (items) => items.filter((branch) => branch.active !== false))
+  const [employees, setEmployees] = useState([])
+  const [branches, setBranches] = useState([])
+  const [timeClockRecords, setTimeClockRecords] = useState([])
+  const [scheduleData, setScheduleData] = useState({
+    workSchedules: [],
+    employeeWorkSchedules: []
+  })
+  const [loadingData, setLoadingData] = useState(true)
+  const [dataError, setDataError] = useState('')
 
   const [selectedCompetence, setSelectedCompetence] = useState(
     getCurrentCompetence()
@@ -108,6 +111,38 @@ export default function FechamentoMensal() {
 
   const endDate = competenceDates?.endDate || ''
 
+  useEffect(() => {
+    if (!startDate || !endDate) return undefined
+    let cancelled = false
+
+    async function loadClosingData() {
+      setLoadingData(true)
+      setDataError('')
+      try {
+        const params = new URLSearchParams({ startDate, endDate })
+        const response = await apiRequest(`/me/timekeeping/closing-data?${params.toString()}`)
+        if (cancelled) return
+        setEmployees((response.employees || []).filter((employee) => employee.active !== false))
+        setBranches((response.branches || []).filter((branch) => branch.active !== false))
+        setTimeClockRecords(response.records || [])
+        setScheduleData(response.scheduleData || { workSchedules: [], employeeWorkSchedules: [] })
+      } catch (error) {
+        if (!cancelled) {
+          setDataError(error?.message || 'Não foi possível carregar os dados do fechamento pelo PostgreSQL.')
+          setEmployees([])
+          setBranches([])
+          setTimeClockRecords([])
+          setScheduleData({ workSchedules: [], employeeWorkSchedules: [] })
+        }
+      } finally {
+        if (!cancelled) setLoadingData(false)
+      }
+    }
+
+    loadClosingData()
+    return () => { cancelled = true }
+  }, [startDate, endDate])
+
   /*
    * ============================================================
    * FUNCIONÁRIOS FILTRADOS
@@ -120,7 +155,7 @@ export default function FechamentoMensal() {
         return true
       }
 
-      return Number(employee.branchId) === Number(selectedBranchId)
+      return String(employee.branchId) === String(selectedBranchId)
     })
   }, [employees, selectedBranchId])
 
@@ -137,7 +172,7 @@ export default function FechamentoMensal() {
 
     const employeesToCalculate = selectedEmployeeId
       ? employees.filter(
-          (employee) => Number(employee.id) === Number(selectedEmployeeId)
+          (employee) => String(employee.id) === String(selectedEmployeeId)
         )
       : filteredEmployees
 
@@ -145,7 +180,12 @@ export default function FechamentoMensal() {
       const period = calculateTimeClockPeriod(
         employee.id,
         parseDate(startDate),
-        parseDate(endDate)
+        parseDate(endDate),
+        {
+          employee,
+          records: timeClockRecords,
+          scheduleData
+        }
       )
 
       const expectedMinutes = Number(period?.totals?.expectedMinutes || 0)
@@ -179,7 +219,7 @@ export default function FechamentoMensal() {
         }).length || 0
 
       const branch = branches.find(
-        (item) => Number(item.id) === Number(employee.branchId)
+        (item) => String(item.id) === String(employee.branchId)
       )
 
       return {
@@ -201,7 +241,9 @@ export default function FechamentoMensal() {
     selectedEmployeeId,
     startDate,
     endDate,
-    branches
+    branches,
+    timeClockRecords,
+    scheduleData
   ])
 
   /*
@@ -254,6 +296,7 @@ export default function FechamentoMensal() {
   }
 
   function handleInitializeClosing() {
+    if (loadingData || dataError) return
     const newClosing = createMonthlyClosing(selectedCompetence)
 
     setClosing(newClosing)
@@ -266,6 +309,7 @@ export default function FechamentoMensal() {
    */
 
   function handleStartReview() {
+    if (loadingData || dataError) return
     const existingClosing =
       getMonthlyClosing(selectedCompetence) ||
       createMonthlyClosing(selectedCompetence)
@@ -288,12 +332,11 @@ export default function FechamentoMensal() {
       )}? Após o fechamento, o período será considerado encerrado.`
     )
 
-    if (!confirmed) {
+    if (!confirmed || loadingData || dataError) {
       return
     }
 
-    const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || 'null')
-
+    const loggedUser = getApiUser()
     const closedBy = loggedUser?.name || loggedUser?.username || 'Usuário'
 
     const existingClosing =
@@ -316,7 +359,7 @@ export default function FechamentoMensal() {
       `Deseja reabrir a competência ${formatCompetence(selectedCompetence)}?`
     )
 
-    if (!confirmed) {
+    if (!confirmed || loadingData || dataError) {
       return
     }
 
@@ -359,6 +402,14 @@ export default function FechamentoMensal() {
           </p>
         </div>
       </header>
+
+      {dataError && (
+        <div className="fechamento-mensal-error" role="alert">
+          <p>{dataError}</p>
+          <button type="button" onClick={() => window.location.reload()}>Tentar novamente</button>
+        </div>
+      )}
+      {loadingData && <p role="status">Carregando dados da competência no PostgreSQL...</p>}
 
       {/* ======================================================
           COMPETÊNCIA E FILTROS

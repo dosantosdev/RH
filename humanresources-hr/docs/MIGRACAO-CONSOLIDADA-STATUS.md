@@ -1,3 +1,10 @@
+## Etapa mais recente — Fechamento Mensal via API
+
+- Dados de funcionários, filiais, marcações e jornadas agora são carregados pela rota autenticada `/api/me/timekeeping/closing-data`.
+- A rota exige `ponto_fechamento_view` e limita os dados à empresa autenticada.
+- O fechamento continua usando a persistência compatível existente; validar criação, revisão, fechamento e reabertura com PostgreSQL real.
+- Detalhes: `MIGRACAO-FECHAMENTO-MENSAL-API-POSTGRES.md`.
+
 ## Etapa mais recente — persistência administrativa de Avaliações
 
 - Modelos de avaliação e criação de workflows agora aguardam a confirmação das gravações na API PostgreSQL.
