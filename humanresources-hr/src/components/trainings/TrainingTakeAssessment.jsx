@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react'
+import { apiRequest } from '../../services/api'
 
 import { getTrainingAssessments } from '../../services/trainingAssessment'
-
-import {
-  addAssessmentAttempt,
-  getTrainingParticipants
-} from '../../services/trainingParticipant'
 
 import TrainingCertificate from './TrainingCertificate'
 
@@ -44,6 +40,8 @@ export default function TrainingTakeAssessment({
   const [certificateParticipant, setCertificateParticipant] = useState(null)
 
   const [showCertificate, setShowCertificate] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState('')
 
   useEffect(() => {
     const assessments = getTrainingAssessments()
@@ -113,169 +111,66 @@ export default function TrainingTakeAssessment({
     return Math.max(...scores)
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e?.preventDefault()
-
-    if (!assessment) {
-      return
-    }
+    if (!assessment || submitting) return
 
     const questions = assessment.questions || []
-
-    if (questions.length === 0) {
+    if (!questions.length) {
       alert('Esta avaliação ainda não possui perguntas.')
-
       return
     }
 
-    /*
-     * Verifica se alguma pergunta está sem alternativas.
-     *
-     * Se aparecer este aviso, significa que a pergunta
-     * precisa ser corrigida no cadastro da avaliação.
-     */
     const invalidQuestions = questions.filter(
       (question) =>
         !Array.isArray(question.alternatives) ||
         question.alternatives.length < 4 ||
-        question.alternatives.some(
-          (alternative) => !String(alternative || '').trim()
-        )
+        question.alternatives.some((alternative) => !String(alternative || '').trim())
     )
-
     if (invalidQuestions.length > 0) {
-      alert(
-        'Esta avaliação possui uma ou mais perguntas sem as quatro alternativas preenchidas. Volte ao cadastro da avaliação, clique em "Editar" e preencha as alternativas A, B, C e D.'
-      )
-
+      alert('Esta avaliação possui perguntas sem as quatro alternativas preenchidas. Volte ao cadastro da avaliação e corrija as alternativas.')
       return
     }
 
-    const attempts = Array.isArray(participant.attempts)
-      ? participant.attempts
-      : []
-
+    const attempts = Array.isArray(participant.attempts) ? participant.attempts : []
     const attemptLimit = getAttemptLimit()
-
     if (attempts.length >= attemptLimit) {
-      alert(
-        attemptLimit === 1
-          ? 'Este participante já realizou esta avaliação e uma nova tentativa não está permitida.'
-          : 'O número máximo de tentativas desta avaliação já foi atingido.'
-      )
-
+      alert(attemptLimit === 1
+        ? 'Este participante já realizou esta avaliação e uma nova tentativa não está permitida.'
+        : 'O número máximo de tentativas desta avaliação já foi atingido.')
       return
     }
 
-    const unansweredQuestions = questions.filter(
-      (question) => answers[question.id] === undefined
-    )
-
+    const unansweredQuestions = questions.filter((question) => answers[question.id] === undefined)
     if (unansweredQuestions.length > 0) {
       alert('Responda todas as perguntas antes de enviar a avaliação.')
-
       return
     }
 
-    let earnedPoints = 0
-
-    let totalPoints = 0
-
-    questions.forEach((question) => {
-      const points = Number(question.points) || 0
-
-      totalPoints += points
-
-      if (answers[question.id] === Number(question.correctAnswer)) {
-        earnedPoints += points
+    setSubmitting(true)
+    setSubmitError('')
+    try {
+      // O servidor calcula a nota usando o gabarito do banco; o cliente envia somente respostas.
+      const response = await apiRequest('/me/training-attempt', {
+        method: 'POST',
+        body: JSON.stringify({
+          participantId: participant.id,
+          answers
+        })
+      })
+      const resultFromServer = response?.result
+      const updatedParticipant = response?.participant
+      if (!resultFromServer || !updatedParticipant) {
+        throw new Error('O servidor não retornou o resultado da avaliação.')
       }
-    })
 
-    const score =
-      totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0
-
-    const minimumScore = Number(assessment.minimumScore) || 0
-
-    const previousBestScore = getBestScore()
-
-    const bestScore =
-      previousBestScore === null ? score : Math.max(previousBestScore, score)
-
-    const approved = bestScore >= minimumScore
-
-    const attempt = {
-      id: Date.now(),
-
-      startedAt: new Date().toISOString(),
-
-      completedAt: new Date().toISOString(),
-
-      answers,
-
-      earnedPoints,
-
-      totalPoints,
-
-      score,
-
-      bestScore,
-
-      minimumScore,
-
-      approved
-    }
-
-    addAssessmentAttempt(participant.id, attempt, {
-      minimumScore,
-
-      allowRetake: assessment.allowRetake !== false,
-
-      unlimitedAttempts: assessment.unlimitedAttempts === true,
-
-      maxAttempts: assessment.maxAttempts
-    })
-
-    const nextAttemptCount = attempts.length + 1
-
-    setResult({
-      score,
-
-      bestScore,
-
-      minimumScore,
-
-      approved,
-
-      earnedPoints,
-
-      totalPoints,
-
-      attemptNumber: nextAttemptCount,
-
-      attemptLimit
-    })
-
-    /*
-     * IMPORTANTE:
-     *
-     * Não fechamos a avaliação aqui.
-     *
-     * O resultado permanece na tela.
-     */
-    if (onComplete) {
-      onComplete(attempt)
-    }
-
-    if (approved) {
-      const updatedParticipants = getTrainingParticipants()
-
-      const updatedParticipant = updatedParticipants.find(
-        (item) => item.id === participant.id
-      )
-
-      if (updatedParticipant) {
-        setCertificateParticipant(updatedParticipant)
-      }
+      setResult(resultFromServer)
+      if (onComplete) onComplete(response.attempt, updatedParticipant)
+      if (resultFromServer.approved) setCertificateParticipant(updatedParticipant)
+    } catch (error) {
+      setSubmitError(error?.message || 'Não foi possível registrar a tentativa no servidor.')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -504,6 +399,11 @@ export default function TrainingTakeAssessment({
   return (
     <div className="training-modal-overlay">
       <div className="training-content-modal training-assessment-modal">
+        {submitError && (
+          <div className="training-assessment-empty-screen" role="alert">
+            <p>{submitError}</p>
+          </div>
+        )}
         <div className="training-modal-header">
           <div>
             <span className="training-progress-kicker">AVALIAÇÃO</span>
@@ -604,8 +504,9 @@ export default function TrainingTakeAssessment({
             type="button"
             className="training-primary-button"
             onClick={handleSubmit}
+            disabled={submitting}
           >
-            Enviar avaliação
+            {submitting ? 'Salvando resultado...' : 'Enviar avaliação'}
           </button>
         </div>
       </div>

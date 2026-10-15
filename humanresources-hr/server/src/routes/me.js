@@ -987,4 +987,317 @@ router.get('/training-data', async (req, res, next) => {
 })
 
 
+
+/*
+ * Persistência do portal Meus Treinamentos.
+ *
+ * Os registros legados continuam no app_records, mas as alterações passam
+ * pelo servidor e são limitadas ao funcionário autenticado. O navegador não
+ * pode enviar nota, aprovação ou percentual como valores confiáveis.
+ */
+async function getTrainingEmployeeAliases(client, req) {
+  if (!req.user?.employeeId) return new Set()
+  const result = await client.query(
+    `SELECT id, registration_data
+     FROM employees
+     WHERE id = $1 AND company_id = $2`,
+    [req.user.employeeId, req.user.companyId]
+  )
+  if (!result.rowCount) return new Set()
+  const employee = result.rows[0]
+  const data = employee.registration_data || {}
+  return new Set([
+    employee.id,
+    data.legacyId,
+    data.legacy_id,
+    data.id
+  ].filter((value) => value !== undefined && value !== null).map(String))
+}
+
+async function readTrainingArray(client, companyId, recordKey, lock = false) {
+  const result = await client.query(
+    `SELECT payload
+     FROM app_records
+     WHERE company_id = $1 AND module_key = 'trainings' AND record_key = $2
+     ${lock ? 'FOR UPDATE' : ''}`,
+    [companyId, recordKey]
+  )
+  return result.rowCount && Array.isArray(result.rows[0].payload)
+    ? result.rows[0].payload
+    : []
+}
+
+async function saveTrainingArray(client, req, recordKey, payload) {
+  await client.query(
+    `INSERT INTO app_records
+       (company_id, module_key, record_key, payload, created_by, updated_by)
+     VALUES ($1, 'trainings', $2, $3::jsonb, $4, $4)
+     ON CONFLICT (company_id, module_key, record_key)
+     DO UPDATE SET payload = EXCLUDED.payload,
+                   updated_by = EXCLUDED.updated_by,
+                   updated_at = NOW()`,
+    [req.user.companyId, recordKey, JSON.stringify(payload), req.user.userId || null]
+  )
+}
+
+function participantBelongsToEmployee(participant, aliases) {
+  return aliases.has(String(participant?.employeeId))
+}
+
+function getParticipantIndex(participants, participantId, aliases) {
+  return participants.findIndex((participant) =>
+    String(participant.id) === String(participantId) &&
+    participantBelongsToEmployee(participant, aliases)
+  )
+}
+
+router.patch('/training-progress', async (req, res, next) => {
+  const participantId = req.body?.participantId
+  const completedContents = req.body?.completedContents
+  if (participantId === undefined || !Array.isArray(completedContents)) {
+    return res.status(400).json({ message: 'Informe a participação e a lista de conteúdos concluídos.' })
+  }
+  if (completedContents.length > 1000) {
+    return res.status(400).json({ message: 'A lista de conteúdos excede o limite permitido.' })
+  }
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    const aliases = await getTrainingEmployeeAliases(client, req)
+    if (!aliases.size) {
+      await client.query('ROLLBACK')
+      return res.status(403).json({ message: 'Não existe funcionário vinculado à sessão.' })
+    }
+
+    const participants = await readTrainingArray(client, req.user.companyId, 'trainingParticipants', true)
+    const participantIndex = getParticipantIndex(participants, participantId, aliases)
+    if (participantIndex < 0) {
+      await client.query('ROLLBACK')
+      return res.status(404).json({ message: 'Participação não encontrada para o funcionário autenticado.' })
+    }
+
+    const participant = participants[participantIndex]
+    const trainings = await readTrainingArray(client, req.user.companyId, 'trainings')
+    const training = trainings.find((item) => String(item.id) === String(participant.trainingId))
+    if (!training) {
+      await client.query('ROLLBACK')
+      return res.status(404).json({ message: 'Treinamento relacionado não encontrado.' })
+    }
+
+    const validContentIds = new Set((Array.isArray(training.contents) ? training.contents : [])
+      .map((content) => String(content.id)))
+    const requestedIds = [...new Set(completedContents.map(String))]
+    if (requestedIds.some((id) => !validContentIds.has(id))) {
+      await client.query('ROLLBACK')
+      return res.status(400).json({ message: 'A lista contém conteúdos que não pertencem a este treinamento.' })
+    }
+
+    const progress = validContentIds.size
+      ? Math.round((requestedIds.length / validContentIds.size) * 100)
+      : 0
+    const assessmentStatus = participant.assessmentStatus || null
+    const status = assessmentStatus === 'failed'
+      ? 'failed'
+      : progress > 0 ? 'in_progress' : 'pending'
+    const updatedParticipant = {
+      ...participant,
+      completedContents: requestedIds,
+      progress,
+      status,
+      completedAt: status === 'completed' ? participant.completedAt || new Date().toISOString() : null
+    }
+    participants[participantIndex] = updatedParticipant
+    await saveTrainingArray(client, req, 'trainingParticipants', participants)
+    await client.query('COMMIT')
+    return res.json({ participant: updatedParticipant })
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {})
+    return next(error)
+  } finally {
+    client.release()
+  }
+})
+
+router.post('/training-attempt', async (req, res, next) => {
+  const participantId = req.body?.participantId
+  const submittedAnswers = req.body?.answers
+  if (participantId === undefined || !submittedAnswers || typeof submittedAnswers !== 'object' || Array.isArray(submittedAnswers)) {
+    return res.status(400).json({ message: 'Informe a participação e as respostas da avaliação.' })
+  }
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    const aliases = await getTrainingEmployeeAliases(client, req)
+    if (!aliases.size) {
+      await client.query('ROLLBACK')
+      return res.status(403).json({ message: 'Não existe funcionário vinculado à sessão.' })
+    }
+
+    const participants = await readTrainingArray(client, req.user.companyId, 'trainingParticipants', true)
+    const participantIndex = getParticipantIndex(participants, participantId, aliases)
+    if (participantIndex < 0) {
+      await client.query('ROLLBACK')
+      return res.status(404).json({ message: 'Participação não encontrada para o funcionário autenticado.' })
+    }
+    const participant = participants[participantIndex]
+    const assessments = await readTrainingArray(client, req.user.companyId, 'trainingAssessments')
+    const assessment = assessments.find((item) => String(item.trainingId) === String(participant.trainingId))
+    if (!assessment) {
+      await client.query('ROLLBACK')
+      return res.status(404).json({ message: 'Avaliação deste treinamento não encontrada.' })
+    }
+
+    const questions = Array.isArray(assessment.questions) ? assessment.questions : []
+    if (!questions.length) {
+      await client.query('ROLLBACK')
+      return res.status(400).json({ message: 'Esta avaliação ainda não possui perguntas.' })
+    }
+    const invalidQuestions = questions.filter((question) =>
+      !Array.isArray(question.alternatives) ||
+      question.alternatives.length < 4 ||
+      question.alternatives.some((alternative) => !String(alternative || '').trim())
+    )
+    if (invalidQuestions.length) {
+      await client.query('ROLLBACK')
+      return res.status(400).json({ message: 'A avaliação contém perguntas sem quatro alternativas válidas.' })
+    }
+
+    const attempts = Array.isArray(participant.attempts) ? participant.attempts : []
+    let attemptLimit = 1
+    if (assessment.allowRetake !== false) {
+      if (assessment.unlimitedAttempts === true) attemptLimit = Infinity
+      else {
+        const configuredLimit = Number(assessment.maxAttempts)
+        attemptLimit = configuredLimit >= 2 ? Math.floor(configuredLimit) : 1
+      }
+    }
+    if (attempts.length >= attemptLimit) {
+      await client.query('ROLLBACK')
+      return res.status(409).json({ message: 'O limite de tentativas desta avaliação foi atingido.' })
+    }
+
+    const unanswered = questions.filter((question) =>
+      submittedAnswers[question.id] === undefined ||
+      !Number.isInteger(Number(submittedAnswers[question.id])) ||
+      Number(submittedAnswers[question.id]) < 0 ||
+      Number(submittedAnswers[question.id]) >= question.alternatives.length
+    )
+    if (unanswered.length) {
+      await client.query('ROLLBACK')
+      return res.status(400).json({ message: 'Responda todas as perguntas com uma alternativa válida.' })
+    }
+
+    let earnedPoints = 0
+    let totalPoints = 0
+    for (const question of questions) {
+      const points = Math.max(0, Number(question.points) || 1)
+      totalPoints += points
+      if (Number(submittedAnswers[question.id]) === Number(question.correctAnswer)) earnedPoints += points
+    }
+    const score = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0
+    const minimumScore = Math.max(0, Number(assessment.minimumScore) || 0)
+    const priorScores = attempts.map((attempt) => Number(attempt.score)).filter(Number.isFinite)
+    const existingBest = Number.isFinite(Number(participant.bestScore))
+      ? Number(participant.bestScore)
+      : Number.isFinite(Number(participant.score)) ? Number(participant.score) : null
+    const bestScore = Math.max(score, ...(existingBest === null ? [] : [existingBest]), ...priorScores)
+    const approved = bestScore >= minimumScore
+    const now = new Date().toISOString()
+    const attempt = {
+      id: Date.now(),
+      startedAt: now,
+      completedAt: now,
+      answers: submittedAnswers,
+      earnedPoints,
+      totalPoints,
+      score,
+      bestScore,
+      minimumScore,
+      approved
+    }
+    const assessmentStatus = approved ? 'approved' : 'failed'
+    const updatedParticipant = {
+      ...participant,
+      attempts: [...attempts, attempt],
+      score: bestScore,
+      bestScore,
+      assessmentStatus,
+      status: assessmentStatus === 'failed' ? 'failed' : Number(participant.progress) > 0 ? 'in_progress' : 'pending',
+      completedAt: null
+    }
+    participants[participantIndex] = updatedParticipant
+    await saveTrainingArray(client, req, 'trainingParticipants', participants)
+    await client.query('COMMIT')
+    return res.json({
+      attempt,
+      participant: updatedParticipant,
+      result: {
+        score,
+        bestScore,
+        minimumScore,
+        approved,
+        earnedPoints,
+        totalPoints,
+        attemptNumber: attempts.length + 1,
+        attemptLimit: Number.isFinite(attemptLimit) ? attemptLimit : null
+      }
+    })
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {})
+    return next(error)
+  } finally {
+    client.release()
+  }
+})
+
+router.post('/training-complete', async (req, res, next) => {
+  const participantId = req.body?.participantId
+  if (participantId === undefined) {
+    return res.status(400).json({ message: 'Informe a participação do treinamento.' })
+  }
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    const aliases = await getTrainingEmployeeAliases(client, req)
+    if (!aliases.size) {
+      await client.query('ROLLBACK')
+      return res.status(403).json({ message: 'Não existe funcionário vinculado à sessão.' })
+    }
+    const participants = await readTrainingArray(client, req.user.companyId, 'trainingParticipants', true)
+    const participantIndex = getParticipantIndex(participants, participantId, aliases)
+    if (participantIndex < 0) {
+      await client.query('ROLLBACK')
+      return res.status(404).json({ message: 'Participação não encontrada para o funcionário autenticado.' })
+    }
+    const participant = participants[participantIndex]
+    const trainings = await readTrainingArray(client, req.user.companyId, 'trainings')
+    const training = trainings.find((item) => String(item.id) === String(participant.trainingId))
+    const contentCount = Array.isArray(training?.contents) ? training.contents.length : 0
+    const completedContents = new Set((participant.completedContents || []).map(String))
+    if (!training || contentCount === 0 || completedContents.size < contentCount ||
+        Number(participant.progress) < 100 || participant.assessmentStatus !== 'approved') {
+      await client.query('ROLLBACK')
+      return res.status(409).json({ message: 'Conclua todos os conteúdos e obtenha aprovação na avaliação antes de finalizar o treinamento.' })
+    }
+    const updatedParticipant = {
+      ...participant,
+      progress: 100,
+      status: 'completed',
+      completedAt: participant.completedAt || new Date().toISOString()
+    }
+    participants[participantIndex] = updatedParticipant
+    await saveTrainingArray(client, req, 'trainingParticipants', participants)
+    await client.query('COMMIT')
+    return res.json({ participant: updatedParticipant })
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {})
+    return next(error)
+  } finally {
+    client.release()
+  }
+})
+
+
 export default router

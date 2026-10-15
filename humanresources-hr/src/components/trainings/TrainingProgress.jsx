@@ -1,10 +1,5 @@
 import { useEffect, useState } from 'react'
-
-import {
-  updateParticipantProgress,
-  getTrainingParticipants,
-  completeParticipantTraining
-} from '../../services/trainingParticipant'
+import { apiRequest } from '../../services/api'
 
 import TrainingCertificate from './TrainingCertificate'
 import TrainingTakeAssessment from './TrainingTakeAssessment'
@@ -15,6 +10,8 @@ export default function TrainingProgress({ training, participant, onClose }) {
   const [showCertificate, setShowCertificate] = useState(false)
 
   const [showAssessment, setShowAssessment] = useState(false)
+  const [savingProgress, setSavingProgress] = useState(false)
+  const [progressError, setProgressError] = useState('')
 
   const contents = [...(training.contents || [])].sort(
     (a, b) => (a.order || 0) - (b.order || 0)
@@ -55,48 +52,38 @@ export default function TrainingProgress({ training, participant, onClose }) {
     return 'pending'
   }
 
-  function refreshParticipant() {
-    const participants = getTrainingParticipants()
-
-    const savedParticipant = participants.find(
-      (item) => item.id === currentParticipant.id
-    )
-
-    if (savedParticipant) {
-      setCurrentParticipant(savedParticipant)
+  function refreshParticipant(updatedParticipant) {
+    if (updatedParticipant) {
+      setCurrentParticipant(updatedParticipant)
+      return updatedParticipant
     }
-
-    return savedParticipant || currentParticipant
+    return currentParticipant
   }
 
-  function toggleContent(contentId) {
+  async function toggleContent(contentId) {
+    if (savingProgress) return
+    setSavingProgress(true)
+    setProgressError('')
     const currentCompleted = currentParticipant.completedContents || []
-
-    const isCompleted = currentCompleted.includes(contentId)
-
+    const isCompleted = currentCompleted.some((id) => String(id) === String(contentId))
     const updatedCompleted = isCompleted
-      ? currentCompleted.filter((id) => id !== contentId)
+      ? currentCompleted.filter((id) => String(id) !== String(contentId))
       : [...currentCompleted, contentId]
 
-    const progress = calculateProgress(updatedCompleted)
-
-    const updatedParticipants = updateParticipantProgress(
-      currentParticipant.id,
-      progress,
-      updatedCompleted
-    )
-
-    const savedParticipant = updatedParticipants.find(
-      (item) => item.id === currentParticipant.id
-    )
-
-    setCurrentParticipant(
-      savedParticipant || {
-        ...currentParticipant,
-        completedContents: updatedCompleted,
-        progress
-      }
-    )
+    try {
+      const response = await apiRequest('/me/training-progress', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          participantId: currentParticipant.id,
+          completedContents: updatedCompleted
+        })
+      })
+      refreshParticipant(response?.participant)
+    } catch (error) {
+      setProgressError(error?.message || 'Não foi possível salvar o progresso no servidor.')
+    } finally {
+      setSavingProgress(false)
+    }
   }
 
   /*
@@ -105,18 +92,9 @@ export default function TrainingProgress({ training, participant, onClose }) {
    * ============================================================
    */
 
-  function handleAssessmentComplete() {
-    /*
-     * Não fechamos a avaliação aqui.
-     *
-     * O resultado precisa continuar aparecendo dentro do modal.
-     *
-     * Apenas atualizamos os dados do participante no estado do
-     * treinamento.
-     */
-    const updatedParticipant = refreshParticipant()
-
-    setCurrentParticipant(updatedParticipant)
+  function handleAssessmentComplete(attempt, updatedParticipant) {
+    // O participante só é atualizado com o retorno confirmado pela API.
+    if (updatedParticipant) setCurrentParticipant(updatedParticipant)
   }
 
   /*
@@ -136,26 +114,21 @@ export default function TrainingProgress({ training, participant, onClose }) {
    * - avaliação aprovada.
    */
 
-  function handleAssessmentApproved() {
-    const updatedParticipants = completeParticipantTraining(
-      currentParticipant.id
-    )
-
-    const updatedParticipant = updatedParticipants.find(
-      (item) => item.id === currentParticipant.id
-    )
-
-    if (!updatedParticipant || updatedParticipant.status !== 'completed') {
-      alert(
-        'O treinamento ainda não pode ser concluído. Verifique se todos os conteúdos foram concluídos e se a avaliação foi aprovada.'
-      )
-
-      return
+  async function handleAssessmentApproved() {
+    setProgressError('')
+    try {
+      const response = await apiRequest('/me/training-complete', {
+        method: 'POST',
+        body: JSON.stringify({ participantId: currentParticipant.id })
+      })
+      if (!response?.participant || response.participant.status !== 'completed') {
+        throw new Error('O servidor não confirmou a conclusão do treinamento.')
+      }
+      setCurrentParticipant(response.participant)
+      setShowAssessment(false)
+    } catch (error) {
+      setProgressError(error?.message || 'Não foi possível concluir o treinamento.')
     }
-
-    setCurrentParticipant(updatedParticipant)
-
-    setShowAssessment(false)
   }
 
   /*
@@ -305,6 +278,14 @@ export default function TrainingProgress({ training, participant, onClose }) {
           </button>
         </div>
 
+        {progressError && (
+          <div className="training-assessment-empty-screen" role="alert">
+            <p>{progressError}</p>
+          </div>
+        )}
+
+        {savingProgress && <p role="status">Salvando progresso...</p>}
+
         <div className="training-progress-summary">
           <div className="training-progress-summary-info">
             <div>
@@ -376,7 +357,7 @@ export default function TrainingProgress({ training, participant, onClose }) {
           ) : (
             <div className="training-progress-content-list">
               {contents.map((content, index) => {
-                const isCompleted = completedContents.includes(content.id)
+                const isCompleted = completedContents.some((id) => String(id) === String(content.id))
 
                 return (
                   <div
@@ -414,6 +395,7 @@ export default function TrainingProgress({ training, participant, onClose }) {
                           type="checkbox"
                           checked={isCompleted}
                           onChange={() => toggleContent(content.id)}
+                          disabled={savingProgress}
                         />
 
                         <span>

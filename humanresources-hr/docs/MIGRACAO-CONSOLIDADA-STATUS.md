@@ -1,3 +1,10 @@
+## Etapa mais recente — persistência de Meus Treinamentos
+
+- Progresso, tentativas e conclusão agora são enviados à API autenticada e persistidos no PostgreSQL.
+- O servidor calcula a nota e a aprovação usando o gabarito do banco e verifica a participação do funcionário.
+- Certificados e cadastro administrativo ainda precisam de migração.
+- Detalhes: `MIGRACAO-MEUS-TREINAMENTOS-PERSISTENCIA-API.md`.
+
 ## Etapa mais recente — portal Meus Treinamentos
 
 - A consulta inicial do portal passou a usar `GET /api/me/training-data`.
