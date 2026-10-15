@@ -15,6 +15,7 @@ import organizationRoutes from './routes/organization.js'
 import chatRoutes from './routes/chat.js'
 import appRecordRoutes from './routes/appRecords.js'
 import positionRoutes from './routes/positions.js'
+import { adminRouter as recruitmentLinkRoutes, publicRouter as publicRecruitmentRoutes } from './routes/recruitmentApplicationLinks.js'
 import { pool } from './db/pool.js'
 
 const app = express()
@@ -26,7 +27,7 @@ app.use(cors({
     ? process.env.CORS_ORIGIN.split(',').map((value) => value.trim())
     : true
 }))
-app.use(express.json({ limit: '2mb' }))
+app.use(express.json({ limit: '10mb' }))
 
 app.get('/', (_req, res) => {
   res.json({
@@ -37,6 +38,7 @@ app.get('/', (_req, res) => {
 })
 
 app.use('/api/health', healthRoutes)
+app.use('/api/public/recruitment', publicRecruitmentRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/access-roles', accessRoleRoutes)
@@ -49,6 +51,7 @@ app.use('/api/employee-requests', requestRoutes)
 app.use('/api/me', meRoutes)
 app.use('/api/chat', chatRoutes)
 app.use('/api/app-records', appRecordRoutes)
+app.use('/api/recruitment', recruitmentLinkRoutes)
 
 app.use((error, _req, res, _next) => {
   console.error(error)

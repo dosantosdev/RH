@@ -2,12 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
 import { hasPermission } from '../../services/permissions'
+import { apiRequest } from '../../services/api'
 import {
   addCandidate,
   addCandidateStage,
-  createApplicationLink,
-  deleteApplicationLink,
-  getApplicationLinks,
   addInterview,
   addVacancy,
   deleteCandidate,
@@ -22,7 +20,6 @@ import {
   updateCandidateStage,
   updateInterview,
   updateVacancy,
-  revokeApplicationLink
 } from '../../services/recruitment'
 import { getEmployees, addEmployee } from '../../services/employee'
 import { getPositions } from '../../services/position'
@@ -146,7 +143,6 @@ export default function Candidatos() {
     setStages(getCandidateStages())
     setInterviews(getInterviews())
     setPositions(getPositions())
-    setApplicationLinks(getApplicationLinks())
   }
 
   useEffect(() => {
@@ -160,6 +156,24 @@ export default function Candidatos() {
       window.removeEventListener('hr:organization-cache-updated', refreshPositions)
       window.removeEventListener('storage', refreshPositions)
     }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadApplicationLinks() {
+      try {
+        const links = await apiRequest('/recruitment/application-links')
+        if (!cancelled && Array.isArray(links)) setApplicationLinks(links)
+      } catch (error) {
+        if (!cancelled) {
+          showToast(error?.message || 'Não foi possível carregar os links de candidatura.', 'error')
+        }
+      }
+    }
+
+    loadApplicationLinks()
+    return () => { cancelled = true }
   }, [])
 
   function changeTab(nextTab) {
@@ -233,22 +247,24 @@ export default function Candidatos() {
     )
   }
 
-  function handleCreateApplicationLink(vacancyId) {
+  async function handleCreateApplicationLink(vacancyId) {
     if (!hasPermission('recruitment_create')) {
       showToast('Você não tem permissão para gerar links de candidatura.', 'error')
       return
     }
 
     try {
-      const link = createApplicationLink({
-        vacancyId,
-        expiresInHours: Number(linkValidity)
+      const link = await apiRequest('/recruitment/application-links', {
+        method: 'POST',
+        body: JSON.stringify({
+          vacancyId,
+          expiresInHours: Number(linkValidity)
+        })
       })
-
       const publicUrl = `${window.location.origin}/candidatura?token=${encodeURIComponent(link.token)}`
 
       setLinkVacancyId(String(vacancyId))
-      reload()
+      setApplicationLinks((current) => [link, ...current.filter((item) => item.id !== link.id)])
 
       if (navigator.clipboard?.writeText) {
         navigator.clipboard.writeText(publicUrl)
@@ -279,18 +295,24 @@ export default function Candidatos() {
       .catch(() => window.prompt('Copie o link de candidatura:', url))
   }
 
-  function handleRevokeApplicationLink(id) {
+  async function handleRevokeApplicationLink(id) {
     if (!hasPermission('recruitment_edit')) {
       showToast('Você não tem permissão para revogar links.', 'error')
       return
     }
 
-    revokeApplicationLink(id)
-    reload()
-    showToast('Link revogado.', 'success')
+    try {
+      const updated = await apiRequest(`/recruitment/application-links/${encodeURIComponent(id)}/revoke`, {
+        method: 'PATCH'
+      })
+      setApplicationLinks((current) => current.map((item) => item.id === id ? updated : item))
+      showToast('Link revogado.', 'success')
+    } catch (error) {
+      showToast(error?.message || 'Não foi possível revogar o link.', 'error')
+    }
   }
 
-  function handleDeleteApplicationLink(id) {
+  async function handleDeleteApplicationLink(id) {
     if (!hasPermission('recruitment_delete')) {
       showToast('Você não tem permissão para excluir links.', 'error')
       return
@@ -298,9 +320,15 @@ export default function Candidatos() {
 
     if (!window.confirm('Excluir este link de candidatura?')) return
 
-    deleteApplicationLink(id)
-    reload()
-    showToast('Link excluído.', 'success')
+    try {
+      await apiRequest(`/recruitment/application-links/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+      })
+      setApplicationLinks((current) => current.filter((item) => item.id !== id))
+      showToast('Link excluído.', 'success')
+    } catch (error) {
+      showToast(error?.message || 'Não foi possível excluir o link.', 'error')
+    }
   }
 
   function handleVacancySubmit(event) {

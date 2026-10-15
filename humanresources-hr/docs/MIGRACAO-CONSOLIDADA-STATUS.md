@@ -1,3 +1,11 @@
+## Etapa mais recente — links públicos de candidatura
+
+- Criação, listagem, revogação e exclusão dos links usam a API e PostgreSQL.
+- Tokens são validados por hash e mantidos cifrados no banco para cópia por usuários autorizados.
+- A página pública valida o token no servidor e envia a candidatura para a API.
+- Migração SQL: `009_recruitment_application_links.sql`.
+- Detalhes e limitações: `MIGRACAO-LINKS-PUBLICOS-RECRUTAMENTO-POSTGRES.md`.
+
 ## Etapa mais recente — permissões granulares do Ponto
 
 - A API agora autoriza os módulos separados de Banco de Horas, Jornadas e Escalas, Fechamento Mensal e Atestados com suas permissões específicas.

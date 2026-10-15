@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 
-import { addCandidate, getApplicationLinkByToken } from '../../services/recruitment'
+import { apiRequest } from '../../services/api'
 import { initialEmployeeForm } from '../../data/initialEmployeeForm'
 
 import './candidaturaPublica.css'
@@ -113,12 +113,40 @@ function Field({ label, value, onChange, required = false, type = 'text' }) {
 export default function CandidaturaPublica() {
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token') || ''
-  const link = useMemo(() => getApplicationLinkByToken(token), [token])
+  const [link, setLink] = useState(null)
+  const [loadingLink, setLoadingLink] = useState(true)
   const [form, setForm] = useState({ ...initialEmployeeForm })
   const [documents, setDocuments] = useState([])
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadLink() {
+      setLoadingLink(true)
+      try {
+        const result = await apiRequest(`/public/recruitment/applications/${encodeURIComponent(token)}`)
+        if (!cancelled) {
+          setLink({
+            ...result,
+            vacancyId: result.vacancy?.id,
+            vacancyTitle: result.vacancy?.title
+          })
+        }
+      } catch {
+        if (!cancelled) setLink(null)
+      } finally {
+        if (!cancelled) setLoadingLink(false)
+      }
+    }
+
+    if (token) loadLink()
+    else setLoadingLink(false)
+
+    return () => { cancelled = true }
+  }, [token])
 
   function updateField(field, value) {
     setForm((current) => ({ ...current, [field]: value }))
@@ -130,6 +158,15 @@ export default function CandidaturaPublica() {
 
     if (file.size > 2 * 1024 * 1024) {
       setError(`O arquivo de ${type} deve ter no máximo 2 MB.`)
+      event.target.value = ''
+      return
+    }
+
+    const currentBytes = documents
+      .filter((item) => item.type !== type)
+      .reduce((total, item) => total + (Number(item.size) || 0), 0)
+    if (currentBytes + file.size > 5 * 1024 * 1024) {
+      setError('O tamanho total dos documentos não pode ultrapassar 5 MB. Remova um anexo antes de adicionar outro.')
       event.target.value = ''
       return
     }
@@ -153,7 +190,7 @@ export default function CandidaturaPublica() {
     reader.readAsDataURL(file)
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
     if (!link) return
 
@@ -161,7 +198,7 @@ export default function CandidaturaPublica() {
     setError('')
 
     try {
-      addCandidate({
+      const candidate = {
         name: form.name,
         cpf: form.cpf,
         email: form.email,
@@ -170,12 +207,6 @@ export default function CandidaturaPublica() {
         city: form.city,
         state: form.state,
         education: form.education,
-        source: 'Link público de candidatura',
-        vacancyId: link.vacancyId,
-        vacancyTitle: link.vacancy.title,
-        stageId: 1,
-        stageName: 'Inscrição',
-        status: 'em_processo',
         employeeData: {
           ...form,
           active: true,
@@ -184,17 +215,32 @@ export default function CandidaturaPublica() {
         },
         documents,
         publicApplication: true,
-        publicApplicationToken: token,
         submittedAt: new Date().toISOString(),
         notes: 'Cadastro preenchido pelo candidato através de link público.'
-      })
+      }
 
+      await apiRequest(`/public/recruitment/applications/${encodeURIComponent(token)}`, {
+        method: 'POST',
+        body: JSON.stringify({ candidate })
+      })
       setSubmitted(true)
     } catch (submitError) {
       setError(submitError?.message || 'Não foi possível enviar o cadastro.')
     } finally {
       setSaving(false)
     }
+  }
+
+  if (loadingLink) {
+    return (
+      <main className="public-application-page">
+        <section className="public-application-card">
+          <div className="public-brand">RECURSOS HUMANOS</div>
+          <h1>Validando link de candidatura...</h1>
+          <p>Por favor, aguarde enquanto verificamos a validade do link.</p>
+        </section>
+      </main>
+    )
   }
 
   if (!link) {
@@ -327,7 +373,7 @@ export default function CandidaturaPublica() {
 
           <section>
             <h2>Documentos para análise</h2>
-            <p className="public-muted">Envie os documentos disponíveis. Cada arquivo pode ter até 2 MB.</p>
+            <p className="public-muted">Envie os documentos disponíveis. Cada arquivo pode ter até 2 MB, com limite total de 5 MB para os anexos.</p>
             <div className="public-documents-grid">
               {DOCUMENT_TYPES.map((document) => {
                 const selected = documents.find((item) => item.type === document.key)
