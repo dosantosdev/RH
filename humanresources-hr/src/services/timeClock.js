@@ -600,7 +600,7 @@ function formatDate(date) {
  * ============================================================
  */
 
-export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
+export function calculateTimeClockPeriod(employeeId, startDate, endDate, options = {}) {
   if (!employeeId) {
     return {
       employeeId: null,
@@ -625,7 +625,7 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
     start > end
   ) {
     return {
-      employeeId: Number(employeeId),
+      employeeId,
       startDate: null,
       endDate: null,
       days: [],
@@ -633,10 +633,12 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
     }
   }
 
-  const employees = getEmployees()
+  const employees = options.employee
+    ? [options.employee]
+    : getEmployees()
 
   const employee =
-    employees.find((item) => Number(item.id) === Number(employeeId)) || null
+    employees.find((item) => String(item.id) === String(employeeId)) || null
 
   const days = []
 
@@ -647,7 +649,7 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
   /*
    * Identificação da jornada utilizada.
    */
-  const scheduleName = getEmployeeWorkScheduleName(employee)
+  const scheduleName = getEmployeeWorkScheduleName(employee, new Date(), options.scheduleData)
 
   for (let index = 0; index <= totalDays; index += 1) {
     const currentDate = new Date(start)
@@ -656,7 +658,11 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
 
     const date = formatDate(currentDate)
 
-    const record = getTimeClockRecord(employeeId, date)
+    const record = Array.isArray(options.records)
+      ? options.records.find(
+          (item) => String(item.employeeId) === String(employeeId) && String(item.date) === date
+        ) || null
+      : getTimeClockRecord(employeeId, date)
 
     const future = isFutureDate(currentDate)
 
@@ -680,7 +686,7 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
      *
      * Ela é obtida através da configuração do funcionário.
      */
-    const scheduleMinutes = getExpectedMinutesForDate(employee, currentDate)
+    const scheduleMinutes = getExpectedMinutesForDate(employee, currentDate, options.scheduleData)
 
     /*
      * Feriado sempre possui prioridade.
@@ -822,7 +828,7 @@ export function calculateTimeClockPeriod(employeeId, startDate, endDate) {
   }
 
   return {
-    employeeId: Number(employeeId),
+    employeeId,
 
     startDate: formatDate(start),
 

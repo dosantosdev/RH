@@ -657,7 +657,9 @@ export function compareWorkedHours(expectedHours, workedHours) {
  * ============================================================
  */
 
-export function getWorkSchedules() {
+export function getWorkSchedules(providedSchedules = null) {
+  if (Array.isArray(providedSchedules)) return providedSchedules
+
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
 
@@ -747,7 +749,9 @@ export function deleteWorkSchedule(scheduleId) {
  * ============================================================
  */
 
-export function getEmployeeWorkSchedules() {
+export function getEmployeeWorkSchedules(providedAssignments = null) {
+  if (Array.isArray(providedAssignments)) return providedAssignments
+
   try {
     const stored = localStorage.getItem(ASSIGNMENTS_STORAGE_KEY)
 
@@ -814,17 +818,19 @@ export function assignWorkSchedule({
  * ============================================================
  */
 
-export function getEmployeeCurrentWorkSchedule(employeeId, date = new Date()) {
-  const assignments = getEmployeeWorkSchedules()
+export function getEmployeeCurrentWorkSchedule(employeeId, date = new Date(), scheduleData = null) {
+  const assignments = getEmployeeWorkSchedules(scheduleData?.employeeWorkSchedules)
 
-  const schedules = getWorkSchedules()
+  const schedules = getWorkSchedules(scheduleData?.workSchedules)
 
   const targetDate = date instanceof Date ? date : new Date(date)
 
-  const target = targetDate.toISOString().slice(0, 10)
+  // Usa a data local para não deslocar a vigência em fusos negativos
+  // (por exemplo, meia-noite no Brasil convertida para o dia anterior em UTC).
+  const target = `${targetDate.getFullYear()}-${String(targetDate.getMonth() + 1).padStart(2, '0')}-${String(targetDate.getDate()).padStart(2, '0')}`
 
   const employeeAssignments = assignments
-    .filter((item) => Number(item.employeeId) === Number(employeeId))
+    .filter((item) => String(item.employeeId) === String(employeeId))
     .filter((item) => {
       if (item.effectiveFrom && item.effectiveFrom > target) {
         return false
@@ -848,7 +854,7 @@ export function getEmployeeCurrentWorkSchedule(employeeId, date = new Date()) {
 
   return (
     schedules.find(
-      (schedule) => Number(schedule.id) === Number(assignment.scheduleId)
+      (schedule) => String(schedule.id) === String(assignment.scheduleId)
     ) || null
   )
 }
@@ -867,7 +873,7 @@ export function getEmployeeCurrentWorkSchedule(employeeId, date = new Date()) {
  * Primeiro tenta localizar a jornada vigente.
  */
 
-export function getEmployeeWorkScheduleName(employee, date = new Date()) {
+export function getEmployeeWorkScheduleName(employee, date = new Date(), scheduleData = null) {
   if (!employee) {
     return ''
   }
@@ -878,7 +884,7 @@ export function getEmployeeWorkScheduleName(employee, date = new Date()) {
     return ''
   }
 
-  const schedule = getEmployeeCurrentWorkSchedule(employeeId, date)
+  const schedule = getEmployeeCurrentWorkSchedule(employeeId, date, scheduleData)
 
   return schedule?.name || ''
 }
@@ -894,7 +900,7 @@ export function getEmployeeWorkScheduleName(employee, date = new Date()) {
  * que o funcionário deveria cumprir naquele dia.
  */
 
-export function getExpectedMinutesForDate(employee, date = new Date()) {
+export function getExpectedMinutesForDate(employee, date = new Date(), scheduleData = null) {
   if (!employee) {
     return 0
   }
@@ -905,7 +911,7 @@ export function getExpectedMinutesForDate(employee, date = new Date()) {
     return 0
   }
 
-  const schedule = getEmployeeCurrentWorkSchedule(employeeId, date)
+  const schedule = getEmployeeCurrentWorkSchedule(employeeId, date, scheduleData)
 
   if (!schedule) {
     return 0

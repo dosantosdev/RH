@@ -339,6 +339,127 @@ router.post('/timekeeping/punch', async (req, res, next) => {
   }
 })
 
+
+// Espelho do funcionário autenticado. A API devolve somente as marcações
+// e as jornadas necessárias ao período solicitado, sem aceitar employeeId.
+router.get('/timekeeping/period', requirePermission('ponto_espelho_view'), async (req, res, next) => {
+  const startDate = typeof req.query.startDate === 'string' ? req.query.startDate : ''
+  const endDate = typeof req.query.endDate === 'string' ? req.query.endDate : ''
+  const isoDate = /^\d{4}-\d{2}-\d{2}$/
+
+  if (!isoDate.test(startDate) || !isoDate.test(endDate)) {
+    return res.status(400).json({ message: 'Informe datas válidas no formato AAAA-MM-DD.' })
+  }
+
+  const start = new Date(`${startDate}T00:00:00.000Z`)
+  const end = new Date(`${endDate}T00:00:00.000Z`)
+  const days = Math.round((end - start) / 86400000)
+
+  if (!Number.isFinite(days) || days < 0 || days > 366) {
+    return res.status(400).json({ message: 'O período deve ter entre 1 e 367 dias.' })
+  }
+
+  if (!req.user?.employeeId) {
+    return res.status(403).json({ message: 'Esta conta não está vinculada a um funcionário.' })
+  }
+
+  try {
+    const employeeResult = await pool.query(
+      `SELECT e.id, e.name, e.status, e.registration_data,
+              p.name AS position_name
+       FROM employees e
+       LEFT JOIN positions p
+         ON p.id = e.position_id AND p.company_id = e.company_id
+       WHERE e.id = $1 AND e.company_id = $2`,
+      [req.user.employeeId, req.user.companyId]
+    )
+
+    if (!employeeResult.rowCount) {
+      return res.status(404).json({ message: 'Funcionário vinculado não encontrado.' })
+    }
+
+    const employeeRow = employeeResult.rows[0]
+    const registrationData = employeeRow.registration_data || {}
+    const employee = {
+      id: employeeRow.id,
+      name: employeeRow.name || registrationData.name || '',
+      status: employeeRow.status || 'active',
+      position: employeeRow.position_name || registrationData.position || registrationData.jobTitle || '',
+      jobTitle: registrationData.jobTitle || employeeRow.position_name || ''
+    }
+
+    const aliases = new Set([
+      String(employeeRow.id),
+      registrationData.legacyId == null ? '' : String(registrationData.legacyId),
+      registrationData.legacy_id == null ? '' : String(registrationData.legacy_id),
+      registrationData.id == null ? '' : String(registrationData.id)
+    ].filter(Boolean))
+
+    const recordsResult = await pool.query(
+      `SELECT module_key, record_key, payload
+       FROM app_records
+       WHERE company_id = $1
+         AND module_key IN ('timekeeping_clock', 'timekeeping')
+         AND record_key = 'timeClockRecords'
+       ORDER BY CASE WHEN module_key = 'timekeeping_clock' THEN 0 ELSE 1 END`,
+      [req.user.companyId]
+    )
+
+    const recordsByDate = new Map()
+    for (const row of recordsResult.rows) {
+      const items = Array.isArray(row.payload) ? row.payload : []
+      for (const item of items) {
+        const itemDate = String(item?.date || '')
+        if (
+          aliases.has(String(item?.employeeId)) &&
+          itemDate >= startDate &&
+          itemDate <= endDate &&
+          !recordsByDate.has(itemDate)
+        ) {
+          // Normaliza o vínculo para o UUID oficial, sem alterar o registro no banco.
+          recordsByDate.set(itemDate, { ...item, employeeId: employeeRow.id })
+        }
+      }
+    }
+
+    const scheduleResult = await pool.query(
+      `SELECT record_key, payload
+       FROM app_records
+       WHERE company_id = $1
+         AND module_key = 'timekeeping_schedules'
+         AND record_key IN ('workSchedules', 'employeeWorkSchedules')`,
+      [req.user.companyId]
+    )
+
+    const schedulePayloads = Object.fromEntries(
+      scheduleResult.rows.map((row) => [row.record_key, Array.isArray(row.payload) ? row.payload : []])
+    )
+
+    const allAssignments = schedulePayloads.employeeWorkSchedules || []
+    const assignments = allAssignments
+      .filter((item) => aliases.has(String(item?.employeeId)))
+      .map((item) => ({ ...item, employeeId: employeeRow.id }))
+
+    const scheduleIds = new Set(assignments.map((item) => String(item?.scheduleId)))
+    const workSchedules = (schedulePayloads.workSchedules || []).filter((item) =>
+      scheduleIds.has(String(item?.id))
+    )
+
+    return res.json({
+      employee,
+      records: [...recordsByDate.values()],
+      scheduleData: {
+        workSchedules,
+        employeeWorkSchedules: assignments
+      },
+      startDate,
+      endDate
+    })
+  } catch (error) {
+    return next(error)
+  }
+})
+
 router.get('/documents', async (req, res, next) => {
   try {
     if (!req.user.employeeId) return res.json([])

@@ -1,3 +1,10 @@
+## Etapa mais recente — Meu Espelho via API PostgreSQL
+
+- `MeuEspelho.jsx` carrega a identidade autenticada e consulta `GET /api/me/timekeeping/period` para obter as marcações do período e as jornadas atribuídas ao próprio funcionário.
+- O backend deriva o funcionário do token, limita a empresa, valida datas e retorna somente dados vinculados à pessoa autenticada.
+- Os totais são calculados no frontend a partir dos dados recebidos pela API; os cálculos e as regras atuais de feriados foram preservados.
+- Detalhes e cenários de teste: `MIGRACAO-MEU-ESPELHO-API-POSTGRES.md`.
+
 ## Etapa mais recente — Bater Ponto via API PostgreSQL
 
 - A tela Bater Ponto carrega o funcionário vinculado e a marcação do dia por `GET /api/me/timekeeping/today`.

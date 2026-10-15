@@ -4,7 +4,7 @@ import './meuEspelho.css'
 
 import { hasPermission } from '../../../services/permissions'
 
-import { getEmployees } from '../../../services/employee'
+import { apiRequest } from '../../../services/api'
 
 import {
   calculateTimeClockPeriod,
@@ -51,100 +51,111 @@ export default function MeuEspelho() {
    */
 
   useEffect(() => {
+    let active = true
+
+    async function loadEmployee() {
+      setLoading(true)
+      try {
+        const result = await apiRequest('/me')
+        const apiUser = result?.user
+
+        if (!active) return
+
+        setCurrentUser({
+          ...apiUser,
+          employeeId: apiUser?.employee_id || null,
+          permissions: result.permissions || [],
+          isAdmin: Boolean(result.isAdmin)
+        })
+      } catch (error) {
+        if (!active) return
+        setCurrentUser(null)
+        setEmployee(null)
+        setPeriodError(error.message || 'Não foi possível carregar o usuário autenticado.')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
     loadEmployee()
+    return () => {
+      active = false
+    }
   }, [])
 
   /*
    * ============================================================
-   * ATUALIZA O ESPELHO
+   * ATUALIZA O ESPELHO PELA API
    * ============================================================
    */
 
   useEffect(() => {
-    if (!employee?.id) {
+    if (!currentUser?.employeeId || !startDate || !endDate) {
+      setEmployee(null)
       setPeriod(null)
-
       return
     }
 
-    loadPeriod(employee.id, startDate, endDate)
-  }, [employee, startDate, endDate])
+    const parsedStart = parseDate(startDate)
+    const parsedEnd = parseDate(endDate)
 
-  /*
-   * ============================================================
-   * CARREGA FUNCIONÁRIO VINCULADO
-   * ============================================================
-   */
-
-  function loadEmployee() {
-    setLoading(true)
-
-    try {
-      const loggedUser = JSON.parse(localStorage.getItem('loggedUser'))
-
-      setCurrentUser(loggedUser)
-
-      if (!loggedUser?.employeeId) {
-        setEmployee(null)
-
-        return
-      }
-
-      const employees = getEmployees()
-
-      const linkedEmployee = employees.find(
-        (item) => Number(item.id) === Number(loggedUser.employeeId)
-      )
-
-      setEmployee(linkedEmployee || null)
-    } finally {
+    if (!parsedStart || !parsedEnd || parsedStart > parsedEnd) {
+      setPeriod(null)
+      setPeriodError('Informe um período válido. A data inicial não pode ser posterior à data final.')
       setLoading(false)
-    }
-  }
-
-  /*
-   * ============================================================
-   * CARREGA PERÍODO
-   * ============================================================
-   */
-
-  function loadPeriod(employeeId, periodStart, periodEnd) {
-    if (!periodStart || !periodEnd) {
       return
     }
 
-    const start = parseDate(periodStart)
-
-    const end = parseDate(periodEnd)
-
-    if (!start || !end) {
-      setPeriodError('Informe datas válidas para o período.')
-
-      setPeriod(null)
-
-      return
-    }
-
-    if (start > end) {
-      setPeriodError('A data inicial não pode ser posterior à data final.')
-
-      setPeriod(null)
-
-      return
-    }
-
+    let active = true
+    setLoading(true)
     setPeriodError('')
 
-    setLoading(true)
+    async function loadPeriod() {
+      try {
+        const params = new URLSearchParams({ startDate, endDate })
+        const result = await apiRequest(`/me/timekeeping/period?${params.toString()}`)
 
-    try {
-      const result = calculateTimeClockPeriod(employeeId, start, end)
+        if (!active) return
 
-      setPeriod(result)
-    } finally {
-      setLoading(false)
+        const linkedEmployee = result.employee || null
+        setEmployee(linkedEmployee)
+
+        if (!linkedEmployee) {
+          setPeriod(null)
+          setPeriodError('O funcionário vinculado não foi encontrado.')
+          return
+        }
+
+        const calculatedPeriod = calculateTimeClockPeriod(
+          linkedEmployee.id,
+          parseDate(startDate),
+          parseDate(endDate),
+          {
+            employee: linkedEmployee,
+            records: Array.isArray(result.records) ? result.records : [],
+            scheduleData: result.scheduleData || {
+              workSchedules: [],
+              employeeWorkSchedules: []
+            }
+          }
+        )
+
+        setPeriod(calculatedPeriod)
+      } catch (error) {
+        if (!active) return
+        setPeriod(null)
+        setEmployee(null)
+        setPeriodError(error.message || 'Não foi possível carregar o espelho pela API.')
+      } finally {
+        if (active) setLoading(false)
+      }
     }
-  }
+
+    loadPeriod()
+    return () => {
+      active = false
+    }
+  }, [currentUser?.employeeId, startDate, endDate])
 
   /*
    * ============================================================
