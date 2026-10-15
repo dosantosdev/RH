@@ -71,7 +71,32 @@ const permissionSeed = [
   ['evaluation_models_delete', 'Excluir modelos de avaliação', 'Avaliações'],
   ['evaluations_history_view', 'Visualizar histórico de avaliações', 'Avaliações'],
   ['evaluations_results_view', 'Visualizar resultados de avaliações', 'Avaliações'],
-  ['evaluations_180_view', 'Visualizar avaliações 180 graus', 'Avaliações']
+  ['evaluations_180_view', 'Visualizar avaliações 180 graus', 'Avaliações'],
+  ['access_roles_view', 'Visualizar perfis de acesso', 'Perfis de Acesso'],
+  ['access_roles_create', 'Criar perfis de acesso', 'Perfis de Acesso'],
+  ['access_roles_edit', 'Editar perfis de acesso', 'Perfis de Acesso'],
+  ['access_roles_delete', 'Excluir perfis de acesso', 'Perfis de Acesso'],
+  ['ponto_bater', 'Registrar próprio ponto', 'Ponto'],
+  ['ponto_espelho_view', 'Visualizar próprio espelho de ponto', 'Ponto'],
+  ['ponto_controle_view', 'Visualizar controle de ponto', 'Ponto'],
+  ['ponto_controle_edit', 'Ajustar registros de ponto', 'Ponto'],
+  ['ponto_jornadas_view', 'Visualizar jornadas e escalas', 'Ponto'],
+  ['ponto_jornadas_create', 'Cadastrar jornadas e escalas', 'Ponto'],
+  ['ponto_jornadas_edit', 'Editar jornadas e escalas', 'Ponto'],
+  ['ponto_jornadas_delete', 'Excluir jornadas e escalas', 'Ponto'],
+  ['ponto_banco_horas_view', 'Visualizar banco de horas', 'Ponto'],
+  ['ponto_banco_horas_manage', 'Gerenciar banco de horas', 'Ponto'],
+  ['ponto_horas_extras_view', 'Visualizar horas extras', 'Ponto'],
+  ['ponto_horas_extras_manage', 'Gerenciar horas extras', 'Ponto'],
+  ['ponto_faltas_view', 'Visualizar faltas e atrasos', 'Ponto'],
+  ['ponto_faltas_manage', 'Gerenciar faltas e atrasos', 'Ponto'],
+  ['ponto_atestados_view', 'Visualizar atestados', 'Ponto'],
+  ['ponto_atestados_manage', 'Gerenciar atestados', 'Ponto'],
+  ['ponto_fechamento_view', 'Visualizar fechamento mensal', 'Ponto'],
+  ['ponto_fechamento_manage', 'Gerenciar fechamento mensal', 'Ponto'],
+  ['ponto_relatorios_view', 'Visualizar relatórios de ponto', 'Ponto'],
+  ['profile_view', 'Visualizar meu perfil', 'Perfil'],
+  ['password_change', 'Alterar senha', 'Perfil']
 ]
 
 const roleSeed = [
@@ -104,7 +129,15 @@ const roleSeed = [
       'work_schedules_edit', 'evaluations_view', 'evaluations_create',
       'evaluations_edit', 'evaluation_models_view', 'evaluation_models_create',
       'evaluation_models_edit', 'evaluations_history_view',
-      'evaluations_results_view', 'evaluations_180_view'
+      'evaluations_results_view', 'evaluations_180_view',
+      'ponto_controle_view', 'ponto_controle_edit',
+      'ponto_jornadas_view', 'ponto_jornadas_create', 'ponto_jornadas_edit', 'ponto_jornadas_delete',
+      'ponto_banco_horas_view', 'ponto_banco_horas_manage',
+      'ponto_horas_extras_view', 'ponto_horas_extras_manage',
+      'ponto_faltas_view', 'ponto_faltas_manage',
+      'ponto_atestados_view', 'ponto_atestados_manage',
+      'ponto_fechamento_view', 'ponto_fechamento_manage', 'ponto_relatorios_view',
+      'profile_view', 'password_change'
     ]
   },
   {
@@ -117,7 +150,9 @@ const roleSeed = [
       'my_evaluations_view',
       'my_evaluations_answer',
       'employee_requests_create',
-      'employee_requests_view_own'
+      'employee_requests_view_own',
+      'ponto_bater', 'ponto_espelho_view',
+      'profile_view', 'password_change'
     ]
   }
 ]

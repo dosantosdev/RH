@@ -3,13 +3,8 @@ import { useEffect, useState } from 'react'
 import './accessRoles.css'
 
 import { permissions } from '../../data/permissions'
-
-import {
-  getAccessRoles,
-  addAccessRole,
-  updateAccessRole,
-  deleteAccessRole
-} from '../../services/accessRoles'
+import { apiRequest } from '../../services/api'
+import { getStoredArray, setStored } from '../../services/storage'
 
 import { hasPermission } from '../../services/permissions'
 
@@ -37,12 +32,36 @@ export default function AccessRoles() {
   const [deleteId, setDeleteId] = useState(null)
 
   const { toast, showToast } = useToast()
+  const canViewAccessRoles = hasPermission('access_roles_view')
 
   useEffect(() => {
-    setAccessRoles(getAccessRoles())
-  }, [])
+    if (!canViewAccessRoles) return undefined
+    let active = true
 
-  if (!hasPermission('access_roles_view')) {
+    async function loadAccessRoles() {
+      try {
+        const result = await apiRequest('/access-roles')
+        if (!active) return
+
+        const roles = Array.isArray(result) ? result : []
+        setAccessRoles(roles)
+        // Mantém o cache para componentes legados que ainda consultam os perfis.
+        setStored('accessRoles', roles)
+      } catch (error) {
+        if (!active) return
+        setAccessRoles(getStoredArray('accessRoles'))
+        showToast(
+          error.message || 'Não foi possível carregar os perfis de acesso pela API.',
+          'warning'
+        )
+      }
+    }
+
+    loadAccessRoles()
+    return () => { active = false }
+  }, [canViewAccessRoles, showToast])
+
+  if (!canViewAccessRoles) {
     return <h2>Acesso negado</h2>
   }
 
@@ -136,7 +155,7 @@ export default function AccessRoles() {
     }))
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
 
     if (!editingId && !hasPermission('access_roles_create')) {
@@ -185,31 +204,33 @@ export default function AccessRoles() {
         }
       : accessRole
 
-    if (editingId) {
-      const updated = updateAccessRole({
-        ...dataToSave,
-        id: editingId
-      })
+    try {
+      const apiPayload = isEditingAdmin
+        ? { displayName: dataToSave.displayName, description: dataToSave.description }
+        : dataToSave
+
+      const savedRole = editingId
+        ? await apiRequest(`/access-roles/${encodeURIComponent(String(editingId))}`, {
+            method: 'PATCH',
+            body: JSON.stringify(apiPayload)
+          })
+        : await apiRequest('/access-roles', {
+            method: 'POST',
+            body: JSON.stringify(dataToSave)
+          })
+
+      const updated = editingId
+        ? accessRoles.map((role) => String(role.id) === String(savedRole.id) ? savedRole : role)
+        : [...accessRoles, savedRole]
 
       setAccessRoles(updated)
-
-      showToast('Perfil de acesso atualizado!', 'success')
-    } else {
-      const newAccessRole = {
-        ...dataToSave,
-        id: Date.now()
-      }
-
-      const updated = addAccessRole(newAccessRole)
-
-      setAccessRoles(updated)
-
-      showToast('Perfil de acesso cadastrado!', 'success')
+      setStored('accessRoles', updated)
+      showToast(editingId ? 'Perfil de acesso atualizado!' : 'Perfil de acesso cadastrado!', 'success')
+      setAccessRole(initialAccessRole)
+      setEditingId(null)
+    } catch (error) {
+      showToast(error.message || 'Não foi possível salvar o perfil de acesso.', 'warning')
     }
-
-    setAccessRole(initialAccessRole)
-
-    setEditingId(null)
   }
 
   function handleEdit(role) {
@@ -252,7 +273,7 @@ export default function AccessRoles() {
 
     return users.filter((user) => {
       const sameId =
-        user.accessRoleId && Number(user.accessRoleId) === Number(role.id)
+        user.accessRoleId && String(user.accessRoleId) === String(role.id)
 
       const sameName = user.accessRoleName && user.accessRoleName === role.name
 
@@ -270,7 +291,7 @@ export default function AccessRoles() {
       return
     }
 
-    const role = accessRoles.find((item) => Number(item.id) === Number(id))
+    const role = accessRoles.find((item) => String(item.id) === String(id))
 
     if (!role) {
       showToast('Perfil de acesso não encontrado.', 'warning')
@@ -314,13 +335,13 @@ export default function AccessRoles() {
     setDeleteId(id)
   }
 
-  function confirmDelete() {
+  async function confirmDelete() {
     if (deleteId === null) {
       return
     }
 
     const role = accessRoles.find(
-      (item) => Number(item.id) === Number(deleteId)
+      (item) => String(item.id) === String(deleteId)
     )
 
     /*
@@ -362,13 +383,19 @@ export default function AccessRoles() {
       }
     }
 
-    const updated = deleteAccessRole(deleteId)
-
-    setAccessRoles(updated)
-
-    setDeleteId(null)
-
-    showToast('Perfil de acesso excluído com sucesso!', 'success')
+    try {
+      await apiRequest(`/access-roles/${encodeURIComponent(String(deleteId))}`, {
+        method: 'DELETE'
+      })
+      const updated = accessRoles.filter((item) => String(item.id) !== String(deleteId))
+      setAccessRoles(updated)
+      setStored('accessRoles', updated)
+      setDeleteId(null)
+      showToast('Perfil de acesso excluído com sucesso!', 'success')
+    } catch (error) {
+      setDeleteId(null)
+      showToast(error.message || 'Não foi possível excluir o perfil de acesso.', 'warning')
+    }
   }
 
   return (

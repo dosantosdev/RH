@@ -1,3 +1,11 @@
+## Etapa mais recente — Perfis de Acesso via API PostgreSQL
+
+- A tela de Perfis de Acesso agora usa endpoints autenticados para listar, criar, editar e excluir perfis e suas permissões.
+- O backend valida permissões, limita o escopo à empresa autenticada, protege o perfil `admin` e impede excluir perfis ainda vinculados a usuários.
+- A migração `008_complete_permission_catalog.sql` completa no PostgreSQL as permissões de Ponto, Perfil e Perfis de Acesso que existiam na interface, mas faltavam no catálogo do banco.
+- O cache local é atualizado apenas como compatibilidade para consumidores antigos.
+- Detalhes: `MIGRACAO-PERFIS-ACESSO-API-POSTGRES.md`.
+
 ## Etapa mais recente — Relatórios de Ponto via API PostgreSQL
 
 - A tela de Relatórios consulta a rota autenticada `/api/me/timekeeping/report-data` em vez de ler diretamente `employees`, `timeClockRecords` e `medicalCertificates` do navegador.
@@ -78,6 +86,7 @@
 ## Pendências decisivas antes de produção
 
 - Executar `npm run build` e testes funcionais no ambiente Windows da usuária.
+- Validar a nova API de Perfis de Acesso com PostgreSQL real, incluindo permissões, persistência, perfil inativo e bloqueio de exclusão de perfis vinculados.
 - Testar CRUD e isolamento entre empresas no PostgreSQL real.
 - Migrar listas agregadas JSONB para tabelas/rotas de domínio e adicionar filtros por usuário nos portais de autoatendimento.
 - Criar permissões granulares por domínio do Ponto; nesta etapa os módulos separados ainda exigem as permissões centrais `ponto_controle_view` e `ponto_controle_edit`.

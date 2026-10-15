@@ -321,7 +321,9 @@ export function initializeAccessRoles() {
 export function getAccessRoleById(id) {
   const accessRoles = getAccessRoles()
 
-  return accessRoles.find((role) => Number(role.id) === Number(id))
+  return accessRoles.find((role) =>
+    String(role.id) === String(id) || Number(role.id) === Number(id)
+  )
 }
 
 /*

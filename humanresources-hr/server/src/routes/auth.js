@@ -20,7 +20,8 @@ router.post('/login', async (req, res, next) => {
         u.*,
         c.legal_name AS company_name,
         ar.name AS access_role_name,
-        ar.display_name AS access_role_display_name
+        ar.display_name AS access_role_display_name,
+        ar.active AS access_role_active
        FROM users u
        LEFT JOIN companies c ON c.id = u.company_id
        LEFT JOIN access_roles ar ON ar.id = u.access_role_id
@@ -34,6 +35,10 @@ router.post('/login', async (req, res, next) => {
 
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
       return res.status(401).json({ message: 'Usuário ou senha inválidos.' })
+    }
+
+    if (user.access_role_id && user.access_role_active === false) {
+      return res.status(403).json({ message: 'O perfil de acesso deste usuário está inativo. Procure o administrador.' })
     }
 
     const permissionResult = await pool.query(
