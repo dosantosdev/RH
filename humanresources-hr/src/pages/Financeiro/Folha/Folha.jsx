@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import './folha.css'
 
 import { hasPermission } from '../../../services/permissions'
+import { apiRequest, getApiUser } from '../../../services/api'
 
 import {
   calculateFinancialEventAmount,
@@ -69,6 +70,76 @@ export default function Folha() {
   const [payroll, setPayroll] = useState(() =>
     getPayrollByCompetence(competence)
   )
+  const [loadingFinancialData, setLoadingFinancialData] = useState(true)
+  const [financialDataError, setFinancialDataError] = useState('')
+  const [financialDataNotice, setFinancialDataNotice] = useState('')
+  const [financialEvents, setFinancialEvents] = useState(() => getActiveFinancialEvents())
+
+  /*
+   * A API/PostgreSQL é a fonte oficial dos dados financeiros.
+   * O cache local continua sendo usado temporariamente pelos serviços
+   * síncronos existentes, mas só é hidratado após uma resposta da API.
+   */
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadFinancialData() {
+      try {
+        const data = await apiRequest('/me/financial-data')
+        if (cancelled) return
+
+        const warnings = []
+        const cacheArray = (key, value, preserveEmpty = false) => {
+          if (!Array.isArray(value)) return false
+
+          let parsedCache = []
+          try {
+            parsedCache = JSON.parse(localStorage.getItem(key) || '[]')
+          } catch {
+            parsedCache = []
+          }
+
+          if (preserveEmpty && value.length === 0 && parsedCache.length > 0) {
+            warnings.push(
+              `O PostgreSQL ainda não retornou registros para ${key}. O cache local foi preservado; pode ser necessária uma importação.`
+            )
+            return false
+          }
+
+          localStorage.setItem(key, JSON.stringify(value))
+          return true
+        }
+
+        if (Array.isArray(data.employees)) {
+          cacheArray('employees', data.employees)
+        }
+
+        cacheArray('payrolls', data.payrolls, true)
+        cacheArray('financialEvents', data.financialEvents, true)
+        cacheArray('salaryHistory', data.salaryHistory, true)
+
+        setFinancialEvents(getActiveFinancialEvents())
+        setFinancialDataNotice(warnings.join(' '))
+
+        setPayroll(getPayrollByCompetence(competence))
+        setFinancialDataError('')
+      } catch (error) {
+        if (!cancelled) {
+          setFinancialDataError(
+            error?.message ||
+              'Não foi possível carregar os dados financeiros do PostgreSQL.'
+          )
+        }
+      } finally {
+        if (!cancelled) setLoadingFinancialData(false)
+      }
+    }
+
+    loadFinancialData()
+    return () => {
+      cancelled = true
+    }
+  }, [competence])
 
   /*
    * ==========================================================
@@ -125,8 +196,6 @@ export default function Folha() {
    * ==========================================================
    */
 
-  const financialEvents = useMemo(() => getActiveFinancialEvents(), [])
-
   const earningEvents = useMemo(
     () => financialEvents.filter((event) => event.type === 'provento'),
     [financialEvents]
@@ -177,7 +246,7 @@ export default function Folha() {
     }
 
     return (payroll.employees || []).find(
-      (employee) => Number(employee.employeeId) === Number(selectedEmployeeId)
+      (employee) => String(employee.employeeId) === String(selectedEmployeeId)
     )
   }, [payroll, selectedEmployeeId])
 
@@ -246,7 +315,7 @@ export default function Folha() {
       return
     }
 
-    const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || 'null')
+    const loggedUser = getApiUser()
 
     const userName = loggedUser?.name || loggedUser?.username || 'Usuário'
 
@@ -699,6 +768,24 @@ export default function Folha() {
         </div>
       </header>
 
+      {loadingFinancialData && (
+        <div className="payroll-message payroll-message-warning" role="status">
+          Carregando dados financeiros do PostgreSQL...
+        </div>
+      )}
+
+      {financialDataError && (
+        <div className="payroll-message payroll-message-warning" role="alert">
+          {financialDataError} Os dados exibidos podem estar desatualizados.
+        </div>
+      )}
+
+      {financialDataNotice && (
+        <div className="payroll-message payroll-message-warning" role="status">
+          {financialDataNotice}
+        </div>
+      )}
+
       {/* ======================================================
           MENSAGEM
       ====================================================== */}
@@ -945,8 +1032,8 @@ export default function Folha() {
                         <tr
                           key={employee.employeeId}
                           className={
-                            Number(selectedEmployeeId) ===
-                            Number(employee.employeeId)
+                            String(selectedEmployeeId) ===
+                            String(employee.employeeId)
                               ? 'selected'
                               : ''
                           }

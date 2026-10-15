@@ -481,7 +481,7 @@ function isEventForEmployee(event, employeeId) {
     return true
   }
 
-  return Number(event.employeeId) === Number(employeeId)
+  return String(event.employeeId) === String(employeeId)
 }
 
 /*
@@ -965,7 +965,7 @@ export function updatePayrollEmployee(payrollId, employeeRow) {
   }
 
   const updatedEmployees = payroll.employees.map((employee) =>
-    Number(employee.employeeId) === Number(employeeRow.employeeId)
+    String(employee.employeeId) === String(employeeRow.employeeId)
       ? employeeRow
       : employee
   )
@@ -989,7 +989,7 @@ export function recalculatePayrollEmployee(payroll, employeeRow, options = {}) {
   }
 
   const employee = getEmployees().find(
-    (item) => Number(item.id) === Number(employeeRow.employeeId)
+    (item) => String(item.id) === String(employeeRow.employeeId)
   )
 
   if (!employee) {
@@ -1131,7 +1131,7 @@ export function addPayrollEarning(payrollId, employeeId, earning) {
   }
 
   const updatedEmployees = payroll.employees.map((employee) => {
-    if (Number(employee.employeeId) !== Number(employeeId)) {
+    if (String(employee.employeeId) !== String(employeeId)) {
       return employee
     }
 
@@ -1194,7 +1194,7 @@ export function addPayrollDeduction(payrollId, employeeId, deduction) {
   }
 
   const updatedEmployees = payroll.employees.map((employee) => {
-    if (Number(employee.employeeId) !== Number(employeeId)) {
+    if (String(employee.employeeId) !== String(employeeId)) {
       return employee
     }
 
@@ -1257,7 +1257,7 @@ export function removePayrollItem(payrollId, employeeId, itemType, itemId) {
   }
 
   const updatedEmployees = payroll.employees.map((employee) => {
-    if (Number(employee.employeeId) !== Number(employeeId)) {
+    if (String(employee.employeeId) !== String(employeeId)) {
       return employee
     }
 

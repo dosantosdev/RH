@@ -138,7 +138,33 @@ router.get('/financial-data', async (req, res, next) => {
     for (const [key, value] of Object.entries(records)) {
       if (!Array.isArray(value)) continue
       records[key] = value.map((record) => {
-        if (!record || typeof record !== 'object' || record.employeeId === undefined || record.employeeId === null) {
+        if (!record || typeof record !== 'object') return record
+
+        // O funcionário da folha fica dentro de payroll.employees,
+        // portanto precisa da mesma normalização de IDs legados usada
+        // nos registros financeiros de nível superior.
+        if (key === 'payrolls' && Array.isArray(record.employees)) {
+          return {
+            ...record,
+            employees: record.employees.map((payrollEmployee) => {
+              if (
+                !payrollEmployee ||
+                payrollEmployee.employeeId === undefined ||
+                payrollEmployee.employeeId === null
+              ) {
+                return payrollEmployee
+              }
+              const canonicalEmployeeId = employeeIdAliases.get(
+                String(payrollEmployee.employeeId)
+              )
+              return canonicalEmployeeId
+                ? { ...payrollEmployee, employeeId: canonicalEmployeeId }
+                : payrollEmployee
+            })
+          }
+        }
+
+        if (record.employeeId === undefined || record.employeeId === null) {
           return record
         }
         const canonicalEmployeeId = employeeIdAliases.get(String(record.employeeId))

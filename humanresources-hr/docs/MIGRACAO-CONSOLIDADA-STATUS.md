@@ -1,3 +1,11 @@
+## Etapa mais recente — leitura da Folha de Pagamento via API PostgreSQL
+
+- A tela `Folha.jsx` consulta `/api/me/financial-data` e hidrata o cache compatível de folhas, funcionários, eventos financeiros e histórico salarial.
+- A interface informa carregamento, falha da API e situações em que listas vazias no PostgreSQL não devem apagar dados locais existentes.
+- A rota normaliza referências de funcionários dentro de `payrolls[].employees[]`, e o serviço de folha compara IDs como strings para suportar UUIDs.
+- Criação, recálculo, fechamento, reabertura e lançamentos ainda usam a ponte compatível de persistência em `app_records`; endpoints de mutação dedicados e testes com PostgreSQL real continuam pendentes.
+- Detalhes: `MIGRACAO-FOLHA-PAGAMENTO-API-POSTGRES.md`.
+
 ## Etapa mais recente — leitura de Salários via API PostgreSQL
 
 - `Salarios.jsx` consulta `/api/me/financial-data` para carregar funcionários e histórico salarial autorizados.
