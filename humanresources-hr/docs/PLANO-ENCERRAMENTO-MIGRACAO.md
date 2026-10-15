@@ -1,0 +1,43 @@
+# Plano de encerramento da migração — revisão de 15/10/2026
+
+Este documento substitui a avaliação vaga de “falta migrar mais telas” por critérios de conclusão verificáveis. Uma tela não é considerada migrada apenas por ler dados da API: precisa concluir o ciclo de leitura e escrita, validar permissões no servidor, preservar dados antigos e passar pelos testes aplicáveis.
+
+## Critério de conclusão por domínio
+
+Um domínio só passa para **concluído** quando:
+
+- [ ] leitura vem da API autenticada e do banco;
+- [ ] criar/editar/ativar/excluir ou as mutações aplicáveis aguardam confirmação do servidor;
+- [ ] permissões são validadas no backend, com escopo da empresa obtido do token;
+- [ ] falhas não são exibidas como sucesso e não apagam o cache legado;
+- [ ] atualização da página confirma persistência;
+- [ ] teste de isolamento entre empresas e perfis de acesso foi executado;
+- [ ] a solução não depende de uma gravação genérica de lista inteira sem controle de concorrência, salvo como etapa temporária documentada.
+
+## Macroetapas
+
+| Macroetapa | Estado em 15/10/2026 | Critério para fechar |
+|---|---|---|
+| 1. Sessão, usuários, permissões e dados organizacionais | Em grande parte implementada; testes reais pendentes | Fluxos principais e 403 validados no banco real |
+| 2. Leitura dos principais domínios pela API | Ampla cobertura implementada | Auditoria confirma ausência de leituras diretas críticas do localStorage |
+| 3. Escritas de domínio pela API | Em andamento | Cada domínio possui mutações autenticadas, confirmadas e testadas |
+| 4. Sair da ponte genérica JSONB/localStorage | Pendente em vários domínios | Tabelas/rotas de domínio e importação legada idempotente, sem depender de listas agregadas |
+| 5. Testes de integração e build de produção | Pendente | Build completo e testes com PostgreSQL, perfis e múltiplas empresas aprovados |
+| 6. Firebase Storage | Reservado para a última etapa | Migração e validação de documentos/binários após estabilizar banco e permissões |
+
+## Evidência desta entrega
+
+Proventos e Descontos agora usa `GET/PUT /api/financial-events`, com validação no servidor e atualização do cache somente depois da confirmação do PostgreSQL. Isso fecha o ciclo de API da tela, mas o catálogo ainda é uma lista JSONB agregada em `app_records` e não há teste de integração real nesta sessão. Por esse motivo, a tela está **migrada no fluxo de API, mas não concluída para produção**.
+
+## Regra para o progresso numérico
+
+A nota global só sobe quando uma macroetapa ou um domínio passa critérios verificáveis. Pequenas migrações de leitura não devem, sozinhas, inflar a nota. A avaliação de 6/10 feita anteriormente ficou repetida porque usava uma estimativa ampla sem mostrar os critérios que ainda impediam o encerramento. Nesta revisão, a estimativa é **6,5/10**: houve avanço concreto no ciclo de escrita de Proventos e Descontos, mas normalização, outros fluxos de escrita e validação integrada ainda são pendências substanciais.
+
+## Próxima sequência, sem repetir etapas já feitas
+
+1. Auditar e migrar as gravações de Folha de Pagamento e Salários, reaproveitando as leituras já implementadas.
+2. Concluir o ciclo de escrita de Proventos e Descontos com persistência de domínio e controle de concorrência; não reimplementar a leitura já migrada.
+3. Auditar Financeiro Avançado (férias, 13º e rescisões) por CRUD, não apenas por leitura.
+4. Fazer inventário automático das leituras/gravações restantes em `localStorage` e `app_records` para gerar uma lista fechada, em vez de selecionar abas repetidamente sem fechar os fluxos.
+5. Executar build, testes de API e integração no PostgreSQL real; corrigir o que falhar.
+6. Integrar Firebase Storage por último.

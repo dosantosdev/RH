@@ -1,19 +1,16 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import './proventosDescontos.css'
 
 import { hasPermission } from '../../../services/permissions'
+import { apiRequest, getApiUser } from '../../../services/api'
 
 import {
-  addFinancialEvent,
-  deleteFinancialEvent,
   FINANCIAL_CALCULATION_TYPES,
   FINANCIAL_EVENT_TYPES,
   financialCalculationTypeLabels,
   financialEventTypeLabels,
-  getFinancialEvents,
-  toggleFinancialEvent,
-  updateFinancialEvent
+  getFinancialEvents
 } from '../../../services/financialEvents'
 
 /*
@@ -57,6 +54,12 @@ export default function ProventosDescontos() {
 
   const [events, setEvents] = useState(() => getFinancialEvents())
 
+  const [loading, setLoading] = useState(true)
+
+  const [apiReady, setApiReady] = useState(false)
+
+  const [saving, setSaving] = useState(false)
+
   const [activeTab, setActiveTab] = useState(FINANCIAL_EVENT_TYPES.EARNING)
 
   const [search, setSearch] = useState('')
@@ -68,6 +71,84 @@ export default function ProventosDescontos() {
   const [message, setMessage] = useState('')
 
   const [messageType, setMessageType] = useState('')
+
+  /*
+   * ==========================================================
+   * CARREGAR EVENTOS DIRETAMENTE DA API
+   * ==========================================================
+   * O localStorage é mantido apenas como cache de compatibilidade.
+   * A API/PostgreSQL é a fonte principal para leitura e gravação.
+   */
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadEvents() {
+      setLoading(true)
+      try {
+        const response = await apiRequest('/financial-events')
+        if (cancelled) return
+
+        const databaseEvents = Array.isArray(response?.events)
+          ? response.events
+          : []
+        const cachedEvents = getFinancialEvents()
+
+        if (databaseEvents.length > 0 || cachedEvents.length === 0) {
+          setEvents(databaseEvents)
+          localStorage.setItem('financialEvents', JSON.stringify(databaseEvents))
+        } else {
+          // Não apagamos o legado automaticamente: ele pode precisar ser importado.
+          setEvents(cachedEvents)
+          showMessage(
+            'O PostgreSQL ainda não possui eventos. Os dados locais foram preservados; ao salvar, serão enviados à API.',
+            'warning'
+          )
+        }
+
+        setApiReady(true)
+      } catch (error) {
+        if (cancelled) return
+        setApiReady(false)
+        setEvents(getFinancialEvents())
+        showMessage(
+          error?.message || 'Não foi possível carregar os eventos pela API. Nenhuma alteração será gravada localmente como se tivesse sido salva.',
+          'error'
+        )
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+
+    loadEvents()
+    return () => { cancelled = true }
+  }, [])
+
+  async function persistEvents(nextEvents, successMessage) {
+    if (!apiReady) {
+      showMessage('A API não está disponível. Reconecte antes de alterar os eventos.', 'error')
+      return false
+    }
+
+    setSaving(true)
+    try {
+      const response = await apiRequest('/financial-events', {
+        method: 'PUT',
+        body: JSON.stringify({ events: nextEvents })
+      })
+      const savedEvents = Array.isArray(response?.events) ? response.events : nextEvents
+      setEvents(savedEvents)
+      // Cache local atualizado somente depois da confirmação do PostgreSQL.
+      localStorage.setItem('financialEvents', JSON.stringify(savedEvents))
+      showMessage(successMessage)
+      return true
+    } catch (error) {
+      showMessage(error?.message || 'Não foi possível salvar no PostgreSQL.', 'error')
+      return false
+    } finally {
+      setSaving(false)
+    }
+  }
 
   /*
    * ==========================================================
@@ -224,131 +305,76 @@ export default function ProventosDescontos() {
    * ==========================================================
    */
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
 
     if (!canManage) {
-      showMessage(
-        'Você não possui permissão para cadastrar eventos financeiros.',
-        'warning'
-      )
-
+      showMessage('Você não possui permissão para gerenciar eventos financeiros.', 'warning')
       return
     }
-
+    if (!apiReady) {
+      showMessage('A API ainda não está disponível. Aguarde a conexão antes de salvar.', 'error')
+      return
+    }
     if (!form.name.trim()) {
       showMessage('Informe o nome do evento.', 'warning')
-
       return
     }
-
     if (!form.type) {
       showMessage('Selecione o tipo do evento.', 'warning')
-
       return
     }
-
     if (!form.calculationType) {
       showMessage('Selecione o tipo de cálculo.', 'warning')
-
       return
     }
-
-    /*
-     * Evita códigos duplicados.
-     */
 
     const normalizedCode = form.code.trim().toUpperCase()
-
-    const duplicatedCode = events.some(
-      (item) =>
-        item.id !== editingId &&
-        normalizedCode &&
-        String(item.code || '')
-          .trim()
-          .toUpperCase() === normalizedCode
+    const duplicatedCode = events.some((item) =>
+      String(item.id) !== String(editingId) &&
+      normalizedCode &&
+      String(item.code || '').trim().toUpperCase() === normalizedCode
     )
-
     if (duplicatedCode) {
       showMessage('Já existe um evento financeiro com este código.', 'warning')
-
       return
     }
 
-    const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || 'null')
-
+    const loggedUser = getApiUser()
     const userName = loggedUser?.name || loggedUser?.username || 'Usuário'
-
     const eventData = {
       name: form.name.trim(),
-
       code: normalizedCode,
-
       type: form.type,
-
       calculationType: form.calculationType,
-
       defaultValue: form.defaultValue === '' ? '' : Number(form.defaultValue),
-
       notes: form.notes.trim(),
-
       active: form.active
     }
 
-    /*
-     * ========================================================
-     * ATUALIZAR
-     * ========================================================
-     */
-
+    let nextEvents
+    let successMessage
     if (editingId !== null) {
-      const existingEvent =
-        events.find((item) => Number(item.id) === Number(editingId)) || {}
-
-      const updatedEvent = updateFinancialEvent({
-        ...existingEvent,
+      nextEvents = events.map((item) => String(item.id) === String(editingId)
+        ? { ...item, ...eventData, updatedAt: new Date().toISOString(), updatedBy: userName }
+        : item)
+      successMessage = 'Evento financeiro atualizado com sucesso!'
+    } else {
+      const newId = window.crypto?.randomUUID?.() || String(Date.now())
+      nextEvents = [...events, {
         ...eventData,
-        updatedAt: new Date().toISOString(),
-        updatedBy: userName
-      })
-
-      setEvents((previous) =>
-        previous.map((item) =>
-          Number(item.id) === Number(updatedEvent.id) ? updatedEvent : item
-        )
-      )
-
-      setEditingId(null)
-
-      setForm({
-        ...initialForm,
-        type: activeTab
-      })
-
-      showMessage('Evento financeiro atualizado com sucesso!')
-
-      return
+        id: newId,
+        createdAt: new Date().toISOString(),
+        createdBy: userName
+      }]
+      successMessage = 'Evento financeiro cadastrado com sucesso!'
     }
 
-    /*
-     * ========================================================
-     * NOVO
-     * ========================================================
-     */
+    const saved = await persistEvents(nextEvents, successMessage)
+    if (!saved) return
 
-    const newEvent = addFinancialEvent({
-      ...eventData,
-      createdBy: userName
-    })
-
-    setEvents((previous) => [...previous, newEvent])
-
-    setForm({
-      ...initialForm,
-      type: activeTab
-    })
-
-    showMessage('Evento financeiro cadastrado com sucesso!')
+    setEditingId(null)
+    setForm({ ...initialForm, type: activeTab })
   }
 
   /*
@@ -357,25 +383,21 @@ export default function ProventosDescontos() {
    * ==========================================================
    */
 
-  function handleToggle(event) {
+  async function handleToggle(event) {
     if (!canManage) {
-      showMessage(
-        'Você não possui permissão para alterar eventos financeiros.',
-        'warning'
-      )
-
+      showMessage('Você não possui permissão para alterar eventos financeiros.', 'warning')
       return
     }
 
-    const updated = toggleFinancialEvent(event.id)
-
-    setEvents(updated)
-
-    const wasActive = event.active !== false
-
-    showMessage(
-      wasActive ? 'Evento financeiro inativado.' : 'Evento financeiro ativado.'
+    const updatedEvent = { ...event, active: event.active === false }
+    const nextEvents = events.map((item) =>
+      String(item.id) === String(event.id) ? updatedEvent : item
     )
+    const saved = await persistEvents(
+      nextEvents,
+      event.active !== false ? 'Evento financeiro inativado.' : 'Evento financeiro ativado.'
+    )
+    if (!saved) return
   }
 
   /*
@@ -384,33 +406,20 @@ export default function ProventosDescontos() {
    * ==========================================================
    */
 
-  function handleDelete(event) {
+  async function handleDelete(event) {
     if (!canManage) {
-      showMessage(
-        'Você não possui permissão para excluir eventos financeiros.',
-        'warning'
-      )
-
+      showMessage('Você não possui permissão para excluir eventos financeiros.', 'warning')
       return
     }
 
-    const confirmed = window.confirm(
-      `Deseja realmente excluir o evento "${event.name}"?`
-    )
+    const confirmed = window.confirm(`Deseja realmente excluir o evento "${event.name}"?`)
+    if (!confirmed) return
 
-    if (!confirmed) {
-      return
-    }
+    const nextEvents = events.filter((item) => String(item.id) !== String(event.id))
+    const saved = await persistEvents(nextEvents, 'Evento financeiro excluído com sucesso!')
+    if (!saved) return
 
-    const updated = deleteFinancialEvent(event.id)
-
-    setEvents(updated)
-
-    if (Number(editingId) === Number(event.id)) {
-      handleCancel()
-    }
-
-    showMessage('Evento financeiro excluído com sucesso!')
+    if (String(editingId) === String(event.id)) handleCancel()
   }
 
   /*
@@ -461,6 +470,7 @@ export default function ProventosDescontos() {
             type="button"
             className="financial-events-new-button"
             onClick={handleNew}
+            disabled={!apiReady || loading || saving}
           >
             + Novo evento
           </button>
@@ -476,6 +486,18 @@ export default function ProventosDescontos() {
           className={`financial-events-message financial-events-message-${messageType}`}
         >
           {message}
+        </div>
+      )}
+
+      {loading && (
+        <div className="financial-events-message financial-events-message-warning" role="status">
+          Carregando eventos financeiros do PostgreSQL...
+        </div>
+      )}
+
+      {saving && (
+        <div className="financial-events-message financial-events-message-warning" role="status">
+          Salvando alterações no PostgreSQL...
         </div>
       )}
 
@@ -646,6 +668,7 @@ export default function ProventosDescontos() {
                 <button
                   type="submit"
                   className="financial-event-primary-button"
+                  disabled={!apiReady || loading || saving}
                 >
                   {editingId !== null ? 'Atualizar evento' : 'Cadastrar evento'}
                 </button>
@@ -795,6 +818,7 @@ export default function ProventosDescontos() {
                             <button
                               type="button"
                               title="Editar"
+                              disabled={!apiReady || loading || saving}
                               onClick={() => handleEdit(event)}
                             >
                               ✏️
@@ -805,6 +829,7 @@ export default function ProventosDescontos() {
                               title={
                                 event.active === false ? 'Ativar' : 'Inativar'
                               }
+                              disabled={!apiReady || loading || saving}
                               onClick={() => handleToggle(event)}
                             >
                               {event.active === false ? '▶️' : '⏸️'}
@@ -813,6 +838,7 @@ export default function ProventosDescontos() {
                             <button
                               type="button"
                               title="Excluir"
+                              disabled={!apiReady || loading || saving}
                               onClick={() => handleDelete(event)}
                             >
                               🗑️

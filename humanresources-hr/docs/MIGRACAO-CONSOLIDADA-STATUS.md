@@ -1,3 +1,13 @@
+> Plano objetivo de encerramento, critérios e sequência sem repetição: `PLANO-ENCERRAMENTO-MIGRACAO.md`.
+
+## Etapa mais recente — Proventos e Descontos com ciclo de API
+
+- `ProventosDescontos.jsx` carrega o catálogo por `GET /api/financial-events`.
+- Cadastro, edição, ativação/inativação e exclusão aguardam confirmação da API antes de atualizar a tela/cache.
+- A API valida permissões de leitura/gestão, empresa do token, tipos, IDs/códigos duplicados e tamanho do payload.
+- Esta etapa ainda usa uma lista JSONB agregada em `app_records`; concorrência e normalização relacional seguem pendentes.
+- Detalhes: `MIGRACAO-PROVENTOS-DESCONTOS-API-POSTGRES.md`.
+
 ## Etapa mais recente — leitura da Folha de Pagamento via API PostgreSQL
 
 - A tela `Folha.jsx` consulta `/api/me/financial-data` e hidrata o cache compatível de folhas, funcionários, eventos financeiros e histórico salarial.

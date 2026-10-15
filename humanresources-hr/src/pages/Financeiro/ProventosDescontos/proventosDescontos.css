@@ -86,6 +86,19 @@
   color: #8a6500;
 }
 
+.financial-events-message-error {
+  border: 1px solid #f2c5c5;
+  background: #fff0f0;
+  color: #9b2525;
+}
+
+.financial-event-primary-button:disabled,
+.financial-events-new-button:disabled,
+.financial-event-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* ============================================================
    RESUMO
 ============================================================ */
