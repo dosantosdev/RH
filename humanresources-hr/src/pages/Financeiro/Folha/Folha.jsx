@@ -4,6 +4,7 @@ import './folha.css'
 
 import { hasPermission } from '../../../services/permissions'
 import { apiRequest, getApiUser } from '../../../services/api'
+import { runWithoutPostgresStorageBridge } from '../../../services/storage'
 
 import {
   calculateFinancialEventAmount,
@@ -85,11 +86,14 @@ export default function Folha() {
 
     async function loadFinancialData() {
       try {
-        const data = await apiRequest('/me/financial-data')
+        const [data, payrollData] = await Promise.all([
+          apiRequest('/me/financial-data'),
+          apiRequest('/payrolls')
+        ])
         if (cancelled) return
 
         const warnings = []
-        const cacheArray = (key, value, preserveEmpty = false) => {
+        const cacheArray = (key, value, preserveEmpty = false, dedicatedApi = false) => {
           if (!Array.isArray(value)) return false
 
           let parsedCache = []
@@ -106,7 +110,9 @@ export default function Folha() {
             return false
           }
 
-          localStorage.setItem(key, JSON.stringify(value))
+          const writeCache = () => localStorage.setItem(key, JSON.stringify(value))
+          if (dedicatedApi) runWithoutPostgresStorageBridge(key, writeCache)
+          else writeCache()
           return true
         }
 
@@ -114,7 +120,7 @@ export default function Folha() {
           cacheArray('employees', data.employees)
         }
 
-        cacheArray('payrolls', data.payrolls, true)
+        cacheArray('payrolls', payrollData.payrolls, true, true)
         cacheArray('financialEvents', data.financialEvents, true)
         cacheArray('salaryHistory', data.salaryHistory, true)
 
@@ -278,6 +284,50 @@ export default function Folha() {
     }, 3500)
   }
 
+  /**
+   * Executa primeiro a regra de cálculo já existente no serviço de folha,
+   * depois confirma a mutação pela API. Se o servidor recusar a operação,
+   * restaura o cache anterior para não exibir uma alteração não persistida.
+   * O PostgreSQL permanece como fonte oficial e valida a versão concorrente.
+   */
+  async function executePayrollMutation(mutateLocally, requestOnServer) {
+    const previousCache = localStorage.getItem('payrolls')
+    const previousPayroll = getPayrollByCompetence(competence) || null
+
+    try {
+      const candidate = runWithoutPostgresStorageBridge('payrolls', mutateLocally)
+      const response = await requestOnServer(candidate, previousPayroll)
+
+      if (!response || !Array.isArray(response.payrolls)) {
+        throw new Error('A API não retornou a lista atualizada de folhas.')
+      }
+
+      runWithoutPostgresStorageBridge('payrolls', () =>
+        localStorage.setItem('payrolls', JSON.stringify(response.payrolls))
+      )
+      const selected = response.payrolls.find(
+        (item) => String(item.competence) === String(competence)
+      ) || null
+      setPayroll(selected)
+      setFinancialDataError('')
+      return response
+    } catch (error) {
+      if (previousCache === null) {
+        runWithoutPostgresStorageBridge('payrolls', () => localStorage.removeItem('payrolls'))
+      } else {
+        runWithoutPostgresStorageBridge('payrolls', () =>
+          localStorage.setItem('payrolls', previousCache)
+        )
+      }
+      setPayroll(getPayrollByCompetence(competence) || null)
+      throw error
+    }
+  }
+
+  function showPayrollMutationError(error, fallbackMessage) {
+    showMessage(error?.message || fallbackMessage, 'warning')
+  }
+
   /*
    * ==========================================================
    * CARREGAR COMPETÊNCIA
@@ -302,30 +352,31 @@ export default function Folha() {
    * ==========================================================
    */
 
-  function handleCreatePayroll() {
+  async function handleCreatePayroll() {
     if (!canManage) {
       showMessage('Você não possui permissão para criar a folha.', 'warning')
-
       return
     }
-
     if (!competence) {
       showMessage('Selecione uma competência.', 'warning')
-
       return
     }
 
     const loggedUser = getApiUser()
-
     const userName = loggedUser?.name || loggedUser?.username || 'Usuário'
 
-    const created = createPayroll(competence, {
-      createdBy: userName
-    })
-
-    setPayroll(created)
-
-    showMessage(`Folha de ${formatCompetence(competence)} criada com sucesso!`)
+    try {
+      await executePayrollMutation(
+        () => createPayroll(competence, { createdBy: userName }),
+        (candidate) => apiRequest('/payrolls', {
+          method: 'POST',
+          body: JSON.stringify({ payroll: candidate })
+        })
+      )
+      showMessage(`Folha de ${formatCompetence(competence)} criada com sucesso!`)
+    } catch (error) {
+      showPayrollMutationError(error, 'Não foi possível criar a folha no PostgreSQL.')
+    }
   }
 
   /*
@@ -334,32 +385,35 @@ export default function Folha() {
    * ==========================================================
    */
 
-  function handleClosePayroll() {
-    if (!payroll) {
-      return
-    }
-
+  async function handleClosePayroll() {
+    if (!payroll) return
     if (!canManage) {
       showMessage('Você não possui permissão para fechar a folha.', 'warning')
-
       return
     }
-
     const confirmed = window.confirm(
-      `Deseja fechar a folha de ${formatCompetence(
-        payroll.competence
-      )}? Depois disso, os lançamentos ficarão bloqueados.`
+      `Deseja fechar a folha de ${formatCompetence(payroll.competence)}? Depois disso, os lançamentos ficarão bloqueados.`
     )
+    if (!confirmed) return
 
-    if (!confirmed) {
-      return
+    const loggedUser = getApiUser()
+    const userName = loggedUser?.name || loggedUser?.username || 'Usuário'
+    try {
+      await executePayrollMutation(
+        () => closePayroll(payroll.id, { closedBy: userName }),
+        (candidate, previous) => apiRequest(`/payrolls/${encodeURIComponent(payroll.id)}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            action: 'close',
+            payroll: candidate,
+            expectedUpdatedAt: previous?.updatedAt ?? null
+          })
+        })
+      )
+      showMessage('Folha fechada e salva no PostgreSQL com sucesso!')
+    } catch (error) {
+      showPayrollMutationError(error, 'Não foi possível fechar a folha no PostgreSQL.')
     }
-
-    const updated = closePayroll(payroll.id)
-
-    setPayroll(updated)
-
-    showMessage('Folha fechada com sucesso!')
   }
 
   /*
@@ -368,44 +422,34 @@ export default function Folha() {
    * ==========================================================
    */
 
-  function handleRecalculatePayroll() {
-    if (!payroll) {
-      return
-    }
-
+  async function handleRecalculatePayroll() {
+    if (!payroll) return
     if (!canManage) {
-      showMessage(
-        'Você não possui permissão para recalcular a folha.',
-        'warning'
-      )
-
+      showMessage('Você não possui permissão para recalcular a folha.', 'warning')
       return
     }
-
     if (payroll.status === PAYROLL_STATUS.CLOSED) {
-      showMessage(
-        'A folha está fechada e não pode ser recalculada.',
-        'warning'
-      )
-
+      showMessage('A folha está fechada e não pode ser recalculada.', 'warning')
       return
     }
-
     const confirmed = window.confirm(
       'Deseja recalcular a folha? Os lançamentos automáticos serão atualizados e os lançamentos manuais serão preservados.'
     )
+    if (!confirmed) return
 
-    if (!confirmed) {
-      return
+    try {
+      await executePayrollMutation(
+        () => recalculatePayroll(payroll.id),
+        (candidate, previous) => apiRequest(`/payrolls/${encodeURIComponent(payroll.id)}`, {
+          method: 'PUT',
+          body: JSON.stringify({ payroll: candidate, expectedUpdatedAt: previous?.updatedAt ?? null })
+        })
+      )
+      setSelectedEmployeeId(null)
+      showMessage('Folha recalculada e salva no PostgreSQL com sucesso!')
+    } catch (error) {
+      showPayrollMutationError(error, 'Não foi possível recalcular a folha no PostgreSQL.')
     }
-
-    const updated = recalculatePayroll(payroll.id)
-
-    setPayroll(updated)
-
-    setSelectedEmployeeId(null)
-
-    showMessage('Folha recalculada com sucesso!')
   }
 
   /*
@@ -414,46 +458,34 @@ export default function Folha() {
    * ==========================================================
    */
 
-  function handleDeletePayroll() {
-    if (!payroll) {
-      return
-    }
-
+  async function handleDeletePayroll() {
+    if (!payroll) return
     if (!canManage) {
-      showMessage(
-        'Você não possui permissão para excluir a folha.',
-        'warning'
-      )
-
+      showMessage('Você não possui permissão para excluir a folha.', 'warning')
       return
     }
-
     if (payroll.status === PAYROLL_STATUS.CLOSED) {
-      showMessage(
-        'A folha fechada não pode ser excluída.',
-        'warning'
-      )
-
+      showMessage('A folha fechada não pode ser excluída.', 'warning')
       return
     }
-
     const confirmed = window.confirm(
-      `Deseja excluir a folha de ${formatCompetence(
-        payroll.competence
-      )}? Esta ação não poderá ser desfeita.`
+      `Deseja excluir a folha de ${formatCompetence(payroll.competence)}? Esta ação não poderá ser desfeita.`
     )
+    if (!confirmed) return
 
-    if (!confirmed) {
-      return
+    try {
+      await executePayrollMutation(
+        () => deletePayroll(payroll.id),
+        (_candidate, previous) => apiRequest(`/payrolls/${encodeURIComponent(payroll.id)}`, {
+          method: 'DELETE',
+          body: JSON.stringify({ expectedUpdatedAt: previous?.updatedAt ?? null })
+        })
+      )
+      setSelectedEmployeeId(null)
+      showMessage('Folha excluída do PostgreSQL com sucesso!')
+    } catch (error) {
+      showPayrollMutationError(error, 'Não foi possível excluir a folha no PostgreSQL.')
     }
-
-    deletePayroll(payroll.id)
-
-    setPayroll(null)
-
-    setSelectedEmployeeId(null)
-
-    showMessage('Folha excluída com sucesso!')
   }
 
   /*
@@ -462,28 +494,29 @@ export default function Folha() {
    * ==========================================================
    */
 
-  function handleReopenPayroll() {
-    if (!payroll) {
-      return
-    }
-
+  async function handleReopenPayroll() {
+    if (!payroll) return
     if (!canManage) {
       showMessage('Você não possui permissão para reabrir a folha.', 'warning')
-
       return
     }
-
     const confirmed = window.confirm('Deseja reabrir esta folha para edição?')
+    if (!confirmed) return
 
-    if (!confirmed) {
-      return
+    const loggedUser = getApiUser()
+    const userName = loggedUser?.name || loggedUser?.username || 'Usuário'
+    try {
+      await executePayrollMutation(
+        () => reopenPayroll(payroll.id, { reopenedBy: userName }),
+        (_candidate, previous) => apiRequest(`/payrolls/${encodeURIComponent(payroll.id)}/status`, {
+          method: 'PATCH',
+          body: JSON.stringify({ action: 'reopen', expectedUpdatedAt: previous?.updatedAt ?? null })
+        })
+      )
+      showMessage('Folha reaberta e salva no PostgreSQL com sucesso!')
+    } catch (error) {
+      showPayrollMutationError(error, 'Não foi possível reabrir a folha no PostgreSQL.')
     }
-
-    const updated = reopenPayroll(payroll.id)
-
-    setPayroll(updated)
-
-    showMessage('Folha reaberta com sucesso!')
   }
 
   /*
@@ -603,7 +636,7 @@ export default function Folha() {
    * ==========================================================
    */
 
-  function handleSaveItem(event) {
+  async function handleSaveItem(event) {
     event.preventDefault()
 
     if (!itemModal || !payroll) {
@@ -655,23 +688,23 @@ export default function Folha() {
       amount
     }
 
-    let updated
-
-    if (itemModal.type === 'earning') {
-      updated = addPayrollEarning(payroll.id, itemModal.employeeId, itemData)
-    } else {
-      updated = addPayrollDeduction(payroll.id, itemModal.employeeId, itemData)
+    try {
+      await executePayrollMutation(
+        () => itemModal.type === 'earning'
+          ? addPayrollEarning(payroll.id, itemModal.employeeId, itemData)
+          : addPayrollDeduction(payroll.id, itemModal.employeeId, itemData),
+        (candidate, previous) => apiRequest(`/payrolls/${encodeURIComponent(payroll.id)}`, {
+          method: 'PUT',
+          body: JSON.stringify({ payroll: candidate, expectedUpdatedAt: previous?.updatedAt ?? null })
+        })
+      )
+      closeItemModal()
+      showMessage(itemModal.type === 'earning'
+        ? 'Provento adicionado e salvo no PostgreSQL.'
+        : 'Desconto adicionado e salvo no PostgreSQL.')
+    } catch (error) {
+      showPayrollMutationError(error, 'Não foi possível salvar o lançamento no PostgreSQL.')
     }
-
-    setPayroll(updated)
-
-    closeItemModal()
-
-    showMessage(
-      itemModal.type === 'earning'
-        ? 'Provento adicionado à folha.'
-        : 'Desconto adicionado à folha.'
-    )
   }
 
   /*
@@ -680,7 +713,7 @@ export default function Folha() {
    * ==========================================================
    */
 
-  function handleRemoveItem(type, employeeId, itemId) {
+  async function handleRemoveItem(type, employeeId, itemId) {
     if (!canManage) {
       return
     }
@@ -697,11 +730,18 @@ export default function Folha() {
       return
     }
 
-    const updated = removePayrollItem(payroll.id, employeeId, type, itemId)
-
-    setPayroll(updated)
-
-    showMessage('Lançamento removido.')
+    try {
+      await executePayrollMutation(
+        () => removePayrollItem(payroll.id, employeeId, type, itemId),
+        (candidate, previous) => apiRequest(`/payrolls/${encodeURIComponent(payroll.id)}`, {
+          method: 'PUT',
+          body: JSON.stringify({ payroll: candidate, expectedUpdatedAt: previous?.updatedAt ?? null })
+        })
+      )
+      showMessage('Lançamento removido e alteração salva no PostgreSQL.')
+    } catch (error) {
+      showPayrollMutationError(error, 'Não foi possível remover o lançamento no PostgreSQL.')
+    }
   }
 
   /*

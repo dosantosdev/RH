@@ -1,3 +1,7 @@
+# Atualização 15/10/2026 — Persistência da Folha pela API dedicada
+
+A tela de Folha de Pagamento agora consulta `/api/payrolls` e encaminha criar, editar/recalcular, incluir/remover itens, fechar, reabrir e excluir por endpoints autenticados. O backend verifica permissões financeiras, empresa autenticada, competência, status, referências de funcionários e versão `updatedAt`; as mutações são protegidas por lock transacional e o frontend reverte o cache local em caso de erro. A chave `payrolls` não usa a ponte genérica durante essas operações. A lista ainda é armazenada em JSONB; normalização, cálculos no servidor e testes com PostgreSQL real seguem pendentes. Ver `docs/MIGRACAO-FOLHA-PERSISTENCIA-API-POSTGRES.md`.
+
 ## Etapa mais recente — gravações salariais pela API autenticada
 
 - `Salarios.jsx` agora cria, edita e exclui registros por `POST/PUT/DELETE /api/salaries`.

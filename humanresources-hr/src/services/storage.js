@@ -292,6 +292,19 @@ function installStorageWriteBridge() {
 
 installStorageWriteBridge()
 
+/**
+ * Executa uma alteração local de cache sem acionar a ponte genérica de
+ * gravação. Use apenas quando o domínio já persiste pela própria API dedicada.
+ */
+export function runWithoutPostgresStorageBridge(key, callback) {
+  bridgeSuppressedKeys.add(String(key))
+  try {
+    return callback()
+  } finally {
+    bridgeSuppressedKeys.delete(String(key))
+  }
+}
+
 export function getStoredArray(key) {
   try {
     const value = JSON.parse(localStorage.getItem(key))

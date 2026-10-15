@@ -16,6 +16,7 @@ import chatRoutes from './routes/chat.js'
 import appRecordRoutes from './routes/appRecords.js'
 import financialEventRoutes from './routes/financialEvents.js'
 import salaryRoutes from './routes/salaries.js'
+import payrollRoutes from './routes/payrolls.js'
 import positionRoutes from './routes/positions.js'
 import { adminRouter as recruitmentLinkRoutes, publicRouter as publicRecruitmentRoutes } from './routes/recruitmentApplicationLinks.js'
 import { pool } from './db/pool.js'
@@ -55,6 +56,7 @@ app.use('/api/chat', chatRoutes)
 app.use('/api/app-records', appRecordRoutes)
 app.use('/api/financial-events', financialEventRoutes)
 app.use('/api/salaries', salaryRoutes)
+app.use('/api/payrolls', payrollRoutes)
 app.use('/api/recruitment', recruitmentLinkRoutes)
 
 app.use((error, _req, res, _next) => {

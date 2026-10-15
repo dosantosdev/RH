@@ -25,20 +25,24 @@ Um domínio só passa para **concluído** quando:
 | 5. Testes de integração e build de produção | Pendente | Build completo e testes com PostgreSQL, perfis e múltiplas empresas aprovados |
 | 6. Firebase Storage | Reservado para a última etapa | Migração e validação de documentos/binários após estabilizar banco e permissões |
 
-## Evidência desta entrega
+## Evidência da entrega de 15/10/2026 — Folha de Pagamento
+
+A Folha de Pagamento passou a usar endpoints dedicados para consultar e executar as mutações principais. As gravações são serializadas por empresa com lock transacional; operações com versão desatualizada recebem conflito, e o cache local é restaurado se a API falhar. A ponte genérica de escrita foi suprimida para a chave `payrolls` nesta tela, evitando que uma gravação atrasada sobrescreva a mutação dedicada. A persistência ainda é agregada em JSONB, os cálculos continuam no frontend e testes PostgreSQL reais permanecem pendentes. Detalhes em `docs/MIGRACAO-FOLHA-PERSISTENCIA-API-POSTGRES.md`.
+
+## Evidência anterior
 
 Proventos e Descontos agora usa `GET/PUT /api/financial-events`, com validação no servidor e atualização do cache somente depois da confirmação do PostgreSQL. Isso fecha o ciclo de API da tela, mas o catálogo ainda é uma lista JSONB agregada em `app_records` e não há teste de integração real nesta sessão. Por esse motivo, a tela está **migrada no fluxo de API, mas não concluída para produção**.
 
 ## Regra para o progresso numérico
 
-A nota global só sobe quando uma macroetapa ou um domínio passa critérios verificáveis. Pequenas migrações de leitura não devem, sozinhas, inflar a nota. A avaliação de 6/10 feita anteriormente ficou repetida porque usava uma estimativa ampla sem mostrar os critérios que ainda impediam o encerramento. Nesta revisão, a estimativa é **6,5/10**: houve avanço concreto no ciclo de escrita de Proventos e Descontos, mas normalização, outros fluxos de escrita e validação integrada ainda são pendências substanciais.
+A nota global só sobe quando uma macroetapa ou um domínio passa critérios verificáveis. Pequenas migrações de leitura não devem, sozinhas, inflar a nota. A avaliação de 6/10 feita anteriormente ficou repetida porque usava uma estimativa ampla sem mostrar os critérios que ainda impediam o encerramento. Após a migração do ciclo de mutações da Folha de Pagamento, a estimativa é **7/10**. O avanço se deve a operações dedicadas com controle de versão e transações, não apenas à leitura pela API. Normalização em tabelas próprias, validação dos cálculos no servidor e testes integrados continuam sendo pendências substanciais.
 
 ## Próxima sequência, sem repetir etapas já feitas
 
 1. **Salários:** as gravações já usam endpoints dedicados, validação no backend e bloqueio transacional por empresa. Falta normalizar a tabela e validar em PostgreSQL real.
-2. **Folha de Pagamento:** implementar endpoints transacionais dedicados para criar/editar/recalcular/fechar/reabrir/excluir; não reimplementar a leitura já migrada.
+2. **Folha de Pagamento:** endpoints dedicados de leitura e mutação implementados; faltam normalização, cálculos validados no servidor e testes reais.
 3. **Proventos e Descontos:** substituir a lista JSONB por operações por evento em tabela própria, com controle de concorrência.
 4. **Financeiro Avançado:** auditar férias, 13º e rescisões por CRUD completo.
-5. **Inventário fechado:** automatizar a auditoria de leituras/gravações restantes em `localStorage` e `app_records`, e fechar todos os itens encontrados.
+5. **Inventário fechado:** auditar leituras/gravações restantes em `localStorage` e `app_records`, distinguindo cache temporário de fonte oficial.
 6. **Validação final:** executar build, testes de API e integração no PostgreSQL real; corrigir falhas.
 7. Integrar Firebase Storage por último.
