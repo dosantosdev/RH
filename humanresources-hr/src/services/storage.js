@@ -69,6 +69,8 @@ const FINANCIAL_KEY_TO_MODULE = new Map(
   )
 )
 const FINANCIAL_STORAGE_KEYS = new Set(FINANCIAL_KEY_TO_MODULE.keys())
+// Catálogo normalizado em tabela própria: não deve voltar à ponte genérica JSONB.
+const NORMALIZED_DOMAIN_KEYS = new Set(['financialEvents'])
 const EVALUATION_STORAGE_KEYS = new Set([
   'evaluations',
   'evaluationModels',
@@ -94,6 +96,10 @@ const RECRUITMENT_STORAGE_KEYS = new Set([
   'recruitmentStages',
   'recruitmentInterviews'
 ])
+
+function isNormalizedDomainKey(key) {
+  return NORMALIZED_DOMAIN_KEYS.has(key)
+}
 
 function isDedicatedModuleKey(key) {
   return TRAINING_STORAGE_KEYS.has(key) || EVALUATION_STORAGE_KEYS.has(key) || TIMEKEEPING_STORAGE_KEYS.has(key) || RECRUITMENT_STORAGE_KEYS.has(key) || FINANCIAL_STORAGE_KEYS.has(key)
@@ -221,7 +227,7 @@ function sanitizePayload(value) {
 }
 
 function scheduleDatabaseWrite(key, value) {
-  if (!getApiToken() || (!canSyncKey(key) && !isDedicatedModuleKey(key))) return
+  if (isNormalizedDomainKey(key) || !getApiToken() || (!canSyncKey(key) && !isDedicatedModuleKey(key))) return
   const moduleKey = getDatabaseModuleForKey(key)
   if (isDedicatedModuleKey(key) && !userCanManageModule(moduleKey)) return
 
@@ -260,7 +266,7 @@ function installStorageWriteBridge() {
     originalSetItem.call(this, key, value)
     if (this === window.localStorage &&
         !bridgeSuppressedKeys.has(String(key)) &&
-        (canSyncKey(String(key)) || isDedicatedModuleKey(String(key)))) {
+        (!isNormalizedDomainKey(String(key)) && (canSyncKey(String(key)) || isDedicatedModuleKey(String(key))))) {
       try {
         scheduleDatabaseWrite(String(key), JSON.parse(String(value)))
       } catch {
@@ -274,7 +280,7 @@ function installStorageWriteBridge() {
     if (this === window.localStorage &&
         !bridgeSuppressedKeys.has(String(key)) &&
         getApiToken() &&
-        (canSyncKey(String(key)) || isDedicatedModuleKey(String(key)))) {
+        (!isNormalizedDomainKey(String(key)) && (canSyncKey(String(key)) || isDedicatedModuleKey(String(key))))) {
       const moduleKey = getDatabaseModuleForKey(String(key))
       if (isDedicatedModuleKey(String(key)) && !userCanManageModule(moduleKey)) return
       apiRequest(`/app-records/${getDatabaseModuleForKey(String(key))}/${encodeURIComponent(String(key))}`, {
@@ -784,6 +790,24 @@ export async function syncFinancialDataWithPostgres() {
       )
     )
     if (!canView) continue
+
+    // Eventos financeiros têm tabela e rota dedicadas. Não hidratar nem gravar
+    // esse catálogo por app_records, para impedir que uma lista JSONB antiga
+    // volte a ser tratada como fonte oficial.
+    if (module.dbModule === 'financial_events') {
+      try {
+        const response = await apiRequest('/financial-events')
+        const databaseEvents = Array.isArray(response?.events) ? response.events : []
+        const cachedEvents = getStoredArray('financialEvents')
+        if (databaseEvents.length > 0 || cachedEvents.length === 0) {
+          localStorage.setItem('financialEvents', JSON.stringify(databaseEvents))
+          synced += 1
+        }
+      } catch (error) {
+        console.warn('[PostgreSQL] Não foi possível sincronizar eventos financeiros pela rota dedicada.', error)
+      }
+      continue
+    }
 
     const response = await apiRequest(`/app-records/${module.dbModule}`)
     const remoteRecords = Array.isArray(response) ? response : []

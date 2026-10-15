@@ -1,4 +1,5 @@
 import express from 'express'
+import { Buffer } from 'node:buffer'
 import { pool } from '../db/pool.js'
 import { authenticate } from '../middleware/auth.js'
 
@@ -97,6 +98,11 @@ router.get('/:moduleKey/:recordKey', async (req, res, next) => {
   if (denyIfModulePermissionMissing(req, res, 'view')) return
   try {
     const { moduleKey, recordKey } = req.params
+    if (moduleKey === 'financial_events' && recordKey === 'financialEvents') {
+      return res.status(409).json({
+        message: 'O catálogo de eventos financeiros usa a API dedicada /api/financial-events.'
+      })
+    }
     if (!validateModule(moduleKey) || !validateRecordKey(recordKey)) {
       return res.status(400).json({ message: 'Identificador inválido.' })
     }
@@ -120,6 +126,11 @@ router.put('/:moduleKey/:recordKey', async (req, res, next) => {
   try {
     const { moduleKey, recordKey } = req.params
     const payload = req.body?.payload
+    if (moduleKey === 'financial_events' && recordKey === 'financialEvents') {
+      return res.status(409).json({
+        message: 'O catálogo de eventos financeiros usa a API dedicada /api/financial-events.'
+      })
+    }
     if (!validateModule(moduleKey) || !validateRecordKey(recordKey)) {
       return res.status(400).json({ message: 'Identificador inválido.' })
     }
@@ -149,6 +160,11 @@ router.delete('/:moduleKey/:recordKey', async (req, res, next) => {
   if (denyIfModulePermissionMissing(req, res, 'manage')) return
   try {
     const { moduleKey, recordKey } = req.params
+    if (moduleKey === 'financial_events' && recordKey === 'financialEvents') {
+      return res.status(409).json({
+        message: 'O catálogo de eventos financeiros usa a API dedicada /api/financial-events.'
+      })
+    }
     if (!validateModule(moduleKey) || !validateRecordKey(recordKey)) {
       return res.status(400).json({ message: 'Identificador inválido.' })
     }
@@ -180,6 +196,11 @@ router.post('/legacy-import', async (req, res, next) => {
   }
 
   for (const record of records) {
+    if (record?.moduleKey === 'financial_events' && record?.recordKey === 'financialEvents') {
+      return res.status(409).json({
+        message: 'O catálogo de eventos financeiros deve ser salvo pela API dedicada /api/financial-events.'
+      })
+    }
     if (!validateModule(record?.moduleKey) || !validateRecordKey(record?.recordKey) ||
         record.payload === undefined || payloadSize(record.payload) > MAX_PAYLOAD_BYTES) {
       return res.status(400).json({ message: 'O lote contém registro inválido ou acima de 256 KB.' })

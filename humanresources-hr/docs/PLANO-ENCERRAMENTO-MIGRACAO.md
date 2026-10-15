@@ -25,6 +25,10 @@ Um domínio só passa para **concluído** quando:
 | 5. Testes de integração e build de produção | Pendente | Build completo e testes com PostgreSQL, perfis e múltiplas empresas aprovados |
 | 6. Firebase Storage | Reservado para a última etapa | Migração e validação de documentos/binários após estabilizar banco e permissões |
 
+## Evidência adicional de 15/10/2026 — Proventos e Descontos normalizados
+
+O catálogo financeiro foi migrado de uma lista agregada JSONB para a tabela `financial_events`, com cópia idempotente dos dados antigos e bloqueio da ponte genérica para a chave correspondente. O endpoint mantém compatibilidade com a tela, mas persiste uma linha por evento. A validação SQL e funcional no PostgreSQL real continua pendente; por isso, este domínio ainda não deve ser considerado aprovado para produção. Consulte `docs/MIGRACAO-PROVENTOS-DESCONTOS-TABELA-RELACIONAL.md`.
+
 ## Evidência da entrega de 15/10/2026 — Folha de Pagamento
 
 A Folha de Pagamento passou a usar endpoints dedicados para consultar e executar as mutações principais. As gravações são serializadas por empresa com lock transacional; operações com versão desatualizada recebem conflito, e o cache local é restaurado se a API falhar. A ponte genérica de escrita foi suprimida para a chave `payrolls` nesta tela, evitando que uma gravação atrasada sobrescreva a mutação dedicada. A persistência ainda é agregada em JSONB, os cálculos continuam no frontend e testes PostgreSQL reais permanecem pendentes. Detalhes em `docs/MIGRACAO-FOLHA-PERSISTENCIA-API-POSTGRES.md`.
@@ -41,7 +45,7 @@ A nota global só sobe quando uma macroetapa ou um domínio passa critérios ver
 
 1. **Salários:** as gravações já usam endpoints dedicados, validação no backend e bloqueio transacional por empresa. Falta normalizar a tabela e validar em PostgreSQL real.
 2. **Folha de Pagamento:** endpoints dedicados de leitura e mutação implementados; faltam normalização, cálculos validados no servidor e testes reais.
-3. **Proventos e Descontos:** substituir a lista JSONB por operações por evento em tabela própria, com controle de concorrência.
+3. **Proventos e Descontos:** tabela própria e persistência relacional implementadas nesta revisão; falta validar no PostgreSQL real e, depois, trocar o PUT de lista por operações CRUD por evento.
 4. **Financeiro Avançado:** auditar férias, 13º e rescisões por CRUD completo.
 5. **Inventário fechado:** auditar leituras/gravações restantes em `localStorage` e `app_records`, distinguindo cache temporário de fonte oficial.
 6. **Validação final:** executar build, testes de API e integração no PostgreSQL real; corrigir falhas.

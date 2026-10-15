@@ -1,3 +1,11 @@
+# Atualização 15/10/2026 — Proventos e Descontos em tabela relacional
+
+- Criada a migração `server/sql/010_financial_events_normalized.sql`, que cria `financial_events` e copia o catálogo legado de `app_records` sem apagar a origem.
+- A rota `/api/financial-events` agora lê e grava linhas individuais na tabela relacional, mantendo o contrato e os IDs usados pela interface.
+- A ponte genérica `localStorage`/`app_records` foi bloqueada para a chave `financial_events/financialEvents`, para evitar sobrescritas por gravações atrasadas.
+- `node --check` e ESLint direcionado passaram nos três arquivos alterados. Build completo e teste PostgreSQL real não puderam ser concluídos neste ambiente.
+- Detalhes e roteiro de validação: `MIGRACAO-PROVENTOS-DESCONTOS-TABELA-RELACIONAL.md`.
+
 # Atualização 15/10/2026 — Persistência da Folha pela API dedicada
 
 A tela de Folha de Pagamento agora consulta `/api/payrolls` e encaminha criar, editar/recalcular, incluir/remover itens, fechar, reabrir e excluir por endpoints autenticados. O backend verifica permissões financeiras, empresa autenticada, competência, status, referências de funcionários e versão `updatedAt`; as mutações são protegidas por lock transacional e o frontend reverte o cache local em caso de erro. A chave `payrolls` não usa a ponte genérica durante essas operações. A lista ainda é armazenada em JSONB; normalização, cálculos no servidor e testes com PostgreSQL real seguem pendentes. Ver `docs/MIGRACAO-FOLHA-PERSISTENCIA-API-POSTGRES.md`.
