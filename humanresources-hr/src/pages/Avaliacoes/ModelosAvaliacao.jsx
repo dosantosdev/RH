@@ -12,6 +12,8 @@ import {
   updatePdiQuestion
 } from '../../services/evaluationModels'
 
+import { flushEvaluationDataWrites } from '../../services/storage'
+
 import './avaliacoes.css'
 
 /*
@@ -32,6 +34,8 @@ export default function ModelosAvaliacao() {
   const [error, setError] = useState('')
 
   const [success, setSuccess] = useState('')
+
+  const [savingModel, setSavingModel] = useState(false)
 
   /*
    * ----------------------------------------------------------
@@ -559,7 +563,7 @@ export default function ModelosAvaliacao() {
     return errors
   }
 
-  function handleSave(event) {
+  async function handleSave(event) {
     event.preventDefault()
 
     setError('')
@@ -615,6 +619,7 @@ export default function ModelosAvaliacao() {
     }
 
     try {
+      setSavingModel(true)
       let updatedModels
 
       if (selectedModelId) {
@@ -627,6 +632,7 @@ export default function ModelosAvaliacao() {
         updatedModels = addEvaluationModel(data)
       }
 
+      await flushEvaluationDataWrites()
       setModels(updatedModels)
 
       setSuccess('Modelo de avaliação salvo com sucesso.')
@@ -636,8 +642,9 @@ export default function ModelosAvaliacao() {
       setSelectedModelId(null)
     } catch (saveError) {
       console.error(saveError)
-
-      setError('Não foi possível salvar o modelo.')
+      setError(saveError?.message || 'Não foi possível salvar o modelo no PostgreSQL.')
+    } finally {
+      setSavingModel(false)
     }
   }
 
@@ -647,7 +654,7 @@ export default function ModelosAvaliacao() {
    * ==========================================================
    */
 
-  function handleDeleteModel(model) {
+  async function handleDeleteModel(model) {
     const confirmed = window.confirm(
       `Deseja realmente excluir o modelo "${model.name}"?`
     )
@@ -656,9 +663,18 @@ export default function ModelosAvaliacao() {
       return
     }
 
-    const updatedModels = deleteEvaluationModel(model.id)
-
-    setModels(updatedModels)
+    setSavingModel(true)
+    setError('')
+    try {
+      const updatedModels = deleteEvaluationModel(model.id)
+      await flushEvaluationDataWrites()
+      setModels(updatedModels)
+    } catch (deleteError) {
+      setError(deleteError?.message || 'Não foi possível excluir o modelo no PostgreSQL.')
+      return
+    } finally {
+      setSavingModel(false)
+    }
 
     if (selectedModelId === model.id) {
       handleCancel()
@@ -1268,8 +1284,12 @@ export default function ModelosAvaliacao() {
               Cancelar
             </button>
 
-            <button type="submit" className="avaliacoes-primary-button">
-              Salvar modelo
+            <button
+              type="submit"
+              className="avaliacoes-primary-button"
+              disabled={savingModel}
+            >
+              {savingModel ? 'Salvando...' : 'Salvar modelo'}
             </button>
           </div>
         </form>

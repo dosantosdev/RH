@@ -194,6 +194,7 @@ const EXCLUDED_KEYS = new Set([
 ])
 const SENSITIVE_KEY = /password|token|secret|credential|session|auth/i
 const pendingWrites = new Map()
+const bridgeSuppressedKeys = new Set()
 let syncPromise = null
 
 function canSyncKey(key) {
@@ -257,7 +258,9 @@ function installStorageWriteBridge() {
 
   Storage.prototype.setItem = function bridgedSetItem(key, value) {
     originalSetItem.call(this, key, value)
-    if (this === window.localStorage && (canSyncKey(String(key)) || isDedicatedModuleKey(String(key)))) {
+    if (this === window.localStorage &&
+        !bridgeSuppressedKeys.has(String(key)) &&
+        (canSyncKey(String(key)) || isDedicatedModuleKey(String(key)))) {
       try {
         scheduleDatabaseWrite(String(key), JSON.parse(String(value)))
       } catch {
@@ -268,7 +271,10 @@ function installStorageWriteBridge() {
 
   Storage.prototype.removeItem = function bridgedRemoveItem(key) {
     originalRemoveItem.call(this, key)
-    if (this === window.localStorage && getApiToken() && (canSyncKey(String(key)) || isDedicatedModuleKey(String(key)))) {
+    if (this === window.localStorage &&
+        !bridgeSuppressedKeys.has(String(key)) &&
+        getApiToken() &&
+        (canSyncKey(String(key)) || isDedicatedModuleKey(String(key)))) {
       const moduleKey = getDatabaseModuleForKey(String(key))
       if (isDedicatedModuleKey(String(key)) && !userCanManageModule(moduleKey)) return
       apiRequest(`/app-records/${getDatabaseModuleForKey(String(key))}/${encodeURIComponent(String(key))}`, {
@@ -314,6 +320,8 @@ export function getStoredObject(key, fallback = null) {
  */
 const pendingTrainingWrites = new Map()
 const TRAINING_SYNC_ERROR_KEY = 'hr_training_sync_error'
+const pendingEvaluationWrites = new Map()
+const EVALUATION_SYNC_ERROR_KEY = 'hr_evaluation_sync_error'
 
 function enqueueTrainingWrite(key, value) {
   if (!TRAINING_STORAGE_KEYS.has(key)) return
@@ -389,13 +397,130 @@ export async function flushTrainingDataWrites() {
   }
 }
 
+
+/*
+ * As gravações de Avaliações são aguardadas pelas telas administrativas
+ * antes de mostrar sucesso. O contrato dos serviços continua síncrono para
+ * não quebrar componentes existentes durante a migração.
+ */
+function enqueueEvaluationWrite(key, value) {
+  if (!EVALUATION_STORAGE_KEYS.has(key)) return
+  if (!getApiToken() || !userCanManageModule(EVALUATION_DB_MODULE)) return
+
+  const previousWrite = pendingEvaluationWrites.get(key) || Promise.resolve()
+  const nextWrite = previousWrite
+    .catch(() => {})
+    .then(async () => {
+      const serialized = JSON.stringify(value)
+      if (new Blob([serialized]).size > 256 * 1024) {
+        throw new Error(`Os dados de "${key}" excedem o limite de 256 KB da API.`)
+      }
+      await apiRequest(
+        `/app-records/${EVALUATION_DB_MODULE}/${encodeURIComponent(key)}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ payload: sanitizePayload(value) })
+        }
+      )
+      const storedError = localStorage.getItem(EVALUATION_SYNC_ERROR_KEY)
+      if (storedError) {
+        try {
+          if (JSON.parse(storedError)?.key === key) localStorage.removeItem(EVALUATION_SYNC_ERROR_KEY)
+        } catch {
+          localStorage.removeItem(EVALUATION_SYNC_ERROR_KEY)
+        }
+      }
+    })
+    .catch((error) => {
+      localStorage.setItem(EVALUATION_SYNC_ERROR_KEY, JSON.stringify({
+        key,
+        message: error?.message || 'Falha ao salvar os dados de avaliações.',
+        occurredAt: new Date().toISOString()
+      }))
+      console.error(`[PostgreSQL] Falha ao salvar "${key}":`, error)
+    })
+    .finally(() => {
+      if (pendingEvaluationWrites.get(key) === nextWrite) {
+        pendingEvaluationWrites.delete(key)
+      }
+    })
+
+  pendingEvaluationWrites.set(key, nextWrite)
+}
+
+export async function flushEvaluationDataWrites() {
+  const pending = [...pendingEvaluationWrites.values()]
+  if (pending.length) await Promise.all(pending)
+
+  const storedError = localStorage.getItem(EVALUATION_SYNC_ERROR_KEY)
+  if (storedError) {
+    let parsedError
+    try { parsedError = JSON.parse(storedError) } catch { parsedError = null }
+    if (parsedError?.message) throw new Error(parsedError.message)
+  }
+}
+
+function enqueueEvaluationRemoval(key) {
+  if (!EVALUATION_STORAGE_KEYS.has(key)) return
+  if (!getApiToken() || !userCanManageModule(EVALUATION_DB_MODULE)) return
+
+  const previousWrite = pendingEvaluationWrites.get(key) || Promise.resolve()
+  const nextWrite = previousWrite
+    .catch(() => {})
+    .then(async () => {
+      await apiRequest(
+        `/app-records/${EVALUATION_DB_MODULE}/${encodeURIComponent(key)}`,
+        { method: 'DELETE' }
+      )
+      const storedError = localStorage.getItem(EVALUATION_SYNC_ERROR_KEY)
+      if (storedError) {
+        try {
+          if (JSON.parse(storedError)?.key === key) localStorage.removeItem(EVALUATION_SYNC_ERROR_KEY)
+        } catch {
+          localStorage.removeItem(EVALUATION_SYNC_ERROR_KEY)
+        }
+      }
+    })
+    .catch((error) => {
+      localStorage.setItem(EVALUATION_SYNC_ERROR_KEY, JSON.stringify({
+        key,
+        message: error?.message || 'Falha ao remover os dados de avaliações.',
+        occurredAt: new Date().toISOString()
+      }))
+      console.error(`[PostgreSQL] Falha ao remover "${key}":`, error)
+    })
+    .finally(() => {
+      if (pendingEvaluationWrites.get(key) === nextWrite) {
+        pendingEvaluationWrites.delete(key)
+      }
+    })
+
+  pendingEvaluationWrites.set(key, nextWrite)
+}
+
 export function setStored(key, value) {
-  localStorage.setItem(key, JSON.stringify(value))
+  // Evita que o bridge com debounce faça uma segunda gravação paralela para
+  // listas com fila explícita; as demais chaves continuam usando o bridge.
+  const hasExplicitQueue = TRAINING_STORAGE_KEYS.has(key) || EVALUATION_STORAGE_KEYS.has(key)
+  if (hasExplicitQueue) bridgeSuppressedKeys.add(key)
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+  } finally {
+    if (hasExplicitQueue) bridgeSuppressedKeys.delete(key)
+  }
   enqueueTrainingWrite(key, value)
+  enqueueEvaluationWrite(key, value)
 }
 
 export function removeStored(key) {
-  localStorage.removeItem(key)
+  const hasExplicitQueue = TRAINING_STORAGE_KEYS.has(key) || EVALUATION_STORAGE_KEYS.has(key)
+  if (hasExplicitQueue) bridgeSuppressedKeys.add(key)
+  try {
+    localStorage.removeItem(key)
+  } finally {
+    if (hasExplicitQueue) bridgeSuppressedKeys.delete(key)
+  }
+  enqueueEvaluationRemoval(key)
   if (!TRAINING_STORAGE_KEYS.has(key)) return
   if (!getApiToken() || !userCanManageModule(TRAINING_DB_MODULE)) return
 

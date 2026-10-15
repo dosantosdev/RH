@@ -15,6 +15,8 @@ import {
   getEvaluationWorkflows
 } from '../../services/evaluationWorkflow'
 
+import { flushEvaluationDataWrites } from '../../services/storage'
+
 import './avaliacoes.css'
 
 function formatDate(value) {
@@ -86,6 +88,7 @@ export default function Avaliacoes() {
   })
 
   const [error, setError] = useState('')
+  const [savingWorkflow, setSavingWorkflow] = useState(false)
 
   const filteredWorkflows = useMemo(() => {
     const value = search.trim().toLowerCase()
@@ -148,7 +151,7 @@ export default function Avaliacoes() {
     setError('')
   }
 
-  function handleCreate(event) {
+  async function handleCreate(event) {
     event.preventDefault()
 
     setError('')
@@ -170,7 +173,8 @@ export default function Avaliacoes() {
     }
 
     try {
-      createEvaluationWorkflow({
+      setSavingWorkflow(true)
+      await Promise.resolve(createEvaluationWorkflow({
         employeeId: employee.id,
 
         employeeName: employee.name,
@@ -188,13 +192,16 @@ export default function Avaliacoes() {
         createdBy: 'current-user',
 
         createdByName: 'Usuário atual'
-      })
+      }))
 
+      await flushEvaluationDataWrites()
       setWorkflows(getEvaluationWorkflows())
 
       closeForm()
     } catch (workflowError) {
-      setError(workflowError.message)
+      setError(workflowError.message || 'Não foi possível salvar a avaliação no PostgreSQL.')
+    } finally {
+      setSavingWorkflow(false)
     }
   }
 
@@ -465,8 +472,12 @@ export default function Avaliacoes() {
                   Cancelar
                 </button>
 
-                <button type="submit" className="evaluations-primary-button">
-                  Criar avaliação
+                <button
+                  type="submit"
+                  className="evaluations-primary-button"
+                  disabled={savingWorkflow}
+                >
+                  {savingWorkflow ? 'Salvando...' : 'Criar avaliação'}
                 </button>
               </footer>
             </form>

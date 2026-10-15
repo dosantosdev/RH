@@ -1,3 +1,9 @@
+## Etapa mais recente — persistência administrativa de Avaliações
+
+- Modelos de avaliação e criação de workflows agora aguardam a confirmação das gravações na API PostgreSQL.
+- Falhas de persistência são propagadas à interface em vez de serem tratadas como sucesso silencioso.
+- Detalhes: `MIGRACAO-AVALIACOES-ADMIN-PERSISTENCIA-API.md`.
+
 ## Etapa mais recente — persistência administrativa de Treinamentos
 
 - As alterações das listas de treinamentos, participantes, avaliações e certificados agora são enfileiradas para persistência na API PostgreSQL.
