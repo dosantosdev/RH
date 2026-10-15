@@ -622,6 +622,239 @@ router.get('/timekeeping/report-data', requirePermission('ponto_controle_view'),
   }
 })
 
+
+/**
+ * Portal do funcionário: devolve somente workflows de avaliação vinculados
+ * ao funcionário autenticado. A lista completa nunca é enviada ao navegador.
+ */
+router.get('/evaluation-workflows', async (req, res, next) => {
+  const permissions = Array.isArray(req.user?.permissions) ? req.user.permissions : []
+  const canManageEvaluations = req.user?.isAdmin === true ||
+    ['evaluations_create', 'evaluations_edit', 'evaluations_delete'].some((permission) => permissions.includes(permission))
+  if (!req.user?.employeeId && !canManageEvaluations) {
+    return res.status(400).json({ message: 'Esta conta não está vinculada a um funcionário.' })
+  }
+
+  try {
+    let aliases = new Set()
+    if (req.user?.employeeId) {
+      const employeeResult = await pool.query(
+        `SELECT id, registration_data
+         FROM employees
+         WHERE id = $1 AND company_id = $2`,
+        [req.user.employeeId, req.user.companyId]
+      )
+      if (!employeeResult.rowCount) {
+        return res.status(404).json({ message: 'Funcionário não encontrado.' })
+      }
+
+      const employee = employeeResult.rows[0]
+      const registration = employee.registration_data || {}
+      aliases = new Set([
+        employee.id,
+        registration.legacyId,
+        registration.legacy_id,
+        registration.id
+      ].filter((value) => value !== null && value !== undefined).map(String))
+    }
+
+    const result = await pool.query(
+      `SELECT payload
+       FROM app_records
+       WHERE company_id = $1
+         AND module_key = 'evaluations'
+         AND record_key = 'evaluationWorkflows'
+       LIMIT 1`,
+      [req.user.companyId]
+    )
+
+    const workflows = Array.isArray(result.rows[0]?.payload) ? result.rows[0].payload : []
+
+    return res.json(workflows.filter((workflow) => {
+      const candidates = [
+        workflow?.employeeId,
+        workflow?.employee?.id,
+        workflow?.employee?.employeeId
+      ].filter((value) => value !== null && value !== undefined).map(String)
+      const isEvaluatedEmployee = candidates.some((value) => aliases.has(value))
+      const isPdiResponsible =
+        String(workflow?.pdi?.responsibleUserId || '') === String(req.user.userId || '') ||
+        aliases.has(String(workflow?.pdi?.responsibleEmployeeId || ''))
+      return isEvaluatedEmployee || isPdiResponsible || canManageEvaluations
+    }))
+  } catch (error) {
+    return next(error)
+  }
+})
+
+/**
+ * Atualiza somente o PDI de um workflow ao qual o usuário está autorizado.
+ * O cliente envia respostas, nunca IDs de funcionário ou dados completos do workflow.
+ */
+router.post('/evaluation-workflows/:workflowId/pdi', async (req, res, next) => {
+  const permissions = Array.isArray(req.user?.permissions) ? req.user.permissions : []
+  const canManageEvaluations = req.user?.isAdmin === true ||
+    ['evaluations_create', 'evaluations_edit', 'evaluations_delete'].some((permission) => permissions.includes(permission))
+  if (!req.user?.employeeId && !canManageEvaluations) {
+    return res.status(400).json({ message: 'Esta conta não está vinculada a um funcionário.' })
+  }
+
+  const workflowId = String(req.params.workflowId || '')
+  const action = req.body?.action
+  const answers = req.body?.answers && typeof req.body.answers === 'object' &&
+    !Array.isArray(req.body.answers) ? req.body.answers : {}
+
+  if (!workflowId || workflowId.length > 180 || !['start', 'save', 'complete'].includes(action)) {
+    return res.status(400).json({ message: 'Ação ou avaliação inválida.' })
+  }
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    await client.query(
+      'SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))',
+      [String(req.user.companyId), 'evaluations:evaluationWorkflows']
+    )
+
+    let employee = { name: req.user.name || '', username: req.user.username || '', registration_data: {} }
+    let aliases = new Set()
+    if (req.user?.employeeId) {
+      const employeeResult = await client.query(
+        `SELECT e.id, e.name, u.username, e.registration_data
+         FROM employees e
+         LEFT JOIN users u ON u.employee_id = e.id AND u.company_id = e.company_id AND u.id = $3
+         WHERE e.id = $1 AND e.company_id = $2`,
+        [req.user.employeeId, req.user.companyId, req.user.userId]
+      )
+      if (!employeeResult.rowCount) {
+        await client.query('ROLLBACK')
+        return res.status(404).json({ message: 'Funcionário não encontrado.' })
+      }
+
+      employee = employeeResult.rows[0]
+      const registration = employee.registration_data || {}
+      aliases = new Set([
+        employee.id,
+        registration.legacyId,
+        registration.legacy_id,
+        registration.id
+      ].filter((value) => value !== null && value !== undefined).map(String))
+    }
+
+    const recordResult = await client.query(
+      `SELECT payload
+       FROM app_records
+       WHERE company_id = $1
+         AND module_key = 'evaluations'
+         AND record_key = 'evaluationWorkflows'
+       FOR UPDATE`,
+      [req.user.companyId]
+    )
+    if (!recordResult.rowCount || !Array.isArray(recordResult.rows[0].payload)) {
+      await client.query('ROLLBACK')
+      return res.status(404).json({ message: 'Avaliações não encontradas.' })
+    }
+
+    const workflows = recordResult.rows[0].payload
+    const index = workflows.findIndex((workflow) => String(workflow?.id) === workflowId)
+
+    if (index < 0) {
+      await client.query('ROLLBACK')
+      return res.status(404).json({ message: 'Avaliação não encontrada para este funcionário.' })
+    }
+
+    const workflow = workflows[index]
+    const isPdiResponsible =
+      String(workflow?.pdi?.responsibleUserId || '') === String(req.user.userId || '') ||
+      aliases.has(String(workflow?.pdi?.responsibleEmployeeId || ''))
+    if (!canManageEvaluations && !isPdiResponsible) {
+      await client.query('ROLLBACK')
+      return res.status(403).json({ message: 'Somente o responsável pelo PDI ou a Gestão de RH pode alterá-lo.' })
+    }
+
+    const pdi = workflow.pdi && typeof workflow.pdi === 'object' ? workflow.pdi : null
+    if (!pdi || !Array.isArray(pdi.questions)) {
+      await client.query('ROLLBACK')
+      return res.status(400).json({ message: 'Esta avaliação não possui um PDI válido.' })
+    }
+    if (pdi.status === 'completed') {
+      await client.query('ROLLBACK')
+      return res.status(409).json({ message: 'Este PDI já foi concluído.' })
+    }
+
+    const now = new Date().toISOString()
+    const userName = employee.name || req.user.name || req.user.username || 'Funcionário'
+    let updatedPdi = { ...pdi }
+
+    if (action === 'start') {
+      updatedPdi = {
+        ...updatedPdi,
+        status: 'in_progress',
+        startedAt: updatedPdi.startedAt || now,
+        startedByUserId: req.user.userId || '',
+        startedByUserName: userName
+      }
+    } else {
+      const questions = updatedPdi.questions.map((question) => {
+        if (!Object.prototype.hasOwnProperty.call(answers, String(question.id))) return question
+        const rawAnswer = answers[String(question.id)]
+        const answer = typeof rawAnswer === 'string' ? rawAnswer.trim().slice(0, 10000) : String(rawAnswer ?? '').slice(0, 10000)
+        return { ...question, answer, answeredAt: now }
+      })
+
+      updatedPdi = {
+        ...updatedPdi,
+        questions,
+        status: 'in_progress',
+        startedAt: updatedPdi.startedAt || now
+      }
+
+      if (action === 'complete') {
+        const unanswered = questions.filter((question) =>
+          question.required !== false && !String(question.answer ?? '').trim()
+        )
+        if (unanswered.length) {
+          await client.query('ROLLBACK')
+          return res.status(400).json({
+            message: 'Responda todas as perguntas obrigatórias antes de concluir o PDI.',
+            errors: unanswered.map((question, index) => `Pergunta obrigatória pendente: ${question.text || index + 1}`)
+          })
+        }
+
+        updatedPdi = {
+          ...updatedPdi,
+          status: 'completed',
+          completedAt: now,
+          completedByUserId: req.user.userId || '',
+          completedByUserName: userName
+        }
+      }
+    }
+
+    const updatedWorkflow = {
+      ...workflow,
+      pdi: updatedPdi,
+      updatedAt: now
+    }
+    workflows[index] = updatedWorkflow
+
+    await client.query(
+      `UPDATE app_records
+       SET payload = $2::jsonb, updated_by = $3, updated_at = NOW()
+       WHERE company_id = $1 AND module_key = 'evaluations' AND record_key = 'evaluationWorkflows'`,
+      [req.user.companyId, JSON.stringify(workflows), req.user.userId || null]
+    )
+
+    await client.query('COMMIT')
+    return res.json({ workflow: updatedWorkflow })
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {})
+    return next(error)
+  } finally {
+    client.release()
+  }
+})
+
 router.get('/documents', async (req, res, next) => {
   try {
     if (!req.user.employeeId) return res.json([])

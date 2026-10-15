@@ -1,3 +1,11 @@
+## Etapa mais recente — portal Minhas Avaliações/PDI
+
+- `MinhasAvaliacoes.jsx` passa a consultar a API autenticada para obter workflows visíveis e a enviar início/salvamento/conclusão do PDI ao servidor.
+- A API limita a leitura por vínculo/responsabilidade e valida autorização e perguntas obrigatórias no servidor antes de gravar no PostgreSQL.
+- A gravação é transacional; o armazenamento JSONB agregado permanece temporário.
+- O portal `Meus Treinamentos` e o fluxo administrativo de Avaliações ainda precisam de migração específica.
+- Detalhes: `MIGRACAO-PORTAL-MINHAS-AVALIACOES-API.md`.
+
 ## Etapa mais recente — links públicos de candidatura
 
 - Criação, listagem, revogação e exclusão dos links usam a API e PostgreSQL.

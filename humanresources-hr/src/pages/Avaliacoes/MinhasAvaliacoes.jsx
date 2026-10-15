@@ -13,7 +13,8 @@ import {
   canRespondToPdi
 } from '../../services/evaluationAccess'
 
-import { getStoredArray } from '../../services/storage'
+import { getStoredArray, setStored } from '../../services/storage'
+import { apiRequest, getApiToken, getApiUser } from '../../services/api'
 
 import './avaliacoes.css'
 
@@ -59,17 +60,14 @@ export default function MinhasAvaliacoes() {
   }, [])
 
   function loadCurrentUser() {
+    const apiUser = getApiUser()
+    if (apiUser) {
+      setCurrentUser(apiUser)
+      return
+    }
+
     const users = getStoredArray('users')
-
-    /*
-     * O sistema utiliza diferentes nomes dependendo da parte
-     * em que o usuário foi criado.
-     *
-     * Tentamos primeiro os formatos mais comuns.
-     */
-
     const loggedUser = getLoggedUserFromStorage(users)
-
     setCurrentUser(loggedUser)
   }
 
@@ -89,27 +87,23 @@ export default function MinhasAvaliacoes() {
     loadWorkflows()
   }, [currentUser])
 
-  function loadWorkflows() {
+  async function loadWorkflows() {
     setLoading(true)
 
     try {
-      let storedWorkflows = getEvaluationWorkflows()
+      let storedWorkflows
 
-      /*
-       * Atualiza o status das avaliações antigas antes de
-       * apresentá-las.
-       */
-
-      storedWorkflows = storedWorkflows.map(
-        (workflow) => refreshEvaluationWorkflowStatus(workflow.id) || workflow
-      )
-
-      /*
-       * Depois da atualização, buscamos novamente os dados
-       * armazenados.
-       */
-
-      storedWorkflows = getEvaluationWorkflows()
+      if (getApiToken()) {
+        // A API retorna somente avaliações do funcionário autenticado.
+        storedWorkflows = await apiRequest('/me/evaluation-workflows')
+        setStored('evaluationWorkflows', storedWorkflows)
+      } else {
+        // Compatibilidade temporária com instalações legadas sem sessão API.
+        storedWorkflows = getEvaluationWorkflows().map(
+          (workflow) => refreshEvaluationWorkflowStatus(workflow.id) || workflow
+        )
+        storedWorkflows = getEvaluationWorkflows()
+      }
 
       const visibleWorkflows = storedWorkflows.filter(
         (workflow) =>
@@ -120,8 +114,7 @@ export default function MinhasAvaliacoes() {
       setWorkflows(visibleWorkflows)
     } catch (loadError) {
       console.error(loadError)
-
-      setError('Não foi possível carregar suas avaliações.')
+      setError(loadError.message || 'Não foi possível carregar suas avaliações.')
     } finally {
       setLoading(false)
     }
@@ -187,39 +180,47 @@ export default function MinhasAvaliacoes() {
    * ----------------------------------------------------------
    */
 
-  function handleStartPdi() {
-    if (!selectedWorkflow || !currentUser) {
-      return
-    }
+  async function handleStartPdi() {
+    if (!selectedWorkflow || !currentUser) return
 
     setError('')
+    setSuccess('')
 
     try {
-      const updatedWorkflow = startEvaluationPdi(
-        selectedWorkflow.id,
-        currentUser.id
-      )
+      let updatedWorkflow
+
+      if (getApiToken()) {
+        const result = await apiRequest(
+          `/me/evaluation-workflows/${encodeURIComponent(selectedWorkflow.id)}/pdi`,
+          {
+            method: 'POST',
+            body: JSON.stringify({ action: 'start' })
+          }
+        )
+        updatedWorkflow = result.workflow
+        const cached = getEvaluationWorkflows()
+        setStored('evaluationWorkflows', cached.map((item) =>
+          String(item.id) === String(updatedWorkflow.id) ? updatedWorkflow : item
+        ))
+      } else {
+        updatedWorkflow = startEvaluationPdi(selectedWorkflow.id, currentUser)
+      }
 
       if (!updatedWorkflow) {
         setError('Não foi possível iniciar o PDI.')
-
         return
       }
 
       setSelectedWorkflow(updatedWorkflow)
-
       setWorkflows((current) =>
         current.map((workflow) =>
-          workflow.id === updatedWorkflow.id ? updatedWorkflow : workflow
+          String(workflow.id) === String(updatedWorkflow.id) ? updatedWorkflow : workflow
         )
       )
-
       setPdiAnswers(getExistingPdiAnswers(updatedWorkflow))
-
       setSuccess('PDI iniciado com sucesso.')
     } catch (startError) {
       console.error(startError)
-
       setError(startError.message || 'Não foi possível iniciar o PDI.')
     }
   }
@@ -230,73 +231,74 @@ export default function MinhasAvaliacoes() {
    * ----------------------------------------------------------
    */
 
-  function handleSavePdi(complete = false) {
-    if (!selectedWorkflow || !currentUser) {
-      return
-    }
+  async function handleSavePdi(complete = false) {
+    if (!selectedWorkflow || !currentUser) return
 
     setSaving(true)
-
     setError('')
-
     setSuccess('')
 
     try {
-      let updatedWorkflow = selectedWorkflow
+      let updatedWorkflow
 
-      /*
-       * Caso o PDI ainda não tenha sido iniciado, iniciamos
-       * automaticamente antes de salvar.
-       */
-
-      if (!isPdiStarted(updatedWorkflow)) {
-        updatedWorkflow = startEvaluationPdi(
-          selectedWorkflow.id,
-          currentUser.id
+      if (getApiToken()) {
+        const result = await apiRequest(
+          `/me/evaluation-workflows/${encodeURIComponent(selectedWorkflow.id)}/pdi`,
+          {
+            method: 'POST',
+            body: JSON.stringify({
+              action: complete ? 'complete' : 'save',
+              answers: pdiAnswers
+            })
+          }
         )
+        updatedWorkflow = result.workflow
+        const cached = getEvaluationWorkflows()
+        setStored('evaluationWorkflows', cached.map((item) =>
+          String(item.id) === String(updatedWorkflow.id) ? updatedWorkflow : item
+        ))
+      } else {
+        // Compatibilidade temporária para instalações sem API.
+        updatedWorkflow = selectedWorkflow
+        if (!isPdiStarted(updatedWorkflow)) {
+          updatedWorkflow = startEvaluationPdi(updatedWorkflow.id, currentUser)
+        }
+
+        Object.entries(pdiAnswers).forEach(([questionId, answer]) => {
+          updatedWorkflow = answerEvaluationPdiQuestion(
+            updatedWorkflow.id,
+            questionId,
+            answer,
+            currentUser.id
+          )
+        })
+
+        if (complete) {
+          updatedWorkflow = completeEvaluationPdi(
+            updatedWorkflow.id,
+            currentUser,
+            null
+          )
+          if (updatedWorkflow?.success === false) {
+            throw new Error(updatedWorkflow.errors?.join(' ') || 'Não foi possível concluir o PDI.')
+          }
+        }
       }
 
-      /*
-       * Salva cada resposta no workflow.
-       */
-
-      Object.entries(pdiAnswers).forEach(([questionId, answer]) => {
-        updatedWorkflow = answerEvaluationPdiQuestion(
-          updatedWorkflow.id,
-          questionId,
-          answer,
-          currentUser.id
-        )
-      })
-
-      /*
-       * Se o usuário clicou em concluir, fazemos a validação
-       * final.
-       */
-
-      if (complete) {
-        updatedWorkflow = completeEvaluationPdi(
-          updatedWorkflow.id,
-          currentUser.id
-        )
-
-        setSuccess('PDI concluído com sucesso.')
-      } else {
-        setSuccess('Respostas salvas com sucesso.')
+      if (!updatedWorkflow) {
+        throw new Error('Não foi possível salvar o PDI.')
       }
 
       setSelectedWorkflow(updatedWorkflow)
-
       setWorkflows((current) =>
         current.map((workflow) =>
-          workflow.id === updatedWorkflow.id ? updatedWorkflow : workflow
+          String(workflow.id) === String(updatedWorkflow.id) ? updatedWorkflow : workflow
         )
       )
-
       setPdiAnswers(getExistingPdiAnswers(updatedWorkflow))
+      setSuccess(complete ? 'PDI concluído com sucesso.' : 'Respostas salvas com sucesso.')
     } catch (saveError) {
       console.error(saveError)
-
       setError(saveError.message || 'Não foi possível salvar o PDI.')
     } finally {
       setSaving(false)
