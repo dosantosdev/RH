@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import './navbar.css'
 
 import { hasPermission } from '../../services/permissions'
-import { clearApiSession } from '../../services/api'
+import { apiRequest, clearApiSession } from '../../services/api'
 
 export default function Navbar() {
   const navigate = useNavigate()
@@ -32,19 +32,40 @@ export default function Navbar() {
    * ============================================================
    * FUNCIONÁRIO VINCULADO
    * ============================================================
+   *
+   * A identidade e o vínculo do funcionário vêm da API autenticada.
+   * A lista legada `employees` não é mais consultada nesta navegação.
    */
 
-  const employee = useMemo(() => {
+  const [employee, setEmployee] = useState(null)
+
+  useEffect(() => {
+    let active = true
+
     if (!currentUser) {
-      return null
+      return () => { active = false }
     }
 
-    const employees = JSON.parse(localStorage.getItem('employees')) || []
+    apiRequest('/me')
+      .then((result) => {
+        if (!active) return
 
-    return (
-      employees.find((item) => item.id === Number(currentUser.employeeId)) ||
-      null
-    )
+        const apiUser = result?.user
+        setEmployee(apiUser?.employee_id
+          ? {
+              id: apiUser.employee_id,
+              name: apiUser.employee_name || '',
+              status: apiUser.employee_status || ''
+            }
+          : null)
+      })
+      .catch(() => {
+        // A barra continua funcional durante indisponibilidade temporária da API.
+        // O nome da sessão serve como fallback; a lista employees não é consultada.
+        if (active) setEmployee(null)
+      })
+
+    return () => { active = false }
   }, [currentUser])
 
   /*
@@ -94,7 +115,7 @@ export default function Navbar() {
 
   const userInitial = userName.charAt(0).toUpperCase()
 
-  const userPhoto = employee?.photo || currentUser.photo || null
+  const userPhoto = currentUser.photo || null
 
   /*
    * ============================================================

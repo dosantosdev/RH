@@ -1,3 +1,10 @@
+## Etapa mais recente — navegação consulta vínculo do funcionário pela API
+
+- A barra de navegação usa `GET /api/me` para obter o nome e o vínculo do funcionário autenticado.
+- A busca do funcionário pela chave local `employees` foi removida do `Navbar.jsx`.
+- Em falha temporária da API, o nome da sessão é usado como fallback; nenhum dado local é apagado.
+- Detalhes: `MIGRACAO-NAVBAR-FUNCIONARIO-API-POSTGRES.md`.
+
 ## Etapa mais recente — Dashboard via API PostgreSQL
 
 - O Dashboard consulta a identidade em `/api/me` e os dados de funcionários em `/api/employees`.
