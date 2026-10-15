@@ -1,3 +1,9 @@
+## Etapa mais recente — identidade da sessão na gestão de usuários
+
+- `Users.jsx` usa a sessão da API (`getApiUser`) para impedir que o usuário atual tente desativar a própria conta, removendo mais uma leitura direta de `loggedUser`.
+- Os CRUDs de usuários já utilizavam os serviços da API; esta alteração consolida a verificação de identidade com a sessão PostgreSQL.
+- Detalhes: `MIGRACAO-USUARIOS-SESSAO-API-POSTGRES.md`.
+
 ## Etapa mais recente — navegação consulta vínculo do funcionário pela API
 
 - A barra de navegação usa `GET /api/me` para obter o nome e o vínculo do funcionário autenticado.

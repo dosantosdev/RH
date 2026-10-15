@@ -9,7 +9,7 @@ import Toast from '../../components/ui/Toast'
 import useToast from '../../hooks/useToast'
 
 import { hasPermission } from '../../services/permissions'
-import { apiRequest } from '../../services/api'
+import { apiRequest, getApiUser } from '../../services/api'
 import {
   fetchUsers,
   fetchUserAccessRoles,
@@ -174,7 +174,9 @@ export default function Users() {
       return
     }
 
-    if (String(id) === String(JSON.parse(localStorage.getItem('loggedUser') || '{}').id)) {
+    const authenticatedUser = getApiUser()
+
+    if (String(id) === String(authenticatedUser?.id)) {
       showToast('Não é permitido desativar o próprio usuário.', 'warning')
       return
     }
