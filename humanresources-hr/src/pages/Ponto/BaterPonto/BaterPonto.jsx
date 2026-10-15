@@ -3,15 +3,13 @@ import { useEffect, useState } from 'react'
 import './baterPonto.css'
 
 import { hasPermission } from '../../../services/permissions'
-import { getEmployees } from '../../../services/employee'
+import { apiRequest } from '../../../services/api'
 
 import {
   getCurrentTime,
   getNextPunchType,
-  getTodayTimeClockRecord,
   getTimeClockStatusLabel,
-  PUNCH_TYPE_LABELS,
-  registerPunch
+  PUNCH_TYPE_LABELS
 } from '../../../services/timeClock'
 
 import {
@@ -32,6 +30,7 @@ export default function BaterPonto() {
   const [message, setMessage] = useState('')
 
   const [messageType, setMessageType] = useState('')
+  const [loading, setLoading] = useState(true)
 
   const [locationLoading, setLocationLoading] = useState(false)
 
@@ -67,24 +66,29 @@ export default function BaterPonto() {
    */
 
   useEffect(() => {
-    const loggedUser = JSON.parse(localStorage.getItem('loggedUser'))
+    let active = true
 
-    setCurrentUser(loggedUser)
+    async function loadToday() {
+      setLoading(true)
+      try {
+        const result = await apiRequest('/me/timekeeping/today')
+        if (!active) return
 
-    if (!loggedUser?.employeeId) {
-      return
+        setCurrentUser(result.user || null)
+        setEmployee(result.employee || null)
+        setRecord(result.record || null)
+      } catch (error) {
+        if (!active) return
+        setMessageType('error')
+        setMessage(error.message || 'Não foi possível carregar seu ponto pela API.')
+      } finally {
+        if (active) setLoading(false)
+      }
     }
 
-    const employees = getEmployees()
-
-    const linkedEmployee = employees.find(
-      (item) => Number(item.id) === Number(loggedUser.employeeId)
-    )
-
-    setEmployee(linkedEmployee || null)
-
-    if (linkedEmployee) {
-      setRecord(getTodayTimeClockRecord(linkedEmployee.id))
+    loadToday()
+    return () => {
+      active = false
     }
   }, [])
 
@@ -108,14 +112,6 @@ export default function BaterPonto() {
    * ============================================================
    */
 
-  function refreshRecord() {
-    if (!employee) {
-      return
-    }
-
-    setRecord(getTodayTimeClockRecord(employee.id))
-  }
-
   /*
    * ============================================================
    * PERMISSÃO
@@ -129,6 +125,24 @@ export default function BaterPonto() {
           <h2>Acesso negado</h2>
 
           <p>Você não possui permissão para registrar o ponto.</p>
+        </div>
+      </div>
+    )
+  }
+
+  /*
+   * ============================================================
+   * CARREGAMENTO DA API
+   * ============================================================
+   */
+
+  if (loading) {
+    return (
+      <div className="time-clock-page">
+        <div className="time-clock-container">
+          <div className="time-clock-card">
+            <p role="status">Carregando seus dados e o registro de ponto...</p>
+          </div>
         </div>
       </div>
     )
@@ -241,21 +255,14 @@ export default function BaterPonto() {
        * etc.
        */
 
-      const result = registerPunch(employee.id, {
-        location,
-
-        source,
-
-        registrationMethod: source
+      const result = await apiRequest('/me/timekeeping/punch', {
+        method: 'POST',
+        body: JSON.stringify({
+          location,
+          source,
+          registrationMethod: source
+        })
       })
-
-      if (!result.success) {
-        setMessageType('error')
-
-        setMessage(result.message)
-
-        return
-      }
 
       setRecord(result.record)
 

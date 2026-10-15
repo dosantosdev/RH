@@ -1,3 +1,11 @@
+## Etapa mais recente — Bater Ponto via API PostgreSQL
+
+- A tela Bater Ponto carrega o funcionário vinculado e a marcação do dia por `GET /api/me/timekeeping/today`.
+- As novas batidas são gravadas por `POST /api/me/timekeeping/punch`, com permissão `ponto_bater`, vínculo derivado do token e data/hora do servidor no fuso de São Paulo.
+- A rota retorna apenas a marcação do funcionário autenticado; não aceita `employeeId` fornecido pelo cliente.
+- O payload ainda é JSONB agregado em `app_records`; o espelho mensal e relatórios precisam de migração própria.
+- Detalhes e cenários de teste: `MIGRACAO-AUTOATENDIMENTO-BATER-PONTO-API.md`.
+
 ## Etapa mais recente — identidade da sessão na gestão de usuários
 
 - `Users.jsx` usa a sessão da API (`getApiUser`) para impedir que o usuário atual tente desativar a própria conta, removendo mais uma leitura direta de `loggedUser`.
