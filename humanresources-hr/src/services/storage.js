@@ -122,11 +122,38 @@ function userHasAnyPermission(permissions = []) {
   return Array.isArray(user?.permissions) && permissions.some((permission) => user.permissions.includes(permission))
 }
 
+const TIMEKEEPING_MODULE_PERMISSIONS = {
+  timekeeping: {
+    view: ['ponto_controle_view', 'ponto_controle_edit'],
+    manage: ['ponto_controle_edit']
+  },
+  timekeeping_clock: {
+    view: ['ponto_controle_view', 'ponto_controle_edit'],
+    manage: ['ponto_controle_edit']
+  },
+  timekeeping_bank_hours: {
+    view: ['ponto_banco_horas_view', 'ponto_banco_horas_manage'],
+    manage: ['ponto_banco_horas_manage']
+  },
+  timekeeping_schedules: {
+    view: ['ponto_jornadas_view', 'ponto_jornadas_create', 'ponto_jornadas_edit', 'ponto_jornadas_delete'],
+    manage: ['ponto_jornadas_create', 'ponto_jornadas_edit', 'ponto_jornadas_delete']
+  },
+  timekeeping_closings: {
+    view: ['ponto_fechamento_view', 'ponto_fechamento_manage'],
+    manage: ['ponto_fechamento_manage']
+  },
+  timekeeping_medical: {
+    view: ['ponto_atestados_view', 'ponto_atestados_manage'],
+    manage: ['ponto_atestados_manage']
+  }
+}
+
 function userCanViewModule(moduleKey) {
   if (moduleKey === 'trainings') return userHasAnyPermission(['trainings_view'])
   if (moduleKey === 'evaluations') return userHasAnyPermission(['evaluations_view'])
-  if (moduleKey === LEGACY_TIMEKEEPING_DB_MODULE || moduleKey.startsWith('timekeeping_')) {
-    return userHasAnyPermission(['ponto_controle_view'])
+  if (TIMEKEEPING_MODULE_PERMISSIONS[moduleKey]) {
+    return userHasAnyPermission(TIMEKEEPING_MODULE_PERMISSIONS[moduleKey].view)
   }
   if (moduleKey === 'recruitment') return userHasAnyPermission(['recruitment_view'])
   const financialModule = Object.values(FINANCIAL_MODULES).find((module) => module.dbModule === moduleKey)
@@ -136,8 +163,8 @@ function userCanViewModule(moduleKey) {
 function userCanManageModule(moduleKey) {
   if (moduleKey === 'trainings') return userHasAnyPermission(['trainings_create', 'trainings_edit', 'trainings_delete'])
   if (moduleKey === 'evaluations') return userHasAnyPermission(['evaluations_create', 'evaluations_edit', 'evaluations_delete'])
-  if (moduleKey === LEGACY_TIMEKEEPING_DB_MODULE || moduleKey.startsWith('timekeeping_')) {
-    return userHasAnyPermission(['ponto_controle_edit'])
+  if (TIMEKEEPING_MODULE_PERMISSIONS[moduleKey]) {
+    return userHasAnyPermission(TIMEKEEPING_MODULE_PERMISSIONS[moduleKey].manage)
   }
   if (moduleKey === 'recruitment') return userHasAnyPermission(['recruitment_create', 'recruitment_edit', 'recruitment_delete'])
   const financialModule = Object.values(FINANCIAL_MODULES).find((module) => module.dbModule === moduleKey)

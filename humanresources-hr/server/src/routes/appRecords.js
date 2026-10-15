@@ -19,14 +19,14 @@ const MODULE_PERMISSIONS = {
   evaluations: { view: ['evaluations_view'], manage: ['evaluations_create', 'evaluations_edit', 'evaluations_delete'] },
   // O módulo legado continua protegido durante a transição dos dados.
   timekeeping: { view: ['ponto_controle_view', 'ponto_controle_edit'], manage: ['ponto_controle_edit'] },
-  // Módulos separados do Ponto mantêm a permissão central existente nesta
-  // etapa. A granularidade por funcionalidade será aplicada quando as telas
-  // e os perfis tiverem permissões específicas para cada domínio.
+  // Cada domínio separado usa suas permissões específicas no servidor.
+  // Isso impede que a permissão de controle geral conceda automaticamente
+  // acesso a jornadas, banco de horas, fechamentos e atestados.
   timekeeping_clock: { view: ['ponto_controle_view', 'ponto_controle_edit'], manage: ['ponto_controle_edit'] },
-  timekeeping_bank_hours: { view: ['ponto_controle_view', 'ponto_controle_edit'], manage: ['ponto_controle_edit'] },
-  timekeeping_schedules: { view: ['ponto_controle_view', 'ponto_controle_edit'], manage: ['ponto_controle_edit'] },
-  timekeeping_closings: { view: ['ponto_controle_view', 'ponto_controle_edit'], manage: ['ponto_controle_edit'] },
-  timekeeping_medical: { view: ['ponto_controle_view', 'ponto_controle_edit'], manage: ['ponto_controle_edit'] },
+  timekeeping_bank_hours: { view: ['ponto_banco_horas_view', 'ponto_banco_horas_manage'], manage: ['ponto_banco_horas_manage'] },
+  timekeeping_schedules: { view: ['ponto_jornadas_view', 'ponto_jornadas_create', 'ponto_jornadas_edit', 'ponto_jornadas_delete'], manage: ['ponto_jornadas_create', 'ponto_jornadas_edit', 'ponto_jornadas_delete'] },
+  timekeeping_closings: { view: ['ponto_fechamento_view', 'ponto_fechamento_manage'], manage: ['ponto_fechamento_manage'] },
+  timekeeping_medical: { view: ['ponto_atestados_view', 'ponto_atestados_manage'], manage: ['ponto_atestados_manage'] },
   recruitment: { view: ['recruitment_view'], manage: ['recruitment_create', 'recruitment_edit', 'recruitment_delete'] }
 }
 

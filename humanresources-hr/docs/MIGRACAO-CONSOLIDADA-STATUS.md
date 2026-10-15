@@ -1,3 +1,10 @@
+## Etapa mais recente — permissões granulares do Ponto
+
+- A API agora autoriza os módulos separados de Banco de Horas, Jornadas e Escalas, Fechamento Mensal e Atestados com suas permissões específicas.
+- A ponte de sincronização local aplica o mesmo mapa para não tentar gravar dados sem autorização.
+- Perfis personalizados devem ser revisados na tela Perfis de Acesso; o acesso geral de Controle de Ponto não concede mais acesso automático a todos os domínios separados.
+- Detalhes: `MIGRACAO-PONTO-PERMISSOES-GRANULARES.md`.
+
 ## Etapa mais recente — Perfis de Acesso via API PostgreSQL
 
 - A tela de Perfis de Acesso agora usa endpoints autenticados para listar, criar, editar e excluir perfis e suas permissões.
