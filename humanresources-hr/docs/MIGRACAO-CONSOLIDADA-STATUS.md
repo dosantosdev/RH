@@ -1,3 +1,10 @@
+## Etapa mais recente — cadastro de funcionários pela API PostgreSQL
+
+- O cadastro atualiza os catálogos organizacionais antes da validação e envia as relações de filial, departamento, cargo e posição.
+- O backend valida se os IDs organizacionais pertencem à empresa do usuário autenticado e bloqueia CPF/RG duplicados com HTTP 409.
+- O cache local permanece temporariamente para compatibilidade; não foi limpo nem usado como fonte oficial.
+- Procedimento de teste: `MIGRACAO-CADASTRO-FUNCIONARIOS-API-POSTGRES.md`.
+
 ## Etapa mais recente — perfil próprio pela API
 
 - A tela Meu Perfil consulta `GET /api/me` e grava nome/usuário em `PATCH /api/me/profile`.

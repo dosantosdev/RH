@@ -108,7 +108,7 @@ function validateConditionalRequiredField(
 }
 
 export function getSelectedRole(formData, roles = getStoredArray('roles')) {
-  return roles.find((role) => role.id === Number(formData.roleId))
+  return roles.find((role) => String(role.id) === String(formData.roleId))
 }
 
 export function getRequiredCertificates(role) {

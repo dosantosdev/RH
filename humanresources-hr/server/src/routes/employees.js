@@ -58,6 +58,87 @@ async function readDependents(client, employeeId) {
   }))
 }
 
+const organizationReferenceTables = {
+  branchId: { table: 'branches', label: 'filial' },
+  departmentId: { table: 'departments', label: 'departamento' },
+  roleId: { table: 'roles', label: 'cargo' },
+  positionId: { table: 'positions', label: 'posição' }
+}
+
+async function validateOrganizationReferences(client, companyId, body) {
+  for (const [field, config] of Object.entries(organizationReferenceTables)) {
+    const value = body[field]
+    if (value === undefined || value === null || value === '') continue
+
+    // As chaves primárias das tabelas organizacionais são UUIDs.
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(value))) {
+      return `O identificador da ${config.label} é inválido. Atualize os catálogos e selecione novamente.`
+    }
+
+    const result = await client.query(
+      `SELECT 1 FROM ${config.table} WHERE id = $1 AND company_id = $2`,
+      [value, companyId]
+    )
+    if (!result.rowCount) {
+      return `A ${config.label} selecionada não pertence à empresa atual ou não existe mais.`
+    }
+  }
+
+  if (body.branchId && body.departmentId) {
+    const department = await client.query(
+      'SELECT 1 FROM departments WHERE id = $1 AND company_id = $2 AND branch_id = $3',
+      [body.departmentId, companyId, body.branchId]
+    )
+    if (!department.rowCount) {
+      return 'O departamento selecionado não está vinculado à filial escolhida.'
+    }
+  }
+
+  if (body.positionId) {
+    const positionResult = await client.query(
+      'SELECT branch_id, department_id, role_id FROM positions WHERE id = $1 AND company_id = $2',
+      [body.positionId, companyId]
+    )
+    const position = positionResult.rows[0]
+    if (!position) {
+      return 'A posição selecionada não pertence à empresa atual ou não existe mais.'
+    }
+    if (body.branchId && position.branch_id && String(position.branch_id) !== String(body.branchId)) {
+      return 'A posição selecionada não pertence à filial escolhida.'
+    }
+    if (body.departmentId && position.department_id && String(position.department_id) !== String(body.departmentId)) {
+      return 'A posição selecionada não pertence ao departamento escolhido.'
+    }
+    if (body.roleId && position.role_id && String(position.role_id) !== String(body.roleId)) {
+      return 'O cargo da posição selecionada não corresponde ao cargo informado.'
+    }
+  }
+
+  return null
+}
+
+async function findDuplicateEmployee(client, companyId, body, excludeId = null) {
+  const cpf = String(body.cpf || '').replace(/\D/g, '')
+  const rg = String(body.rg || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+  if (!cpf && !rg) return null
+
+  const result = await client.query(
+    `SELECT id, name
+       FROM employees
+      WHERE company_id = $1
+        AND (
+          ($2::text IS NOT NULL AND regexp_replace(COALESCE(cpf, ''), '[^0-9]', '', 'g') = $2)
+          OR
+          ($3::text IS NOT NULL AND lower(regexp_replace(COALESCE(rg, ''), '[^a-zA-Z0-9]', '', 'g')) = $3)
+        )
+        AND ($4::uuid IS NULL OR id <> $4::uuid)
+      LIMIT 1`,
+    [companyId, cpf || null, rg || null, excludeId]
+  )
+
+  return result.rows[0] || null
+}
+
 router.get('/', requirePermission('employees_view'), async (req, res, next) => {
   try {
     const { status, search } = req.query
@@ -110,6 +191,23 @@ router.post('/', requirePermission('employees_create'), async (req, res, next) =
     } = req.body || {}
     if (!name?.trim()) return res.status(400).json({ message: 'Nome é obrigatório.' })
     await client.query('BEGIN')
+
+    const referenceError = await validateOrganizationReferences(client, req.user.companyId, {
+      branchId, departmentId, roleId, positionId
+    })
+    if (referenceError) {
+      await client.query('ROLLBACK')
+      return res.status(400).json({ message: referenceError })
+    }
+
+    const duplicate = await findDuplicateEmployee(client, req.user.companyId, { cpf, rg })
+    if (duplicate) {
+      await client.query('ROLLBACK')
+      return res.status(409).json({
+        message: 'Já existe um funcionário cadastrado com o mesmo CPF ou RG nesta empresa.'
+      })
+    }
+
     const data = registrationData && typeof registrationData === 'object' ? { ...registrationData } : {}
     const dependents = Array.isArray(data.dependents) ? data.dependents : []
     delete data.dependents

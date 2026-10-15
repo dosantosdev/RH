@@ -5,11 +5,12 @@ import Toast from '../../components/ui/Toast'
 import useToast from '../../hooks/useToast'
 
 import { hasPermission } from '../../services/permissions'
-import { addEmployee, getEmployees } from '../../services/employee'
+import { addEmployee } from '../../services/employee'
 import { getStoredArray } from '../../services/storage'
 import { validateEmployee } from '../../services/employeeValidation'
 import { initialEmployeeForm } from '../../data/initialEmployeeForm'
 import { apiRequest } from '../../services/api'
+import { syncOrganizationCatalogsWithPostgres } from '../../services/organizationApi'
 
 import './employeeCreate.css'
 
@@ -64,9 +65,44 @@ export default function EmployeeCreate() {
 
     if (saving) return false
 
+    // Atualiza os catálogos a partir do PostgreSQL antes de validar IDs de
+    // filial, departamento, cargo e posição. Isso evita enviar IDs legados.
+    let catalogSync
+    try {
+      catalogSync = await syncOrganizationCatalogsWithPostgres()
+    } catch (catalogError) {
+      showToast(catalogError.message || 'Não foi possível consultar os catálogos da empresa.', 'error')
+      return false
+    }
+
+    if (catalogSync.errors?.length) {
+      showToast(
+        `Não foi possível atualizar os catálogos do PostgreSQL: ${catalogSync.errors[0].message}`,
+        'error'
+      )
+      return false
+    }
+
+    const branches = getStoredArray('branches')
+    const departments = getStoredArray('departments')
     const roles = getStoredArray('roles')
-    const employees = getEmployees()
-    const errors = validateEmployee(formData, employees, roles)
+    const positions = getStoredArray('positions')
+    // Duplicidade definitiva é verificada pelo backend contra o PostgreSQL;
+    // não bloqueamos o cadastro por registros antigos que só existam no cache.
+    const errors = validateEmployee(formData, [], roles)
+
+    const selectedCatalogs = [
+      ['branchId', formData.branchId, branches, 'A filial selecionada não existe mais no PostgreSQL. Selecione novamente.'],
+      ['departmentId', formData.departmentId, departments, 'O departamento selecionado não existe mais no PostgreSQL. Selecione novamente.'],
+      ['roleId', formData.roleId, roles, 'O cargo selecionado não existe mais no PostgreSQL. Selecione novamente.'],
+      ['positionId', formData.positionId, positions, 'A posição selecionada não existe mais no PostgreSQL. Selecione novamente.']
+    ]
+
+    selectedCatalogs.forEach(([field, value, catalog, message]) => {
+      if (value && !catalog.some((item) => String(item.id) === String(value))) {
+        errors.push({ field, message })
+      }
+    })
 
     if (errors.length > 0) {
       const errorsByField = {}
@@ -98,7 +134,11 @@ export default function EmployeeCreate() {
         phone: formData.phone || null,
         birthDate: toIsoDate(formData.birthDate),
         admissionDate: toIsoDate(formData.admissionDate),
-        status: 'active',
+        branchId: formData.branchId || null,
+        departmentId: formData.departmentId || null,
+        roleId: formData.roleId || null,
+        positionId: formData.positionId || null,
+        status: formData.active === false ? 'inactive' : 'active',
         registrationData: formData
       }
 
@@ -131,7 +171,9 @@ export default function EmployeeCreate() {
 
       const message = error.status === 403
         ? 'Você não tem permissão para cadastrar funcionários na API.'
-        : error.message || 'Não foi possível salvar o funcionário no banco de dados.'
+        : error.status === 409
+          ? (error.message || 'Já existe um funcionário com esses dados de identificação.')
+          : error.message || 'Não foi possível salvar o funcionário no banco de dados.'
 
       showToast(message, 'error')
       return false
