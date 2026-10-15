@@ -1,3 +1,11 @@
+## Etapa mais recente — portal Meus Treinamentos
+
+- A consulta inicial do portal passou a usar `GET /api/me/training-data`.
+- O servidor filtra os dados pelo funcionário autenticado e pela empresa do token.
+- A carga inicial inclui treinamentos atribuídos, participação, avaliação e certificados relacionados.
+- As gravações de progresso e tentativas ainda precisam de endpoints próprios; esta etapa migra a leitura, não todas as mutações.
+- Detalhes: `MIGRACAO-PORTAL-MEUS-TREINAMENTOS-API.md`.
+
 ## Etapa mais recente — portal Minhas Avaliações/PDI
 
 - `MinhasAvaliacoes.jsx` passa a consultar a API autenticada para obter workflows visíveis e a enviar início/salvamento/conclusão do PDI ao servidor.

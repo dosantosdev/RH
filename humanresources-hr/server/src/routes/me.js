@@ -899,4 +899,92 @@ router.get('/payrolls', async (req, res, next) => {
   }
 })
 
+
+// Portal do funcionário: entrega somente os treinamentos atribuídos ao usuário autenticado.
+// Os arrays legados continuam no app_records durante a migração gradual.
+router.get('/training-data', async (req, res, next) => {
+  if (!req.user?.employeeId) {
+    return res.json({
+      trainings: [],
+      participant: null,
+      assessments: [],
+      certificates: []
+    })
+  }
+
+  try {
+    const employeeResult = await pool.query(
+      `SELECT id, registration_data
+       FROM employees
+       WHERE id = $1 AND company_id = $2`,
+      [req.user.employeeId, req.user.companyId]
+    )
+
+    if (!employeeResult.rowCount) {
+      return res.json({
+        trainings: [],
+        participant: null,
+        assessments: [],
+        certificates: []
+      })
+    }
+
+    const employee = employeeResult.rows[0]
+    const registrationData = employee.registration_data || {}
+    const employeeAliases = new Set([
+      employee.id,
+      registrationData.legacyId,
+      registrationData.legacy_id,
+      registrationData.id
+    ].filter((value) => value !== undefined && value !== null).map(String))
+
+    const recordsResult = await pool.query(
+      `SELECT record_key AS "recordKey", payload
+       FROM app_records
+       WHERE company_id = $1
+         AND module_key = 'trainings'
+         AND record_key = ANY($2::text[])`,
+      [req.user.companyId, [
+        'trainings',
+        'trainingParticipants',
+        'trainingAssessments',
+        'trainingCertificates'
+      ]]
+    )
+    const records = new Map(recordsResult.rows.map((row) => [
+      row.recordKey,
+      Array.isArray(row.payload) ? row.payload : []
+    ]))
+
+    const allParticipants = records.get('trainingParticipants') || []
+    const myParticipants = allParticipants.filter((participant) =>
+      employeeAliases.has(String(participant.employeeId))
+    )
+    const trainingIds = new Set(myParticipants.map((participant) => String(participant.trainingId)))
+    const trainings = (records.get('trainings') || []).filter((training) =>
+      trainingIds.has(String(training.id))
+    )
+    const assessmentIds = new Set(trainings.map((training) => String(training.id)))
+    const assessments = (records.get('trainingAssessments') || []).filter((assessment) =>
+      assessmentIds.has(String(assessment.trainingId))
+    )
+    const participantIds = new Set(myParticipants.map((participant) => String(participant.id)))
+    const certificates = (records.get('trainingCertificates') || []).filter((certificate) =>
+      participantIds.has(String(certificate.participantId)) ||
+      employeeAliases.has(String(certificate.employeeId)) ||
+      trainingIds.has(String(certificate.trainingId)) && employeeAliases.has(String(certificate.employeeId))
+    )
+
+    return res.json({
+      trainings,
+      participants: myParticipants,
+      assessments,
+      certificates
+    })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+
 export default router

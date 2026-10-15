@@ -1,39 +1,70 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import './meusTreinamentos.css'
 
-import { getTrainings } from '../../services/training'
-import { getTrainingParticipants } from '../../services/trainingParticipant'
+import { apiRequest } from '../../services/api'
 
 import TrainingProgress from '../../components/trainings/TrainingProgress'
 import TrainingCertificate from '../../components/trainings/TrainingCertificate'
 
 export default function MeusTreinamentos() {
-  const [trainings, setTrainings] = useState(() => getTrainings())
-  const [participants, setParticipants] = useState(() =>
-    getTrainingParticipants()
-  )
+  const [trainings, setTrainings] = useState([])
+  const [participants, setParticipants] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
   const [selectedParticipant, setSelectedParticipant] = useState(null)
   const [selectedCertificate, setSelectedCertificate] = useState(null)
   const [search, setSearch] = useState('')
 
-  const currentUser = JSON.parse(localStorage.getItem('loggedUser'))
+  let currentUser = null
+  try {
+    currentUser = JSON.parse(localStorage.getItem('loggedUser') || 'null')
+  } catch {
+    currentUser = null
+  }
   const employeeId = currentUser?.employeeId
 
-  function loadData() {
-    setTrainings(getTrainings())
-    setParticipants(getTrainingParticipants())
+  async function loadData() {
+    setLoading(true)
+    setLoadError('')
+    try {
+      const response = await apiRequest('/me/training-data')
+      const nextTrainings = Array.isArray(response?.trainings) ? response.trainings : []
+      const nextParticipants = Array.isArray(response?.participants) ? response.participants : []
+      const nextAssessments = Array.isArray(response?.assessments) ? response.assessments : []
+      const nextCertificates = Array.isArray(response?.certificates) ? response.certificates : []
+
+      setTrainings(nextTrainings)
+      setParticipants(nextParticipants)
+
+      // Mantém os componentes legados funcionando com o conjunto já filtrado
+      // pelo servidor para o funcionário autenticado.
+      localStorage.setItem('trainings', JSON.stringify(nextTrainings))
+      localStorage.setItem('trainingParticipants', JSON.stringify(nextParticipants))
+      localStorage.setItem('trainingAssessments', JSON.stringify(nextAssessments))
+      localStorage.setItem('trainingCertificates', JSON.stringify(nextCertificates))
+    } catch (error) {
+      setLoadError(error?.message || 'Não foi possível carregar seus treinamentos.')
+      setTrainings([])
+      setParticipants([])
+    } finally {
+      setLoading(false)
+    }
   }
+
+  useEffect(() => {
+    loadData()
+  }, [])
 
   const myTrainings = useMemo(() => {
     if (!employeeId) {
       return []
     }
 
-    const employeeParticipants = participants.filter(
-      (participant) => Number(participant.employeeId) === Number(employeeId)
-    )
+    // A API já retorna somente as participações do funcionário autenticado.
+    // Não comparamos IDs locais/legados aqui porque o servidor pode usar UUIDs.
+    const employeeParticipants = participants
 
     return employeeParticipants
       .map((participant) => {
@@ -194,7 +225,20 @@ export default function MeusTreinamentos() {
         </div>
       </div>
 
-      {!employeeId ? (
+      {loading ? (
+        <div className="my-trainings-empty" role="status">
+          <div className="my-trainings-empty-icon">⏳</div>
+          <h2>Carregando treinamentos</h2>
+          <p>Estamos consultando seus treinamentos no servidor.</p>
+        </div>
+      ) : loadError ? (
+        <div className="my-trainings-empty" role="alert">
+          <div className="my-trainings-empty-icon">⚠️</div>
+          <h2>Não foi possível carregar os treinamentos</h2>
+          <p>{loadError}</p>
+          <button type="button" onClick={loadData}>Tentar novamente</button>
+        </div>
+      ) : !employeeId ? (
         <div className="my-trainings-empty">
           <div className="my-trainings-empty-icon">👤</div>
 
