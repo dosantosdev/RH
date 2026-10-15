@@ -1,8 +1,15 @@
-# Migração consolidada para PostgreSQL — revisão de 14/10/2026
+# Migração consolidada para PostgreSQL — revisão de 15/10/2026
 
 ## Base e objetivo
 
 Esta entrega parte do ZIP mais recente enviado pela usuária e consolida a ponte de persistência para as abas que ainda dependem do contrato síncrono do `localStorage`. O PostgreSQL é a fonte oficial para chaves já existentes no banco; o `localStorage` permanece como cache de compatibilidade, sem limpeza automática.
+
+## Migrações recentes de leitura do Ponto
+
+- Fechamento Mensal: consulta funcionários, filiais, marcações e jornadas por endpoint autenticado com permissão própria.
+- Horas Extras: consulta dados pela API com `ponto_horas_extras_view`.
+- Faltas e Atrasos: consulta dados pela API com `ponto_faltas_view`; os atestados são enviados somente a este domínio.
+- Os endpoints limitam o escopo pela empresa do token e aceitam períodos de até 367 dias. A camada de registros de ponto ainda utiliza JSONB agregado, e a escrita de fechamento precisa de validação adicional.
 
 ## Áreas contempladas pela ponte
 

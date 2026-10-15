@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import './faltasAtrasos.css'
 
-import { getEmployees } from '../../../services/employee'
-import useOrganizationCache from '../../../Hooks/useOrganizationCache'
+import { apiRequest } from '../../../services/api'
 
 import {
   calculateTimeClockPeriod,
@@ -11,14 +10,16 @@ import {
   PUNCH_TYPE_LABELS
 } from '../../../services/timeClock'
 
-import { getApprovedMedicalCertificatesForDate } from '../../../services/medicalCertificates'
+
 
 export default function FaltasAtrasos() {
-  const [employees] = useState(() =>
-    getEmployees().filter((employee) => employee.active !== false)
-  )
-
-  const [branches] = useOrganizationCache('branches', (items) => items.filter((branch) => branch.active !== false))
+  const [employees, setEmployees] = useState([])
+  const [branches, setBranches] = useState([])
+  const [timeClockRecords, setTimeClockRecords] = useState([])
+  const [scheduleData, setScheduleData] = useState({ workSchedules: [], employeeWorkSchedules: [] })
+  const [medicalCertificates, setMedicalCertificates] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState('')
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
 
@@ -38,6 +39,61 @@ export default function FaltasAtrasos() {
 
   const [selectedDetails, setSelectedDetails] = useState(null)
 
+  useEffect(() => {
+    if (!startDate || !endDate || startDate > endDate) {
+      setLoadError('Informe um período válido. A data inicial não pode ser posterior à final.')
+      setEmployees([])
+      setBranches([])
+      setTimeClockRecords([])
+      setMedicalCertificates([])
+      setScheduleData({ workSchedules: [], employeeWorkSchedules: [] })
+      setLoading(false)
+      return
+    }
+
+    const dayCount = Math.round((new Date(`${endDate}T00:00:00`) - new Date(`${startDate}T00:00:00`)) / 86400000) + 1
+    if (dayCount > 367) {
+      setLoadError('O período máximo para apuração é de 367 dias.')
+      setEmployees([])
+      setBranches([])
+      setTimeClockRecords([])
+      setMedicalCertificates([])
+      setScheduleData({ workSchedules: [], employeeWorkSchedules: [] })
+      setLoading(false)
+      return
+    }
+
+    let active = true
+    setLoading(true)
+    setLoadError('')
+
+    async function loadAbsenceData() {
+      try {
+        const params = new URLSearchParams({ startDate, endDate })
+        const result = await apiRequest(`/me/timekeeping/absence-data?${params.toString()}`)
+        if (!active) return
+        setEmployees((Array.isArray(result.employees) ? result.employees : []).filter((employee) => employee.active !== false))
+        setBranches((Array.isArray(result.branches) ? result.branches : []).filter((branch) => branch.active !== false))
+        setTimeClockRecords(Array.isArray(result.records) ? result.records : [])
+        setMedicalCertificates(Array.isArray(result.medicalCertificates) ? result.medicalCertificates : [])
+        setScheduleData(result.scheduleData || { workSchedules: [], employeeWorkSchedules: [] })
+      } catch (error) {
+        if (!active) return
+        setEmployees([])
+        setBranches([])
+        setTimeClockRecords([])
+        setMedicalCertificates([])
+        setScheduleData({ workSchedules: [], employeeWorkSchedules: [] })
+        setLoadError(error.message || 'Não foi possível carregar os dados de faltas e atrasos pela API.')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    loadAbsenceData()
+    return () => { active = false }
+  }, [startDate, endDate])
+
   /*
    * ============================================================
    * FUNCIONÁRIOS FILTRADOS
@@ -50,7 +106,7 @@ export default function FaltasAtrasos() {
         return true
       }
 
-      return Number(employee.branchId) === Number(selectedBranchId)
+      return String(employee.branchId) === String(selectedBranchId)
     })
   }, [employees, selectedBranchId])
 
@@ -67,7 +123,7 @@ export default function FaltasAtrasos() {
 
     const employeesToCalculate = selectedEmployeeId
       ? employees.filter(
-          (employee) => Number(employee.id) === Number(selectedEmployeeId)
+          (employee) => String(employee.id) === String(selectedEmployeeId)
         )
       : filteredEmployees
 
@@ -77,7 +133,8 @@ export default function FaltasAtrasos() {
       const period = calculateTimeClockPeriod(
         employee.id,
         parseDate(startDate),
-        parseDate(endDate)
+        parseDate(endDate),
+        { employee, records: timeClockRecords, scheduleData }
       )
 
       if (!period?.days) {
@@ -108,9 +165,10 @@ export default function FaltasAtrasos() {
          * especificamente este dia.
          */
 
-        const approvedCertificates = getApprovedMedicalCertificatesForDate(
-          employee.id,
-          day.date
+        const approvedCertificates = medicalCertificates.filter((certificate) =>
+          String(certificate.employeeId) === String(employee.id) &&
+          certificate.status === 'approved' &&
+          day.date >= certificate.startDate && day.date <= certificate.endDate
         )
 
         /*
@@ -196,7 +254,7 @@ export default function FaltasAtrasos() {
 
       return String(b.day.date).localeCompare(String(a.day.date))
     })
-  }, [employees, filteredEmployees, selectedEmployeeId, startDate, endDate])
+  }, [employees, filteredEmployees, selectedEmployeeId, startDate, endDate, timeClockRecords, scheduleData, medicalCertificates])
 
   /*
    * ============================================================
@@ -293,6 +351,9 @@ export default function FaltasAtrasos() {
           </p>
         </div>
       </header>
+
+      {loadError && <div role="alert" className="faltas-atrasos-empty">{loadError}</div>}
+      {loading && <div role="status" className="faltas-atrasos-empty">Carregando dados do PostgreSQL...</div>}
 
       {/* ========================================================
           FILTROS
@@ -437,7 +498,11 @@ export default function FaltasAtrasos() {
           <strong>{filteredOccurrences.length} resultado(s)</strong>
         </div>
 
-        {filteredOccurrences.length === 0 ? (
+        {loading ? (
+          <div className="faltas-atrasos-empty"><h3>Carregando apuração...</h3></div>
+        ) : loadError ? (
+          <div className="faltas-atrasos-empty"><h3>Não foi possível calcular as ocorrências</h3><p>{loadError}</p></div>
+        ) : filteredOccurrences.length === 0 ? (
           <div className="faltas-atrasos-empty">
             <span>✓</span>
 
@@ -518,8 +583,8 @@ export default function FaltasAtrasos() {
                             employee: item.employee,
                             occurrences: occurrences.filter(
                               (occurrence) =>
-                                Number(occurrence.employee.id) ===
-                                Number(item.employee.id)
+                                String(occurrence.employee.id) ===
+                                String(item.employee.id)
                             )
                           })
                         }

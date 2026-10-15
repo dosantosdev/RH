@@ -461,167 +461,182 @@ router.get('/timekeeping/period', requirePermission('ponto_espelho_view'), async
 })
 
 
-// Dataset autorizado para os relatórios de ponto.
-// O escopo da empresa sempre vem do token e o período é validado no backend.
-router.get('/timekeeping/report-data', requirePermission('ponto_controle_view'), async (req, res, next) => {
+// Carrega dados de ponto limitados à empresa autenticada e ao período solicitado.
+// A lista de atestados só é incluída nas respostas que precisam apurar faltas.
+async function loadTimekeepingDataset(companyId, startDate, endDate, includeMedicalCertificates = false) {
+  const [employeeResult, branchResult, recordsResult, schedulesResult, medicalResult] = await Promise.all([
+    pool.query(
+      `SELECT e.*, b.name AS branch_name, d.name AS department_name,
+              r.name AS role_name, p.name AS position_name
+       FROM employees e
+       LEFT JOIN branches b ON b.id = e.branch_id AND b.company_id = e.company_id
+       LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
+       LEFT JOIN roles r ON r.id = e.role_id AND r.company_id = e.company_id
+       LEFT JOIN positions p ON p.id = e.position_id AND p.company_id = e.company_id
+       WHERE e.company_id = $1
+       ORDER BY e.name`,
+      [companyId]
+    ),
+    pool.query(
+      `SELECT id, name, active FROM branches WHERE company_id = $1 ORDER BY name`,
+      [companyId]
+    ),
+    pool.query(
+      `SELECT module_key, record_key, payload FROM app_records
+       WHERE company_id = $1
+         AND module_key IN ('timekeeping_clock', 'timekeeping')
+         AND record_key = 'timeClockRecords'
+       ORDER BY CASE WHEN module_key = 'timekeeping_clock' THEN 0 ELSE 1 END`,
+      [companyId]
+    ),
+    pool.query(
+      `SELECT record_key, payload FROM app_records
+       WHERE company_id = $1 AND module_key = 'timekeeping_schedules'
+         AND record_key IN ('workSchedules', 'employeeWorkSchedules')`,
+      [companyId]
+    ),
+    includeMedicalCertificates
+      ? pool.query(
+          `SELECT payload FROM app_records
+           WHERE company_id = $1 AND module_key = 'timekeeping_medical'
+             AND record_key = 'medicalCertificates'`,
+          [companyId]
+        )
+      : Promise.resolve({ rows: [] })
+  ])
+
+  const employees = employeeResult.rows.map((row) => {
+    const data = row.registration_data && typeof row.registration_data === 'object'
+      ? row.registration_data
+      : {}
+    return {
+      ...data,
+      id: row.id,
+      name: row.name || data.name || '',
+      status: row.status || 'active',
+      active: row.status ? row.status === 'active' : data.active !== false,
+      cpf: row.cpf || data.cpf || '',
+      email: row.email || data.email || '',
+      registration: row.registration || data.registration || data.employeeNumber || '',
+      branchId: row.branch_id || data.branchId || '',
+      branchName: row.branch_name || data.branchName || '',
+      departmentId: row.department_id || data.departmentId || '',
+      departmentName: row.department_name || data.departmentName || '',
+      roleId: row.role_id || data.roleId || '',
+      roleName: row.role_name || data.roleName || '',
+      positionId: row.position_id || data.positionId || '',
+      position: row.position_name || data.position || data.jobTitle || '',
+      jobTitle: data.jobTitle || row.position_name || row.role_name || '',
+      legacyId: data.legacyId ?? data.legacy_id ?? data.id ?? null,
+      admissionDate: row.admission_date || data.admissionDate || '',
+      terminationDate: row.termination_date || data.terminationDate || '',
+      weeklyHours: data.weeklyHours ?? data.weekly_hours ?? row.weekly_hours ?? null
+    }
+  })
+
+  const aliases = new Map()
+  for (const employee of employees) {
+    for (const alias of [employee.id, employee.legacyId, employee.legacy_id, employee.idLegacy]) {
+      if (alias !== undefined && alias !== null && alias !== '') aliases.set(String(alias), String(employee.id))
+    }
+  }
+
+  const recordsByEmployeeDate = new Map()
+  for (const row of recordsResult.rows) {
+    for (const item of (Array.isArray(row.payload) ? row.payload : [])) {
+      const date = String(item?.date || '')
+      if (date < startDate || date > endDate) continue
+      const employeeId = aliases.get(String(item?.employeeId))
+      if (!employeeId) continue
+      const key = `${employeeId}::${date}`
+      if (!recordsByEmployeeDate.has(key)) recordsByEmployeeDate.set(key, { ...item, employeeId })
+    }
+  }
+
+  const schedulePayloads = Object.fromEntries(
+    schedulesResult.rows.map((row) => [row.record_key, Array.isArray(row.payload) ? row.payload : []])
+  )
+  const assignments = (schedulePayloads.employeeWorkSchedules || [])
+    .map((item) => {
+      const employeeId = aliases.get(String(item?.employeeId))
+      return employeeId ? { ...item, employeeId } : null
+    })
+    .filter(Boolean)
+
+  const medicalCertificates = includeMedicalCertificates
+    ? medicalResult.rows.flatMap((row) => Array.isArray(row.payload) ? row.payload : [])
+      .map((certificate) => {
+        const employeeId = aliases.get(String(certificate?.employeeId))
+        return employeeId ? { ...certificate, employeeId } : null
+      })
+      .filter((certificate) => certificate && certificate.startDate && certificate.endDate &&
+        certificate.startDate <= endDate && certificate.endDate >= startDate)
+    : undefined
+
+  return {
+    employees,
+    branches: branchResult.rows,
+    records: [...recordsByEmployeeDate.values()],
+    scheduleData: {
+      workSchedules: schedulePayloads.workSchedules || [],
+      employeeWorkSchedules: assignments
+    },
+    ...(includeMedicalCertificates ? { medicalCertificates } : {}),
+    startDate,
+    endDate
+  }
+}
+
+function validateTimekeepingPeriod(req, res) {
   const startDate = typeof req.query.startDate === 'string' ? req.query.startDate : ''
   const endDate = typeof req.query.endDate === 'string' ? req.query.endDate : ''
   const isoDate = /^\d{4}-\d{2}-\d{2}$/
-
   if (!isoDate.test(startDate) || !isoDate.test(endDate)) {
-    return res.status(400).json({ message: 'Informe datas válidas no formato AAAA-MM-DD.' })
+    res.status(400).json({ message: 'Informe datas válidas no formato AAAA-MM-DD.' })
+    return null
   }
-
   const start = new Date(`${startDate}T00:00:00.000Z`)
   const end = new Date(`${endDate}T00:00:00.000Z`)
   const dayCount = Math.round((end - start) / 86400000) + 1
-
   if (!Number.isFinite(dayCount) || dayCount < 1 || dayCount > 367) {
-    return res.status(400).json({ message: 'O relatório deve abranger de 1 a 367 dias.' })
+    res.status(400).json({ message: 'O período deve abranger de 1 a 367 dias.' })
+    return null
   }
+  return { startDate, endDate }
+}
 
+// Relatórios gerais de ponto.
+router.get('/timekeeping/report-data', requirePermission('ponto_controle_view'), async (req, res, next) => {
+  const period = validateTimekeepingPeriod(req, res)
+  if (!period) return
   try {
-    const [employeeResult, branchResult, recordsResult, schedulesResult, medicalResult] = await Promise.all([
-      pool.query(
-        `SELECT e.*, b.name AS branch_name, d.name AS department_name,
-                r.name AS role_name, p.name AS position_name
-         FROM employees e
-         LEFT JOIN branches b ON b.id = e.branch_id AND b.company_id = e.company_id
-         LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
-         LEFT JOIN roles r ON r.id = e.role_id AND r.company_id = e.company_id
-         LEFT JOIN positions p ON p.id = e.position_id AND p.company_id = e.company_id
-         WHERE e.company_id = $1
-         ORDER BY e.name`,
-        [req.user.companyId]
-      ),
-      pool.query(
-        `SELECT id, name, active
-         FROM branches
-         WHERE company_id = $1
-         ORDER BY name`,
-        [req.user.companyId]
-      ),
-      pool.query(
-        `SELECT module_key, record_key, payload
-         FROM app_records
-         WHERE company_id = $1
-           AND module_key IN ('timekeeping_clock', 'timekeeping')
-           AND record_key = 'timeClockRecords'
-         ORDER BY CASE WHEN module_key = 'timekeeping_clock' THEN 0 ELSE 1 END`,
-        [req.user.companyId]
-      ),
-      pool.query(
-        `SELECT record_key, payload
-         FROM app_records
-         WHERE company_id = $1
-           AND module_key = 'timekeeping_schedules'
-           AND record_key IN ('workSchedules', 'employeeWorkSchedules')`,
-        [req.user.companyId]
-      ),
-      pool.query(
-        `SELECT payload
-         FROM app_records
-         WHERE company_id = $1
-           AND module_key = 'timekeeping_medical'
-           AND record_key = 'medicalCertificates'`,
-        [req.user.companyId]
-      )
-    ])
-
-    const employees = employeeResult.rows.map((row) => {
-      const registrationData = row.registration_data && typeof row.registration_data === 'object'
-        ? row.registration_data
-        : {}
-      return {
-        ...registrationData,
-        id: row.id,
-        name: row.name || registrationData.name || '',
-        status: row.status || 'active',
-        active: row.status ? row.status === 'active' : registrationData.active !== false,
-        cpf: row.cpf || registrationData.cpf || '',
-        email: row.email || registrationData.email || '',
-        registration: row.registration || registrationData.registration || registrationData.employeeNumber || '',
-        branchId: row.branch_id || registrationData.branchId || '',
-        branchName: row.branch_name || registrationData.branchName || '',
-        departmentId: row.department_id || registrationData.departmentId || '',
-        departmentName: row.department_name || registrationData.departmentName || '',
-        roleId: row.role_id || registrationData.roleId || '',
-        roleName: row.role_name || registrationData.roleName || '',
-        positionId: row.position_id || registrationData.positionId || '',
-        position: row.position_name || registrationData.position || registrationData.jobTitle || '',
-        jobTitle: registrationData.jobTitle || row.position_name || row.role_name || '',
-        legacyId: registrationData.legacyId ?? registrationData.legacy_id ?? registrationData.id ?? null,
-        admissionDate: row.admission_date || registrationData.admissionDate || '',
-        terminationDate: row.termination_date || registrationData.terminationDate || '',
-        weeklyHours: registrationData.weeklyHours ?? registrationData.weekly_hours ?? row.weekly_hours ?? null
-      }
-    })
-
-    const employeeAliases = new Map()
-    for (const employee of employees) {
-      const aliases = [
-        employee.id,
-        employee.legacyId,
-        employee.legacy_id,
-        employee.idLegacy
-      ].filter((value) => value !== undefined && value !== null && value !== '')
-      for (const alias of aliases) employeeAliases.set(String(alias), String(employee.id))
-    }
-
-    const recordsByEmployeeDate = new Map()
-    for (const row of recordsResult.rows) {
-      const items = Array.isArray(row.payload) ? row.payload : []
-      for (const item of items) {
-        const itemDate = String(item?.date || '')
-        if (itemDate < startDate || itemDate > endDate) continue
-        const employeeId = employeeAliases.get(String(item?.employeeId))
-        if (!employeeId) continue
-        const key = `${employeeId}::${itemDate}`
-        if (!recordsByEmployeeDate.has(key)) {
-          recordsByEmployeeDate.set(key, { ...item, employeeId })
-        }
-      }
-    }
-
-    const schedulePayloads = Object.fromEntries(
-      schedulesResult.rows.map((row) => [row.record_key, Array.isArray(row.payload) ? row.payload : []])
-    )
-    const assignments = (schedulePayloads.employeeWorkSchedules || [])
-      .map((item) => {
-        const employeeId = employeeAliases.get(String(item?.employeeId))
-        return employeeId ? { ...item, employeeId } : null
-      })
-      .filter(Boolean)
-
-    const records = [...recordsByEmployeeDate.values()]
-    const medicalCertificates = medicalResult.rows.flatMap((row) =>
-      Array.isArray(row.payload) ? row.payload : []
-    ).map((certificate) => {
-      const employeeId = employeeAliases.get(String(certificate?.employeeId))
-      return employeeId ? { ...certificate, employeeId } : null
-    }).filter((certificate) => {
-      if (!certificate) return false
-      if (!certificate.startDate || !certificate.endDate) return false
-      return certificate.startDate <= endDate && certificate.endDate >= startDate
-    })
-
-    return res.json({
-      employees,
-      branches: branchResult.rows,
-      records,
-      scheduleData: {
-        workSchedules: schedulePayloads.workSchedules || [],
-        employeeWorkSchedules: assignments
-      },
-      medicalCertificates,
-      startDate,
-      endDate
-    })
+    return res.json(await loadTimekeepingDataset(req.user.companyId, period.startDate, period.endDate, true))
   } catch (error) {
     return next(error)
   }
 })
 
+// Horas extras: permissão específica e sem expor dados de atestados.
+router.get('/timekeeping/overtime-data', requirePermission('ponto_horas_extras_view'), async (req, res, next) => {
+  const period = validateTimekeepingPeriod(req, res)
+  if (!period) return
+  try {
+    return res.json(await loadTimekeepingDataset(req.user.companyId, period.startDate, period.endDate, false))
+  } catch (error) {
+    return next(error)
+  }
+})
+
+// Faltas e atrasos: inclui apenas os atestados necessários à apuração.
+router.get('/timekeeping/absence-data', requirePermission('ponto_faltas_view'), async (req, res, next) => {
+  const period = validateTimekeepingPeriod(req, res)
+  if (!period) return
+  try {
+    return res.json(await loadTimekeepingDataset(req.user.companyId, period.startDate, period.endDate, true))
+  } catch (error) {
+    return next(error)
+  }
+})
 
 
 // Dataset exclusivo do Fechamento Mensal. A permissão do endpoint é própria

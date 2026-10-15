@@ -1,9 +1,8 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import './horasExtras.css'
 
-import { getEmployees } from '../../../services/employee'
-import useOrganizationCache from '../../../Hooks/useOrganizationCache'
+import { apiRequest } from '../../../services/api'
 
 import {
   calculateTimeClockPeriod,
@@ -15,8 +14,12 @@ import {
 import { getEmployeeWorkScheduleName } from '../../../services/workSchedule'
 
 export default function HorasExtras() {
-  const [employees] = useState(() => getEmployees().filter((employee) => employee.active !== false))
-  const [branches] = useOrganizationCache('branches', (items) => items.filter((branch) => branch.active !== false))
+  const [employees, setEmployees] = useState([])
+  const [branches, setBranches] = useState([])
+  const [timeClockRecords, setTimeClockRecords] = useState([])
+  const [scheduleData, setScheduleData] = useState({ workSchedules: [], employeeWorkSchedules: [] })
+  const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState('')
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState('')
 
@@ -36,6 +39,57 @@ export default function HorasExtras() {
 
   const [selectedDetails, setSelectedDetails] = useState(null)
 
+  useEffect(() => {
+    if (!startDate || !endDate || startDate > endDate) {
+      setLoadError('Informe um período válido. A data inicial não pode ser posterior à final.')
+      setEmployees([])
+      setBranches([])
+      setTimeClockRecords([])
+      setScheduleData({ workSchedules: [], employeeWorkSchedules: [] })
+      setLoading(false)
+      return
+    }
+
+    const dayCount = Math.round((new Date(`${endDate}T00:00:00`) - new Date(`${startDate}T00:00:00`)) / 86400000) + 1
+    if (dayCount > 367) {
+      setLoadError('O período máximo para apuração é de 367 dias.')
+      setEmployees([])
+      setBranches([])
+      setTimeClockRecords([])
+      setScheduleData({ workSchedules: [], employeeWorkSchedules: [] })
+      setLoading(false)
+      return
+    }
+
+    let active = true
+    setLoading(true)
+    setLoadError('')
+
+    async function loadOvertimeData() {
+      try {
+        const params = new URLSearchParams({ startDate, endDate })
+        const result = await apiRequest(`/me/timekeeping/overtime-data?${params.toString()}`)
+        if (!active) return
+        setEmployees((Array.isArray(result.employees) ? result.employees : []).filter((employee) => employee.active !== false))
+        setBranches((Array.isArray(result.branches) ? result.branches : []).filter((branch) => branch.active !== false))
+        setTimeClockRecords(Array.isArray(result.records) ? result.records : [])
+        setScheduleData(result.scheduleData || { workSchedules: [], employeeWorkSchedules: [] })
+      } catch (error) {
+        if (!active) return
+        setEmployees([])
+        setBranches([])
+        setTimeClockRecords([])
+        setScheduleData({ workSchedules: [], employeeWorkSchedules: [] })
+        setLoadError(error.message || 'Não foi possível carregar os dados de horas extras pela API.')
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    loadOvertimeData()
+    return () => { active = false }
+  }, [startDate, endDate])
+
   /*
    * ============================================================
    * FUNCIONÁRIOS FILTRADOS
@@ -48,7 +102,7 @@ export default function HorasExtras() {
         return true
       }
 
-      return Number(employee.branchId) === Number(selectedBranchId)
+      return String(employee.branchId) === String(selectedBranchId)
     })
   }, [employees, selectedBranchId])
 
@@ -69,13 +123,13 @@ export default function HorasExtras() {
 
     const employeesToCalculate = selectedEmployeeId
       ? employees.filter(
-          (employee) => Number(employee.id) === Number(selectedEmployeeId)
+          (employee) => String(employee.id) === String(selectedEmployeeId)
         )
       : filteredEmployees
 
     return employeesToCalculate
       .map((employee) => {
-        const period = calculateTimeClockPeriod(employee.id, startDate, endDate)
+        const period = calculateTimeClockPeriod(employee.id, startDate, endDate, { employee, records: timeClockRecords, scheduleData })
 
         return {
           employee,
@@ -83,7 +137,7 @@ export default function HorasExtras() {
         }
       })
       .filter(({ period }) => period.totals.overtimeMinutes > 0)
-  }, [employees, filteredEmployees, selectedEmployeeId, startDate, endDate])
+  }, [employees, filteredEmployees, selectedEmployeeId, startDate, endDate, timeClockRecords, scheduleData])
 
   /*
    * ============================================================
@@ -142,6 +196,9 @@ export default function HorasExtras() {
           <p>Apuração das horas trabalhadas acima da jornada prevista.</p>
         </div>
       </header>
+
+      {loadError && <div role="alert" className="horas-extras-empty">{loadError}</div>}
+      {loading && <div role="status" className="horas-extras-empty">Carregando dados do PostgreSQL...</div>}
 
       <section className="horas-extras-filters">
         <div className="horas-extras-filter">
@@ -265,7 +322,11 @@ export default function HorasExtras() {
           <strong>{calculations.length} resultado(s)</strong>
         </div>
 
-        {calculations.length === 0 ? (
+        {loading ? (
+          <div className="horas-extras-empty"><h3>Carregando apuração...</h3></div>
+        ) : loadError ? (
+          <div className="horas-extras-empty"><h3>Não foi possível calcular as horas extras</h3><p>{loadError}</p></div>
+        ) : calculations.length === 0 ? (
           <div className="horas-extras-empty">
             <span>⏱️</span>
 
@@ -312,7 +373,7 @@ export default function HorasExtras() {
 
                     <td>
                       <span className="horas-extras-schedule">
-                        {getEmployeeWorkScheduleName(employee)}
+                        {getEmployeeWorkScheduleName(employee, new Date(), scheduleData)}
                       </span>
                     </td>
 

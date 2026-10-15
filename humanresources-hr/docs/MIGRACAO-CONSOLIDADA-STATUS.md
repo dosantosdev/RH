@@ -1,3 +1,12 @@
+## Etapa mais recente — Horas Extras e Faltas/Atrasos via API PostgreSQL
+
+- As telas `HorasExtras.jsx` e `FaltasAtrasos.jsx` deixaram de carregar funcionários, filiais, marcações, jornadas e atestados diretamente do `localStorage`.
+- `GET /api/me/timekeeping/overtime-data` exige `ponto_horas_extras_view` e não devolve dados de atestados.
+- `GET /api/me/timekeeping/absence-data` exige `ponto_faltas_view` e inclui apenas os atestados que podem se sobrepor ao período consultado.
+- As duas rotas limitam os dados à empresa do token, validam períodos de até 367 dias e normalizam IDs legados para IDs atuais do PostgreSQL.
+- Os cálculos existentes foram preservados e agora recebem explicitamente funcionários, marcações e jornadas carregados pela API. A persistência geral de ponto ainda usa temporariamente registros JSONB em `app_records`.
+- Detalhes: `MIGRACAO-HORAS-EXTRAS-FALTAS-API-POSTGRES.md`.
+
 ## Etapa mais recente — Fechamento Mensal via API
 
 - Dados de funcionários, filiais, marcações e jornadas agora são carregados pela rota autenticada `/api/me/timekeeping/closing-data`.
