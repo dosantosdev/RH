@@ -1,3 +1,11 @@
+## Etapa mais recente — Dashboard via API PostgreSQL
+
+- O Dashboard consulta a identidade em `/api/me` e os dados de funcionários em `/api/employees`.
+- Aniversariantes, alertas de exames periódicos e Turnover deixaram de ler diretamente a chave `employees` do `localStorage`.
+- Os indicadores de funcionários são condicionados às permissões `employees_view` e `dashboard_birthdays`.
+- Datas de exame periódico são normalizadas para o formato esperado pelos cálculos.
+- Detalhes: `MIGRACAO-DASHBOARD-API-POSTGRES.md`.
+
 ## Etapa mais recente — cadastro de funcionários pela API PostgreSQL
 
 - O cadastro atualiza os catálogos organizacionais antes da validação e envia as relações de filial, departamento, cargo e posição.

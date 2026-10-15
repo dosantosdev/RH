@@ -28,6 +28,7 @@ export function normalizeEmployee(row) {
     birthDate: formatDateForForm(row.birth_date ?? data.birthDate),
     admissionDate: formatDateForForm(row.admission_date ?? data.admissionDate),
     dismissalDate: formatDateForForm(row.termination_date ?? data.dismissalDate),
+    periodicExamDate: formatDateForForm(data.periodicExamDate ?? data.periodic_exam_date),
     branchId: row.branch_id ?? data.branchId ?? '',
     departmentId: row.department_id ?? data.departmentId ?? '',
     roleId: row.role_id ?? data.roleId ?? '',

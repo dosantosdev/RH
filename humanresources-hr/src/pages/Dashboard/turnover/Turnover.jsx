@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import './turnover.css'
+import { searchEmployees } from '../../../services/employeeApi'
 
 export default function Turnover() {
   const [turnoverPeriod, setTurnoverPeriod] = useState('monthly')
@@ -12,6 +13,8 @@ export default function Turnover() {
   })
 
   const [employees, setEmployees] = useState([])
+  const [loadingEmployees, setLoadingEmployees] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
   /*
    * ---------------------------------------------------------
@@ -68,14 +71,31 @@ export default function Turnover() {
    */
 
   useEffect(() => {
+    let active = true
+
+    async function loadEmployees() {
+      setLoadingEmployees(true)
+      setLoadError('')
+
+      try {
+        const currentEmployees = await searchEmployees('')
+        if (active) setEmployees(currentEmployees)
+      } catch (error) {
+        if (active) {
+          setEmployees([])
+          setLoadError(error.message || 'Não foi possível carregar os dados de rotatividade.')
+        }
+      } finally {
+        if (active) setLoadingEmployees(false)
+      }
+    }
+
     loadEmployees()
+
+    return () => {
+      active = false
+    }
   }, [])
-
-  function loadEmployees() {
-    const storedEmployees = JSON.parse(localStorage.getItem('employees')) || []
-
-    setEmployees(storedEmployees)
-  }
 
   /*
    * ---------------------------------------------------------
@@ -768,6 +788,18 @@ export default function Turnover() {
           )}
         </div>
       </div>
+
+      {loadingEmployees && (
+        <p className="turnover-no-data" role="status">
+          Carregando dados de admissões e desligamentos...
+        </p>
+      )}
+
+      {!loadingEmployees && loadError && (
+        <p className="turnover-no-data" role="alert">
+          {loadError}
+        </p>
+      )}
 
       {/* =====================================================
           INDICADORES

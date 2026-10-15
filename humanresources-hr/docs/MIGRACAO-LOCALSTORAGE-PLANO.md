@@ -16,6 +16,9 @@ Não apagar nem limpar chaves locais durante a migração. Cada área será cone
 ### Migração iniciada nesta entrega
 - Configurações de campos obrigatórios: persistência por empresa na tabela `company_settings`, via `/api/settings/required-fields`. A configuração local existente é usada apenas para a primeira cópia se ainda não houver valor no banco.
 
+### Áreas conectadas nesta revisão
+- Dashboard: identidade via `/api/me`; indicadores de aniversários, exames periódicos e Turnover via `/api/employees`. Ainda requer testes integrados no PostgreSQL real.
+
 ### Próximas áreas que ainda precisam ser conectadas e testadas
 - Filiais, departamentos, cargos e posições do organograma.
 - Busca, perfil, edição e exclusão de funcionários em todas as telas (algumas ainda leem dados locais).
