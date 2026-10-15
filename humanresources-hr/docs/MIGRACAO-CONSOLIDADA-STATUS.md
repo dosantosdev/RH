@@ -1,3 +1,10 @@
+## Etapa mais recente — certificados de treinamento via API
+
+- Consulta e emissão de certificados passaram a usar endpoints autenticados.
+- O servidor valida o vínculo da participação com o funcionário e os requisitos de conclusão antes de emitir.
+- O certificado e seu número são persistidos no PostgreSQL; a reabertura reutiliza o registro existente.
+- Detalhes: `MIGRACAO-CERTIFICADOS-TREINAMENTO-API-POSTGRES.md`.
+
 ## Etapa mais recente — persistência de Meus Treinamentos
 
 - Progresso, tentativas e conclusão agora são enviados à API autenticada e persistidos no PostgreSQL.

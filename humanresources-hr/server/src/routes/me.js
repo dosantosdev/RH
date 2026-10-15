@@ -1300,4 +1300,148 @@ router.post('/training-complete', async (req, res, next) => {
 })
 
 
+
+// Emissão e consulta autenticada de certificados de treinamento.
+// O funcionário é sempre derivado da sessão; IDs enviados pelo navegador
+// servem apenas para localizar a participação dentro da empresa autenticada.
+router.get('/training-certificate', async (req, res, next) => {
+  const participantId = req.query?.participantId
+  const trainingId = req.query?.trainingId
+  if (participantId === undefined || trainingId === undefined) {
+    return res.status(400).json({ message: 'Informe a participação e o treinamento.' })
+  }
+
+  try {
+    const client = await pool.connect()
+    try {
+      const aliases = await getTrainingEmployeeAliases(client, req)
+      if (!aliases.size) {
+        return res.status(403).json({ message: 'Não existe funcionário vinculado à sessão.' })
+      }
+
+      const participants = await readTrainingArray(client, req.user.companyId, 'trainingParticipants')
+      const participant = participants.find((item) =>
+        String(item.id) === String(participantId) &&
+        String(item.trainingId) === String(trainingId) &&
+        participantBelongsToEmployee(item, aliases)
+      )
+      if (!participant) {
+        return res.status(404).json({ message: 'Participação não encontrada para o funcionário autenticado.' })
+      }
+
+      const certificates = await readTrainingArray(client, req.user.companyId, 'trainingCertificates')
+      const certificate = certificates.find((item) =>
+        String(item.participantId) === String(participantId) &&
+        String(item.trainingId) === String(trainingId)
+      )
+      return res.json({ certificate: certificate || null })
+    } finally {
+      client.release()
+    }
+  } catch (error) {
+    return next(error)
+  }
+})
+
+router.post('/training-certificate', async (req, res, next) => {
+  const participantId = req.body?.participantId
+  const trainingId = req.body?.trainingId
+  if (participantId === undefined || trainingId === undefined) {
+    return res.status(400).json({ message: 'Informe a participação e o treinamento.' })
+  }
+
+  const client = await pool.connect()
+  try {
+    await client.query('BEGIN')
+    const aliases = await getTrainingEmployeeAliases(client, req)
+    if (!aliases.size) {
+      await client.query('ROLLBACK')
+      return res.status(403).json({ message: 'Não existe funcionário vinculado à sessão.' })
+    }
+
+    const participants = await readTrainingArray(client, req.user.companyId, 'trainingParticipants', true)
+    const participant = participants.find((item) =>
+      String(item.id) === String(participantId) &&
+      String(item.trainingId) === String(trainingId) &&
+      participantBelongsToEmployee(item, aliases)
+    )
+    if (!participant) {
+      await client.query('ROLLBACK')
+      return res.status(404).json({ message: 'Participação não encontrada para o funcionário autenticado.' })
+    }
+
+    const trainings = await readTrainingArray(client, req.user.companyId, 'trainings')
+    const training = trainings.find((item) => String(item.id) === String(trainingId))
+    if (!training) {
+      await client.query('ROLLBACK')
+      return res.status(404).json({ message: 'Treinamento não encontrado.' })
+    }
+
+    const completedContents = new Set((participant.completedContents || []).map(String))
+    const contentCount = Array.isArray(training.contents) ? training.contents.length : 0
+    if (
+      participant.status !== 'completed' ||
+      Number(participant.progress) < 100 ||
+      participant.assessmentStatus !== 'approved' ||
+      !participant.completedAt ||
+      contentCount === 0 ||
+      completedContents.size < contentCount
+    ) {
+      await client.query('ROLLBACK')
+      return res.status(409).json({ message: 'O certificado só pode ser emitido após a conclusão de todos os conteúdos e aprovação na avaliação.' })
+    }
+
+    const certificates = await readTrainingArray(client, req.user.companyId, 'trainingCertificates', true)
+    const existing = certificates.find((item) =>
+      String(item.participantId) === String(participantId) &&
+      String(item.trainingId) === String(trainingId)
+    )
+    if (existing) {
+      await client.query('COMMIT')
+      return res.json({ certificate: existing, alreadyIssued: true })
+    }
+
+    const employeeResult = await client.query(
+      `SELECT e.id, e.name, e.registration_data
+       FROM employees e
+       WHERE e.id = $1 AND e.company_id = $2`,
+      [req.user.employeeId, req.user.companyId]
+    )
+    if (!employeeResult.rowCount) {
+      await client.query('ROLLBACK')
+      return res.status(403).json({ message: 'Funcionário autenticado não encontrado.' })
+    }
+    const employeeRow = employeeResult.rows[0]
+    const employeeName = employeeRow.name ||
+      employeeRow.registration_data?.name ||
+      participant.employeeName ||
+      'Funcionário'
+    const issuedAt = new Date().toISOString()
+    const certificate = {
+      id: `cert-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
+      participantId: participant.id,
+      employeeId: employeeRow.id,
+      employeeName,
+      trainingId: training.id,
+      trainingName: training.name,
+      issuedAt,
+      completedAt: participant.completedAt,
+      certificateNumber: `CERT-${Date.now()}-${Math.random().toString(10).slice(2, 6).padEnd(4, '0')}`,
+      score: participant.score !== null && participant.score !== undefined
+        ? Number(participant.score)
+        : null,
+      workload: Math.max(0, Number(training.duration) || 0)
+    }
+
+    await saveTrainingArray(client, req, 'trainingCertificates', [...certificates, certificate])
+    await client.query('COMMIT')
+    return res.status(201).json({ certificate, alreadyIssued: false })
+  } catch (error) {
+    await client.query('ROLLBACK').catch(() => {})
+    return next(error)
+  } finally {
+    client.release()
+  }
+})
+
 export default router
