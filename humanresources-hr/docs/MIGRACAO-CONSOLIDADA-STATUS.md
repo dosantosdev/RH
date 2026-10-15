@@ -1,3 +1,12 @@
+## Etapa mais recente — gravações salariais pela API autenticada
+
+- `Salarios.jsx` agora cria, edita e exclui registros por `POST/PUT/DELETE /api/salaries`.
+- O backend exige `finance_salary_manage` para mutações, valida funcionário/empresa, campos e vigência duplicada.
+- As mutações usam advisory lock transacional para evitar perda de atualização concorrente na lista agregada.
+- O cache local só é atualizado após confirmação da API; falhas são exibidas sem sucesso falso.
+- A lista permanece em `app_records`/JSONB, portanto a normalização relacional e os testes reais continuam pendentes.
+- Detalhes: `MIGRACAO-SALARIOS-GRAVACOES-API-POSTGRES.md`.
+
 > Plano objetivo de encerramento, critérios e sequência sem repetição: `PLANO-ENCERRAMENTO-MIGRACAO.md`.
 
 ## Etapa mais recente — Proventos e Descontos com ciclo de API

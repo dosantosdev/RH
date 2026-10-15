@@ -35,9 +35,10 @@ A nota global só sobe quando uma macroetapa ou um domínio passa critérios ver
 
 ## Próxima sequência, sem repetir etapas já feitas
 
-1. Auditar e migrar as gravações de Folha de Pagamento e Salários, reaproveitando as leituras já implementadas.
-2. Concluir o ciclo de escrita de Proventos e Descontos com persistência de domínio e controle de concorrência; não reimplementar a leitura já migrada.
-3. Auditar Financeiro Avançado (férias, 13º e rescisões) por CRUD, não apenas por leitura.
-4. Fazer inventário automático das leituras/gravações restantes em `localStorage` e `app_records` para gerar uma lista fechada, em vez de selecionar abas repetidamente sem fechar os fluxos.
-5. Executar build, testes de API e integração no PostgreSQL real; corrigir o que falhar.
-6. Integrar Firebase Storage por último.
+1. **Salários:** as gravações já usam endpoints dedicados, validação no backend e bloqueio transacional por empresa. Falta normalizar a tabela e validar em PostgreSQL real.
+2. **Folha de Pagamento:** implementar endpoints transacionais dedicados para criar/editar/recalcular/fechar/reabrir/excluir; não reimplementar a leitura já migrada.
+3. **Proventos e Descontos:** substituir a lista JSONB por operações por evento em tabela própria, com controle de concorrência.
+4. **Financeiro Avançado:** auditar férias, 13º e rescisões por CRUD completo.
+5. **Inventário fechado:** automatizar a auditoria de leituras/gravações restantes em `localStorage` e `app_records`, e fechar todos os itens encontrados.
+6. **Validação final:** executar build, testes de API e integração no PostgreSQL real; corrigir falhas.
+7. Integrar Firebase Storage por último.

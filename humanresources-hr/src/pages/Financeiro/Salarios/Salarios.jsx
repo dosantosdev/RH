@@ -3,18 +3,15 @@ import { useEffect, useMemo, useState } from 'react'
 import './salarios.css'
 
 import { getEmployees } from '../../../services/employee'
-import { apiRequest, getApiUser } from '../../../services/api'
+import { apiRequest } from '../../../services/api'
 import { setStored } from '../../../services/storage'
 
 import {
-  addSalaryRecord,
-  deleteSalaryRecord,
   formatSalary,
   formatSalaryDate,
   getCurrentSalary,
   getEmployeeSalaryHistory,
-  getSalaryHistory,
-  updateSalaryRecord
+  getSalaryHistory
 } from '../../../services/salary'
 
 import { hasPermission } from '../../../services/permissions'
@@ -91,6 +88,7 @@ export default function Salarios() {
   const [loadingFinancialData, setLoadingFinancialData] = useState(true)
   const [financialDataError, setFinancialDataError] = useState('')
   const [financialDataNotice, setFinancialDataNotice] = useState('')
+  const [savingSalary, setSavingSalary] = useState(false)
 
   // A API/PostgreSQL é a fonte oficial. O cache local só é usado como
   // contingência visual se a API estiver indisponível; nesse caso, a tela
@@ -350,8 +348,10 @@ export default function Salarios() {
    * ==========================================================
    */
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault()
+
+    if (savingSalary) return
 
     if (!canManage) {
       showMessage(
@@ -397,66 +397,66 @@ export default function Salarios() {
       return
     }
 
-    const loggedUser = getApiUser()
+    setSavingSalary(true)
 
-    const userName = loggedUser?.name || loggedUser?.username || 'Usuário'
+    try {
+      // O PostgreSQL confirma a alteração antes de atualizar o cache local.
+      let response
 
-    /*
-     * ========================================================
-     * ATUALIZAÇÃO
-     * ========================================================
-     */
+      if (editingId !== null) {
+        const existingRecord = salaryHistory.find(
+          (record) => String(record.id) === String(editingId)
+        )
 
-    if (editingId !== null) {
-      const existingRecord =
-        salaryHistory.find(
-          (record) => Number(record.id) === Number(editingId)
-        ) || {}
+        if (!existingRecord) {
+          showMessage('O registro salarial não foi encontrado. Atualize os dados e tente novamente.', 'warning')
+          return
+        }
 
-      updateSalaryRecord({
-        ...existingRecord,
-        salary: salaryValue,
-        effectiveDate: form.effectiveDate,
-        reason: form.reason,
-        notes: form.notes,
-        updatedAt: new Date().toISOString(),
-        updatedBy: userName
-      })
+        response = await apiRequest(`/salaries/${encodeURIComponent(String(editingId))}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            salary: salaryValue,
+            effectiveDate: form.effectiveDate,
+            reason: form.reason,
+            notes: form.notes
+          })
+        })
+      } else {
+        response = await apiRequest('/salaries', {
+          method: 'POST',
+          body: JSON.stringify({
+            employeeId: selectedEmployee.id,
+            employeeName: selectedEmployee.name,
+            salary: salaryValue,
+            effectiveDate: form.effectiveDate,
+            reason: form.reason,
+            notes: form.notes
+          })
+        })
+      }
 
+      if (!Array.isArray(response?.salaryHistory)) {
+        throw new Error('A API não retornou o histórico salarial atualizado.')
+      }
+
+      setStored('salaryHistory', response.salaryHistory)
       setEditingId(null)
-
-      setForm({
-        ...initialForm,
-        effectiveDate: getToday()
-      })
-
-      showMessage('Registro salarial atualizado com sucesso!', 'success')
-
-      return
+      setForm({ ...initialForm, effectiveDate: getToday() })
+      showMessage(
+        editingId !== null
+          ? 'Registro salarial atualizado com sucesso!'
+          : 'Registro salarial cadastrado com sucesso!',
+        'success'
+      )
+    } catch (error) {
+      showMessage(
+        error?.message || 'Não foi possível salvar o registro no PostgreSQL.',
+        'error'
+      )
+    } finally {
+      setSavingSalary(false)
     }
-
-    /*
-     * ========================================================
-     * NOVO REGISTRO
-     * ========================================================
-     */
-
-    addSalaryRecord({
-      employeeId: selectedEmployee.id,
-      employeeName: selectedEmployee.name,
-      salary: salaryValue,
-      effectiveDate: form.effectiveDate,
-      reason: form.reason,
-      notes: form.notes,
-      createdBy: userName
-    })
-
-    setForm({
-      ...initialForm,
-      effectiveDate: getToday()
-    })
-
-    showMessage('Registro salarial cadastrado com sucesso!', 'success')
   }
 
   /*
@@ -465,7 +465,7 @@ export default function Salarios() {
    * ==========================================================
    */
 
-  function handleDelete(record) {
+  async function handleDelete(record) {
     if (!canManage) {
       showMessage('Você não possui permissão para excluir salários.', 'warning')
 
@@ -482,13 +482,31 @@ export default function Salarios() {
       return
     }
 
-    deleteSalaryRecord(record.id)
+    if (savingSalary) return
 
-    if (Number(editingId) === Number(record.id)) {
-      handleCancelEdit()
+    setSavingSalary(true)
+    try {
+      const response = await apiRequest(`/salaries/${encodeURIComponent(String(record.id))}`, {
+        method: 'DELETE'
+      })
+      if (!Array.isArray(response?.salaryHistory)) {
+        throw new Error('A API não retornou o histórico salarial atualizado.')
+      }
+      setStored('salaryHistory', response.salaryHistory)
+
+      if (String(editingId) === String(record.id)) {
+        handleCancelEdit()
+      }
+
+      showMessage('Registro salarial excluído com sucesso!', 'success')
+    } catch (error) {
+      showMessage(
+        error?.message || 'Não foi possível excluir o registro do PostgreSQL.',
+        'error'
+      )
+    } finally {
+      setSavingSalary(false)
     }
-
-    showMessage('Registro salarial excluído com sucesso!', 'success')
   }
 
   /*
@@ -785,7 +803,7 @@ export default function Salarios() {
                       </button>
                     )}
 
-                    <button type="submit" className="salary-primary-button">
+                    <button type="submit" disabled={savingSalary} className="salary-primary-button">
                       {editingId !== null
                         ? 'Atualizar salário'
                         : 'Cadastrar salário'}
