@@ -48,7 +48,7 @@ export function getEmployeeSalaryHistory(employeeId) {
   const history = getSalaryHistory()
 
   return history
-    .filter((item) => Number(item.employeeId) === Number(employeeId))
+    .filter((item) => String(item.employeeId) === String(employeeId))
     .sort((a, b) => {
       /*
        * Ordenamos do registro mais recente para o mais antigo.

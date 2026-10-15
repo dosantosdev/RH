@@ -36,6 +36,123 @@ router.get('/', async (req, res, next) => {
 })
 
 
+
+// Retorna somente os dados financeiros autorizados para a empresa da sessão.
+// A tela não precisa da permissão ampla employees_view para listar funcionários
+// necessários a uma rotina financeira autorizada.
+router.get('/financial-data', async (req, res, next) => {
+  const permissionModules = [
+    { module: 'salaries', permission: ['finance_salary_view', 'finance_salary_manage'], keys: { salaryHistory: 'salaryHistory' } },
+    { module: 'payroll', permission: ['finance_payroll_view', 'finance_payroll_manage'], keys: { payrolls: 'payrolls' } },
+    { module: 'financial_events', permission: ['finance_events_view', 'finance_events_manage'], keys: { financialEvents: 'financialEvents' } },
+    { module: 'financial_advanced', permission: ['finance_advanced_view', 'finance_advanced_manage'], keys: {
+      financialVacations: 'financialVacations',
+      financialThirteenths: 'financialThirteenths',
+      financialTerminations: 'financialTerminations'
+    } }
+  ]
+
+  const userPermissions = Array.isArray(req.user?.permissions) ? req.user.permissions : []
+  const allowedModules = permissionModules.filter((item) =>
+    req.user?.isAdmin === true || item.permission.some((permission) => userPermissions.includes(permission))
+  )
+
+  if (!allowedModules.length) {
+    return res.status(403).json({ message: 'Você não tem permissão para acessar os dados financeiros.' })
+  }
+
+  try {
+    const needsEmployees = allowedModules.some((item) =>
+      ['salaries', 'payroll', 'financial_advanced'].includes(item.module)
+    )
+    const employeeResult = needsEmployees
+      ? await pool.query(
+          `SELECT e.id, e.name, e.status, e.admission_date, e.termination_date,
+                  e.branch_id, e.department_id, e.role_id, e.position_id, e.registration_data,
+                  b.name AS branch_name, d.name AS department_name, r.name AS role_name
+           FROM employees e
+           LEFT JOIN branches b ON b.id = e.branch_id AND b.company_id = e.company_id
+           LEFT JOIN departments d ON d.id = e.department_id AND d.company_id = e.company_id
+           LEFT JOIN roles r ON r.id = e.role_id AND r.company_id = e.company_id
+           WHERE e.company_id = $1
+           ORDER BY e.name`,
+          [req.user.companyId]
+        )
+      : { rows: [] }
+
+    const recordsResult = await pool.query(
+      `SELECT module_key, record_key, payload
+       FROM app_records
+       WHERE company_id = $1 AND module_key = ANY($2::text[])
+       ORDER BY updated_at DESC`,
+      [req.user.companyId, allowedModules.map((item) => item.module)]
+    )
+
+    const records = {}
+    for (const moduleConfig of allowedModules) {
+      for (const responseKey of Object.keys(moduleConfig.keys)) {
+        records[responseKey] = []
+      }
+    }
+
+    for (const row of recordsResult.rows) {
+      const moduleConfig = allowedModules.find((item) => item.module === row.module_key)
+      if (!moduleConfig) continue
+      const responseKey = Object.keys(moduleConfig.keys).find((key) => moduleConfig.keys[key] === row.record_key)
+      if (responseKey) records[responseKey] = Array.isArray(row.payload) ? row.payload : []
+    }
+
+    const employees = employeeResult.rows.map((employee) => ({
+      ...employee,
+      active: employee.status === 'active',
+      admissionDate: employee.admission_date ? String(employee.admission_date).slice(0, 10) : '',
+      terminationDate: employee.termination_date ? String(employee.termination_date).slice(0, 10) : '',
+      registration: employee.registration_data?.registration || employee.registration_data?.registrationNumber || '',
+      branchId: employee.branch_id,
+      departmentId: employee.department_id,
+      roleId: employee.role_id,
+      positionId: employee.position_id
+    }))
+
+    // Históricos legados podem conter o ID numérico usado antes da migração.
+    // Normalizamos referências conhecidas para o UUID atual sem descartar
+    // registros cujo vínculo não possa ser identificado com segurança.
+    const employeeIdAliases = new Map()
+    for (const employee of employees) {
+      const registration = employee.registration_data && typeof employee.registration_data === 'object'
+        ? employee.registration_data
+        : {}
+      for (const alias of [
+        employee.id,
+        registration.legacyId,
+        registration.legacy_id,
+        registration.idLegacy,
+        registration.id
+      ]) {
+        if (alias !== null && alias !== undefined && String(alias).trim()) {
+          employeeIdAliases.set(String(alias), String(employee.id))
+        }
+      }
+    }
+
+    for (const [key, value] of Object.entries(records)) {
+      if (!Array.isArray(value)) continue
+      records[key] = value.map((record) => {
+        if (!record || typeof record !== 'object' || record.employeeId === undefined || record.employeeId === null) {
+          return record
+        }
+        const canonicalEmployeeId = employeeIdAliases.get(String(record.employeeId))
+        return canonicalEmployeeId ? { ...record, employeeId: canonicalEmployeeId } : record
+      })
+    }
+
+    return res.json({ employees, ...records })
+  } catch (error) {
+    return next(error)
+  }
+})
+
+
 // Atualiza somente os campos editáveis do próprio perfil.
 // O ID e a empresa vêm do token autenticado, nunca do corpo da requisição.
 router.patch('/profile', requirePermission('profile_edit'), async (req, res, next) => {

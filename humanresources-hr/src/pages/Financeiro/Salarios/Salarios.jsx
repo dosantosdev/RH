@@ -1,8 +1,10 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import './salarios.css'
 
 import { getEmployees } from '../../../services/employee'
+import { apiRequest, getApiUser } from '../../../services/api'
+import { setStored } from '../../../services/storage'
 
 import {
   addSalaryRecord,
@@ -11,6 +13,7 @@ import {
   formatSalaryDate,
   getCurrentSalary,
   getEmployeeSalaryHistory,
+  getSalaryHistory,
   updateSalaryRecord
 } from '../../../services/salary'
 
@@ -78,13 +81,69 @@ export default function Salarios() {
    * ==========================================================
    */
 
-  const [employees] = useState(() =>
+  const [employees, setEmployees] = useState(() =>
     getEmployees()
       .filter((employee) => employee.active !== false)
       .sort((a, b) =>
         String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR')
       )
   )
+  const [loadingFinancialData, setLoadingFinancialData] = useState(true)
+  const [financialDataError, setFinancialDataError] = useState('')
+  const [financialDataNotice, setFinancialDataNotice] = useState('')
+
+  // A API/PostgreSQL é a fonte oficial. O cache local só é usado como
+  // contingência visual se a API estiver indisponível; nesse caso, a tela
+  // avisa explicitamente para evitar confundir cache com dados atualizados.
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadFinancialData() {
+      try {
+        const data = await apiRequest('/me/financial-data')
+        if (cancelled) return
+
+        if (Array.isArray(data.employees)) {
+          const normalizedEmployees = data.employees
+            .filter((employee) => employee.active !== false && employee.status !== 'inactive')
+            .sort((a, b) =>
+              String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR')
+            )
+          setStored('employees', normalizedEmployees)
+          setEmployees(normalizedEmployees)
+        }
+
+        if (Array.isArray(data.salaryHistory)) {
+          const cachedSalaryHistory = getSalaryHistory()
+          if (data.salaryHistory.length > 0 || cachedSalaryHistory.length === 0) {
+            setStored('salaryHistory', data.salaryHistory)
+            setFinancialDataNotice('')
+          } else {
+            // Uma lista vazia na API pode significar que os registros antigos
+            // ainda não foram importados. Não sobrescrevemos o cache local.
+            setFinancialDataNotice(
+              'O PostgreSQL ainda não retornou registros salariais. O histórico local foi preservado e pode precisar de importação.'
+            )
+          }
+        }
+
+        setFinancialDataError('')
+      } catch (error) {
+        if (!cancelled) {
+          setFinancialDataError(
+            error?.message || 'Não foi possível carregar os dados salariais do PostgreSQL.'
+          )
+        }
+      } finally {
+        if (!cancelled) setLoadingFinancialData(false)
+      }
+    }
+
+    loadFinancialData()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   /*
    * ==========================================================
@@ -112,7 +171,7 @@ export default function Salarios() {
 
   const selectedEmployee = useMemo(() => {
     return employees.find(
-      (employee) => Number(employee.id) === Number(selectedEmployeeId)
+      (employee) => String(employee.id) === String(selectedEmployeeId)
     )
   }, [employees, selectedEmployeeId])
 
@@ -338,7 +397,7 @@ export default function Salarios() {
       return
     }
 
-    const loggedUser = JSON.parse(localStorage.getItem('loggedUser') || 'null')
+    const loggedUser = getApiUser()
 
     const userName = loggedUser?.name || loggedUser?.username || 'Usuário'
 
@@ -480,6 +539,25 @@ export default function Salarios() {
           MENSAGEM
       ====================================================== */}
 
+      {loadingFinancialData && (
+        <div className="salary-message salary-message-warning" role="status">
+          Carregando funcionários e histórico salarial do PostgreSQL...
+        </div>
+      )}
+
+      {financialDataError && (
+        <div className="salary-message salary-message-warning" role="alert">
+          Não foi possível atualizar os dados pela API: {financialDataError}
+          {' '}Os dados exibidos podem estar desatualizados. Evite realizar alterações até restabelecer a conexão.
+        </div>
+      )}
+
+      {financialDataNotice && (
+        <div className="salary-message salary-message-warning" role="status">
+          {financialDataNotice}
+        </div>
+      )}
+
       {message && (
         <div className={`salary-message salary-message-${messageType}`}>
           {message}
@@ -524,7 +602,7 @@ export default function Salarios() {
 
             {filteredEmployees.map((employee) => {
               const isSelected =
-                Number(employee.id) === Number(selectedEmployeeId)
+                String(employee.id) === String(selectedEmployeeId)
 
               const employeeSalary = getCurrentSalary(employee.id)
 

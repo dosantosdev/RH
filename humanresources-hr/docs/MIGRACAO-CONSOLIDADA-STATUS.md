@@ -1,3 +1,12 @@
+## Etapa mais recente — leitura de Salários via API PostgreSQL
+
+- `Salarios.jsx` consulta `/api/me/financial-data` para carregar funcionários e histórico salarial autorizados.
+- A rota usa a empresa e as permissões da sessão autenticada e limita os campos pessoais retornados.
+- A tela informa quando a API falha e o cache local pode estar desatualizado.
+- A comparação de IDs do histórico salarial foi ajustada para suportar UUIDs do PostgreSQL.
+- As alterações ainda são persistidas pela ponte compatível `app_records`/JSONB; gravação assíncrona dedicada e testes com PostgreSQL real continuam pendentes.
+- Detalhes: `MIGRACAO-SALARIOS-API-POSTGRES.md`.
+
 ## Etapa mais recente — Horas Extras e Faltas/Atrasos via API PostgreSQL
 
 - As telas `HorasExtras.jsx` e `FaltasAtrasos.jsx` deixaram de carregar funcionários, filiais, marcações, jornadas e atestados diretamente do `localStorage`.
