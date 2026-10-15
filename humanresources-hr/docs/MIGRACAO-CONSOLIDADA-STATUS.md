@@ -1,3 +1,9 @@
+## Etapa mais recente — persistência administrativa de Treinamentos
+
+- As alterações das listas de treinamentos, participantes, avaliações e certificados agora são enfileiradas para persistência na API PostgreSQL.
+- A tela administrativa aguarda a confirmação das operações principais e apresenta erros de persistência.
+- Detalhes: `MIGRACAO-ADMIN-TREINAMENTOS-PERSISTENCIA-API.md`.
+
 ## Etapa mais recente — certificados de treinamento via API
 
 - Consulta e emissão de certificados passaram a usar endpoints autenticados.

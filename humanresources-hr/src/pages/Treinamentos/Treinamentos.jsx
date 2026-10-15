@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { flushTrainingDataWrites } from '../../services/storage'
 
 import './treinamentos.css'
 
@@ -82,6 +83,8 @@ export default function Treinamentos() {
   const [selectedViewTraining, setSelectedViewTraining] = useState(null)
 
   const [trainingToDelete, setTrainingToDelete] = useState(null)
+  const [savingTraining, setSavingTraining] = useState(false)
+  const [trainingError, setTrainingError] = useState('')
 
   function handleChange(e) {
     const { name, value, type, checked } = e.target
@@ -130,14 +133,23 @@ export default function Treinamentos() {
     setTrainingToDelete(null)
   }
 
-  function handleConfirmDeleteTraining() {
+  async function handleConfirmDeleteTraining() {
     if (!trainingToDelete) {
       return
     }
 
     const trainingId = trainingToDelete.id
+    setSavingTraining(true)
+    setTrainingError('')
     const updatedTrainings = deleteTraining(trainingId)
 
+    try {
+      await flushTrainingDataWrites()
+    } catch (error) {
+      setTrainingError(error?.message || 'Não foi possível persistir a exclusão no PostgreSQL.')
+      setSavingTraining(false)
+      return
+    }
     setTrainings(updatedTrainings)
 
     if (selectedTraining?.id === trainingId) {
@@ -161,10 +173,21 @@ export default function Treinamentos() {
     }
 
     setTrainingToDelete(null)
+    setSavingTraining(false)
   }
 
-  function handleUpdateTraining(updatedTraining) {
+  async function handleUpdateTraining(updatedTraining) {
+    setSavingTraining(true)
+    setTrainingError('')
     const updatedTrainings = updateTraining(updatedTraining)
+    try {
+      await flushTrainingDataWrites()
+    } catch (error) {
+      setTrainingError(error?.message || 'Não foi possível salvar as alterações no PostgreSQL.')
+      setSavingTraining(false)
+      return
+    }
+    setSavingTraining(false)
 
     setTrainings(updatedTrainings)
 
@@ -175,7 +198,7 @@ export default function Treinamentos() {
     setSelectedTraining(updatedSelectedTraining || null)
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault()
 
     if (!training.name.trim()) {
@@ -217,8 +240,17 @@ export default function Treinamentos() {
               : 1
       }
 
+      setSavingTraining(true)
+      setTrainingError('')
       const updatedTrainings = updateTraining(updatedTraining)
-
+      try {
+        await flushTrainingDataWrites()
+      } catch (error) {
+        setTrainingError(error?.message || 'Não foi possível salvar o treinamento no PostgreSQL.')
+        setSavingTraining(false)
+        return
+      }
+      setSavingTraining(false)
       setTrainings(updatedTrainings)
 
       setShowForm(false)
@@ -267,8 +299,17 @@ export default function Treinamentos() {
       participantIds: []
     }
 
+    setSavingTraining(true)
+    setTrainingError('')
     const updatedTrainings = addTraining(newTraining)
-
+    try {
+      await flushTrainingDataWrites()
+    } catch (error) {
+      setTrainingError(error?.message || 'Não foi possível salvar o treinamento no PostgreSQL.')
+      setSavingTraining(false)
+      return
+    }
+    setSavingTraining(false)
     setTrainings(updatedTrainings)
 
     setTraining({
@@ -326,6 +367,15 @@ export default function Treinamentos() {
       {/* ==================================================
           RESUMO
       ================================================== */}
+
+      {trainingError && (
+        <div className="training-error-banner" role="alert">
+          <p>{trainingError}</p>
+          <button type="button" onClick={() => setTrainingError('')}>Fechar</button>
+        </div>
+      )}
+
+      {savingTraining && <p role="status">Salvando no PostgreSQL...</p>}
 
       <div className="training-summary">
         <div className="training-summary-card">
@@ -726,8 +776,9 @@ export default function Treinamentos() {
                 type="submit"
                 form="training-form"
                 className="training-primary-button"
+                disabled={savingTraining}
               >
-                {editingTraining ? 'Salvar alterações' : 'Salvar treinamento'}
+                {savingTraining ? 'Salvando...' : editingTraining ? 'Salvar alterações' : 'Salvar treinamento'}
               </button>
             </div>
           </div>

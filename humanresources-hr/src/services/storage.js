@@ -304,12 +304,124 @@ export function getStoredObject(key, fallback = null) {
   }
 }
 
+/*
+ * Persistência assíncrona das alterações administrativas de Treinamentos.
+ *
+ * Os serviços antigos mantêm contrato síncrono porque várias telas dependem
+ * dele. Por isso, atualizamos primeiro o cache local e enfileiramos a gravação
+ * no PostgreSQL. Escritas da mesma chave são serializadas para que uma edição
+ * mais recente não seja sobrescrita por uma requisição anterior.
+ */
+const pendingTrainingWrites = new Map()
+const TRAINING_SYNC_ERROR_KEY = 'hr_training_sync_error'
+
+function enqueueTrainingWrite(key, value) {
+  if (!TRAINING_STORAGE_KEYS.has(key)) return
+  if (!getApiToken() || !userCanManageModule(TRAINING_DB_MODULE)) return
+
+  const previousWrite = pendingTrainingWrites.get(key) || Promise.resolve()
+  const nextWrite = previousWrite
+    .catch(() => {})
+    .then(async () => {
+      const serialized = JSON.stringify(value)
+      if (new Blob([serialized]).size > 256 * 1024) {
+        throw new Error(`Os dados de "${key}" excedem o limite de 256 KB da API.`)
+      }
+      await apiRequest(
+        `/app-records/${TRAINING_DB_MODULE}/${encodeURIComponent(key)}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ payload: sanitizePayload(value) })
+        }
+      )
+      const storedError = localStorage.getItem(TRAINING_SYNC_ERROR_KEY)
+      if (storedError) {
+        try {
+          if (JSON.parse(storedError)?.key === key) localStorage.removeItem(TRAINING_SYNC_ERROR_KEY)
+        } catch {
+          localStorage.removeItem(TRAINING_SYNC_ERROR_KEY)
+        }
+      }
+    })
+    .catch((error) => {
+      const message = error?.message || 'Falha ao sincronizar os dados de treinamentos.'
+      localStorage.setItem(TRAINING_SYNC_ERROR_KEY, JSON.stringify({
+        key,
+        message,
+        occurredAt: new Date().toISOString()
+      }))
+      console.error(`[PostgreSQL] Falha ao salvar "${key}":`, error)
+      // A fila resolve para evitar rejeições não tratadas em serviços legados
+      // que ainda não aguardam explicitamente a persistência.
+    })
+    .finally(() => {
+      if (pendingTrainingWrites.get(key) === nextWrite) {
+        pendingTrainingWrites.delete(key)
+      }
+    })
+
+  pendingTrainingWrites.set(key, nextWrite)
+}
+
+/**
+ * Aguarda as gravações de Treinamentos iniciadas pelo cache compatível.
+ * As telas administrativas podem chamar esta função antes de confirmar uma
+ * operação ao usuário, sem precisar converter todos os serviços legados para
+ * async de uma só vez.
+ */
+export async function flushTrainingDataWrites() {
+  const pending = [...pendingTrainingWrites.values()]
+  if (!pending.length) {
+    const storedError = localStorage.getItem(TRAINING_SYNC_ERROR_KEY)
+    if (storedError) {
+      let parsedError
+      try { parsedError = JSON.parse(storedError) } catch { parsedError = null }
+      if (parsedError?.message) throw new Error(parsedError.message)
+    }
+    return
+  }
+  await Promise.all(pending)
+  const storedError = localStorage.getItem(TRAINING_SYNC_ERROR_KEY)
+  if (storedError) {
+    let parsedError
+    try { parsedError = JSON.parse(storedError) } catch { parsedError = null }
+    if (parsedError?.message) throw new Error(parsedError.message)
+  }
+}
+
 export function setStored(key, value) {
   localStorage.setItem(key, JSON.stringify(value))
+  enqueueTrainingWrite(key, value)
 }
 
 export function removeStored(key) {
   localStorage.removeItem(key)
+  if (!TRAINING_STORAGE_KEYS.has(key)) return
+  if (!getApiToken() || !userCanManageModule(TRAINING_DB_MODULE)) return
+
+  const previousWrite = pendingTrainingWrites.get(key) || Promise.resolve()
+  const nextWrite = previousWrite
+    .catch(() => {})
+    .then(async () => {
+      await apiRequest(
+        `/app-records/${TRAINING_DB_MODULE}/${encodeURIComponent(key)}`,
+        { method: 'DELETE' }
+      )
+    })
+    .catch((error) => {
+      localStorage.setItem(TRAINING_SYNC_ERROR_KEY, JSON.stringify({
+        key,
+        message: error?.message || 'Falha ao remover os dados de treinamentos.',
+        occurredAt: new Date().toISOString()
+      }))
+      console.error(`[PostgreSQL] Falha ao remover "${key}":`, error)
+    })
+    .finally(() => {
+      if (pendingTrainingWrites.get(key) === nextWrite) {
+        pendingTrainingWrites.delete(key)
+      }
+    })
+  pendingTrainingWrites.set(key, nextWrite)
 }
 
 /**
