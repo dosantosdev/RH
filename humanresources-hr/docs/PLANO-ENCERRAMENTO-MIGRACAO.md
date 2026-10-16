@@ -80,3 +80,9 @@ A nota global só sobe quando uma macroetapa ou um domínio passa critérios ver
 ## Bloqueio crítico de schema identificado em 16/10/2026 — catálogo financeiro
 
 A revisão do ZIP encontrou uma colisão entre `001_init.sql` e `010_financial_events_normalized.sql`: a primeira migration já criava `financial_events` com schema transacional, enquanto a 010 tentava criar a tabela de catálogo com o mesmo nome. Como `CREATE TABLE IF NOT EXISTS` não adiciona colunas a uma tabela existente, a criação de índices sobre `event_type` falharia em uma instalação nova. A migration 010 agora preserva a tabela antiga como `financial_event_transactions` antes de criar o catálogo. A migration 015 aplica a mesma reparação em bancos nos quais a 010 já esteja registrada. Detalhes em `docs/CORRECAO-COLISAO-SCHEMA-FINANCIAL-EVENTS-16-10-2026.md`. Isso foi validado estaticamente; ainda precisa ser executado no PostgreSQL real.
+
+## Evidência adicional de 16/10/2026 — preparação de validação PostgreSQL reproduzível
+
+Foi adicionada uma configuração de teste isolada em `docker-compose.postgres-test.yml`, usando PostgreSQL 18.6 em porta 5433 e volume exclusivo, sem reutilizar o volume do ambiente principal PostgreSQL 16. O backend ganhou `npm run db:verify`, que verifica o registro das migrations 001–015, as colunas essenciais das tabelas financeiras e imprime contagens de linhas sem modificar dados. O procedimento está em `docs/VALIDACAO-POSTGRESQL-TESTE-16-10-2026.md`.
+
+Esta etapa prepara uma forma reproduzível de executar a validação, mas não conta como teste real aprovado: Docker e cliente PostgreSQL não estão disponíveis nesta sessão. O build Vite também continua bloqueado pela dependência nativa ausente do Rolldown. A estimativa global permanece 8/10 até a execução de `db:migrate`, `db:verify`, build e testes de API em ambiente real.
