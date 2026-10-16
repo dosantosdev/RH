@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import { getStoredArray } from '../../services/storage'
 
@@ -8,21 +8,13 @@ export default function TrainingParticipantDetails({
   onClose,
   onSave
 }) {
-  const [employees, setEmployees] = useState([])
+  const [employees] = useState(() => getStoredArray('employees'))
 
   const [selectedEmployeeId, setSelectedEmployeeId] = useState(
     participant.employeeId
   )
 
   const isEditing = mode === 'edit'
-
-  useEffect(() => {
-    setEmployees(getStoredArray('employees'))
-  }, [])
-
-  useEffect(() => {
-    setSelectedEmployeeId(participant.employeeId)
-  }, [participant.employeeId])
 
   const employee = employees.find(
     (item) => Number(item.id) === Number(participant.employeeId)

@@ -1,7 +1,6 @@
 import {
   getAccessRoles,
   initializeAccessRoles,
-  getAccessRoleById,
   getAccessRoleByName
 } from './accessRoles'
 

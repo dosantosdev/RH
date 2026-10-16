@@ -89,28 +89,6 @@ export default function TrainingTakeAssessment({
     return maxAttempts >= 2 ? maxAttempts : 1
   }
 
-  function getBestScore() {
-    const attempts = Array.isArray(participant.attempts)
-      ? participant.attempts
-      : []
-
-    const storedBestScore = Number(participant.bestScore)
-
-    if (Number.isFinite(storedBestScore)) {
-      return storedBestScore
-    }
-
-    const scores = attempts
-      .map((attempt) => Number(attempt.score))
-      .filter((score) => Number.isFinite(score))
-
-    if (scores.length === 0) {
-      return null
-    }
-
-    return Math.max(...scores)
-  }
-
   async function handleSubmit(e) {
     e?.preventDefault()
     if (!assessment || submitting) return
@@ -389,10 +367,6 @@ export default function TrainingTakeAssessment({
    */
 
   const questions = assessment.questions || []
-
-  const attempts = Array.isArray(participant.attempts)
-    ? participant.attempts
-    : []
 
   const attemptLimit = getAttemptLimit()
 

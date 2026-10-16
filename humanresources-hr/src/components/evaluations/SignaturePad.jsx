@@ -89,7 +89,8 @@ export default function SignaturePad({
     } else {
       hasDrawnRef.current = false
 
-      setIsEmpty(true)
+      // A atualização visual é enfileirada após a sincronização do canvas.
+      queueMicrotask(() => setIsEmpty(true))
     }
   }, [value, width, height])
 

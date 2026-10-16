@@ -5,11 +5,9 @@ import {
   createEvaluationQuestion,
   createPdiQuestion,
   deleteEvaluationModel,
-  deletePdiQuestion,
   getEvaluationModels,
   normalizePdiQuestions,
   updateEvaluationModel,
-  updatePdiQuestion
 } from '../../services/evaluationModels'
 
 import { flushEvaluationDataWrites } from '../../services/storage'

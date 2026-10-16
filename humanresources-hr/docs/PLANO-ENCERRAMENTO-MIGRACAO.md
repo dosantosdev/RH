@@ -2,6 +2,10 @@
 
 Este documento substitui a avaliação vaga de “falta migrar mais telas” por critérios de conclusão verificáveis. Uma tela não é considerada migrada apenas por ler dados da API: precisa concluir o ciclo de leitura e escrita, validar permissões no servidor, preservar dados antigos e passar pelos testes aplicáveis.
 
+## Evidência adicional de 16/10/2026 — limpeza global de lint e validação estática
+
+Foi feita uma rodada de correções globais que reduziu o ESLint de 20 erros para **0 erros e 12 avisos**. Também foram verificados 24 arquivos JavaScript do backend com `node --check` e 139 arquivos JS/JSX do frontend com o parser Babel, sem erros de sintaxe. O build ainda falha por ausência de `@rolldown/binding-linux-x64-gnu` no ambiente, e as migrações SQL 010–014 ainda precisam ser executadas e testadas no PostgreSQL real. Consulte `docs/VALIDACAO-ESTATICA-16-10-2026.md`.
+
 ## Critério de conclusão por domínio
 
 Um domínio só passa para **concluído** quando:

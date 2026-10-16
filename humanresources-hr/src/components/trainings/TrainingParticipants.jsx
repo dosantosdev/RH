@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import { getStoredArray } from '../../services/storage'
 
@@ -13,9 +13,9 @@ import TrainingParticipantDetails from './TrainingParticipantDetails'
 import TrainingCertificate from './TrainingCertificate'
 
 export default function TrainingParticipants({ training, onClose }) {
-  const [employees, setEmployees] = useState([])
+  const [employees] = useState(() => getStoredArray('employees'))
 
-  const [participants, setParticipants] = useState([])
+  const [participants, setParticipants] = useState(() => getTrainingParticipantsByTrainingId(training.id))
 
   const [selectedEmployee, setSelectedEmployee] = useState('')
 
@@ -25,15 +25,9 @@ export default function TrainingParticipants({ training, onClose }) {
 
   const [certificateParticipant, setCertificateParticipant] = useState(null)
 
-  useEffect(() => {
-    setEmployees(getStoredArray('employees'))
-
-    reloadParticipants()
-  }, [training.id])
-
-  function reloadParticipants() {
+  const reloadParticipants = useCallback(() => {
     setParticipants(getTrainingParticipantsByTrainingId(training.id))
-  }
+  }, [training.id])
 
   function handleAddParticipant(e) {
     e.preventDefault()
@@ -317,6 +311,7 @@ export default function TrainingParticipants({ training, onClose }) {
 
       {selectedParticipant && (
         <TrainingParticipantDetails
+          key={`${selectedParticipant.id}-${detailsMode}`}
           participant={selectedParticipant}
           mode={detailsMode}
           onClose={() => setSelectedParticipant(null)}

@@ -155,10 +155,6 @@ function getUserRole(user) {
   )
 }
 
-function getUserRoleNormalized(user) {
-  return normalizeText(getUserRole(user))
-}
-
 /*
  * ============================================================
  * IDENTIFICAR PERFIL DE ACESSO PELO ID
@@ -319,16 +315,6 @@ function findEmployeeByPositionId(positionId) {
  * ENCONTRAR USUÁRIO DE UMA POSIÇÃO
  * ============================================================
  */
-
-function findUserByPositionId(positionId) {
-  const employee = findEmployeeByPositionId(positionId)
-
-  if (!employee) {
-    return null
-  }
-
-  return findUserByEmployeeId(employee.id)
-}
 
 /*
  * ============================================================

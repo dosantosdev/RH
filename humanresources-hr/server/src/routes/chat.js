@@ -295,7 +295,11 @@ router.post('/conversations', async (req, res, next) => {
     await client.query('COMMIT')
     return res.status(201).json({ id: conversationId, existing: false })
   } catch (error) {
-    try { await client.query('ROLLBACK') } catch {}
+    try {
+      await client.query('ROLLBACK')
+    } catch (rollbackError) {
+      console.error('Não foi possível reverter a transação do chat:', rollbackError)
+    }
     return next(error)
   } finally {
     client.release()
@@ -422,7 +426,11 @@ router.post('/conversations/:id/messages', async (req, res, next) => {
       sender_name: req.user.name || 'Usuário'
     })
   } catch (error) {
-    try { await client.query('ROLLBACK') } catch {}
+    try {
+      await client.query('ROLLBACK')
+    } catch (rollbackError) {
+      console.error('Não foi possível reverter a transação do chat:', rollbackError)
+    }
     return next(error)
   } finally {
     client.release()

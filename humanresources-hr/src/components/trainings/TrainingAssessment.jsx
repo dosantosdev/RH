@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import {
   getTrainingAssessments,
@@ -8,6 +8,10 @@ import {
 } from '../../services/trainingAssessment'
 
 const EMPTY_ALTERNATIVES = ['', '', '', '']
+
+function createQuestionId() {
+  return Date.now()
+}
 
 const INITIAL_QUESTION = {
   question: '',
@@ -73,7 +77,12 @@ function normalizeAssessment(assessment) {
 }
 
 export default function TrainingAssessment({ training, onClose }) {
-  const [assessment, setAssessment] = useState(null)
+  const [assessment, setAssessment] = useState(() => {
+    const existingAssessment = getTrainingAssessments().find(
+      (item) => Number(item.trainingId) === Number(training.id)
+    )
+    return normalizeAssessment(existingAssessment)
+  })
 
   const [question, setQuestion] = useState({
     ...INITIAL_QUESTION,
@@ -81,24 +90,6 @@ export default function TrainingAssessment({ training, onClose }) {
   })
 
   const [editingQuestion, setEditingQuestion] = useState(null)
-
-  /*
-   * ============================================================
-   * CARREGAR AVALIAÇÃO
-   * ============================================================
-   */
-
-  useEffect(() => {
-    const assessments = getTrainingAssessments()
-
-    const existingAssessment = assessments.find(
-      (item) => Number(item.trainingId) === Number(training.id)
-    )
-
-    if (existingAssessment) {
-      setAssessment(normalizeAssessment(existingAssessment))
-    }
-  }, [training.id])
 
   /*
    * ============================================================
@@ -144,7 +135,7 @@ export default function TrainingAssessment({ training, onClose }) {
 
   function handleCreateAssessment() {
     const newAssessment = {
-      id: Date.now(),
+      id: createQuestionId(),
 
       trainingId: training.id,
 
@@ -290,7 +281,7 @@ export default function TrainingAssessment({ training, onClose }) {
     }
 
     const newQuestion = {
-      id: Date.now(),
+      id: createQuestionId(),
 
       question: question.question.trim(),
 

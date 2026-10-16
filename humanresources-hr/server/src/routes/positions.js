@@ -117,7 +117,7 @@ async function validateReferences(client, body, companyId, excludeId = null) {
 router.get('/', requirePermission('roles_view'), async (req, res, next) => {
   try {
     const result = await pool.query(`${selectSql} WHERE p.company_id = $1 ORDER BY r.name, p.created_at`, [tenant(req)])
-    res.json(result.rows.map(({ metadata, ...row }) => row))
+    res.json(result.rows.map(({ metadata: _metadata, ...row }) => row))
   } catch (error) { next(error) }
 })
 

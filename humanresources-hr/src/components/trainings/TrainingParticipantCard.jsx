@@ -16,8 +16,6 @@ export default function TrainingParticipantCard({
   const isCompleted =
     participant?.status === 'completed' && progress >= 100 && isApproved
 
-  const contents = Array.isArray(training?.contents) ? training.contents : []
-
   const completedContents = Array.isArray(participant?.completedContents)
     ? participant.completedContents
     : []

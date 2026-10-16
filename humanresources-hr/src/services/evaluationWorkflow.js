@@ -2,7 +2,6 @@ import { getStoredArray, setStored } from './storage'
 
 import {
   getEvaluationModelById,
-  getEvaluationModels,
   normalizePdiQuestions
 } from './evaluationModels'
 

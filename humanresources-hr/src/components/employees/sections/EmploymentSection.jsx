@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 import './employmentSection.css'
 
@@ -24,13 +24,13 @@ export default function EmploymentSection({
   const [departmentSearch, setDepartmentSearch] = useState('')
 
   /*
-   * Quando a filial muda, a pesquisa anterior deixa de fazer
-   * sentido e deve ser limpa.
+   * Limpa a pesquisa no mesmo evento que altera a filial,
+   * evitando um efeito que dispara uma atualização extra.
    */
-
-  useEffect(() => {
+  function handleBranchSelectChange(event) {
     setDepartmentSearch('')
-  }, [form.branchId])
+    handleBranchChange(event)
+  }
 
   /*
    * ============================================================
@@ -78,7 +78,7 @@ export default function EmploymentSection({
 
       <div className="employment-grid">
         <ValidatedField name="branchId" error={errors.branchId}>
-          <select value={form.branchId || ''} onChange={handleBranchChange}>
+          <select value={form.branchId || ''} onChange={handleBranchSelectChange}>
             <option value="">Selecione a filial</option>
 
             {branches

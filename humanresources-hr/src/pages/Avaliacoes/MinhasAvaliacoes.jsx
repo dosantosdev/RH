@@ -35,8 +35,6 @@ export default function MinhasAvaliacoes() {
 
   const [workflows, setWorkflows] = useState([])
 
-  const [selectedWorkflowId, setSelectedWorkflowId] = useState(null)
-
   const [selectedWorkflow, setSelectedWorkflow] = useState(null)
 
   const [pdiAnswers, setPdiAnswers] = useState({})
@@ -127,8 +125,6 @@ export default function MinhasAvaliacoes() {
    */
 
   function handleSelectWorkflow(workflow) {
-    setSelectedWorkflowId(workflow.id)
-
     setSelectedWorkflow(workflow)
 
     setError('')
@@ -149,8 +145,6 @@ export default function MinhasAvaliacoes() {
    */
 
   function handleBack() {
-    setSelectedWorkflowId(null)
-
     setSelectedWorkflow(null)
 
     setPdiAnswers({})

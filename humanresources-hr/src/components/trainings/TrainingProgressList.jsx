@@ -1,19 +1,19 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import { getTrainingParticipants } from '../../services/trainingParticipant'
 
 import TrainingProgress from './TrainingProgress'
 
 export default function TrainingProgressList({ training, onClose }) {
-  const [participants, setParticipants] = useState([])
+  const [participants, setParticipants] = useState(() =>
+    getTrainingParticipants().filter(
+      (participant) => participant.trainingId === training.id
+    )
+  )
 
   const [selectedParticipant, setSelectedParticipant] = useState(null)
 
-  useEffect(() => {
-    loadParticipants()
-  }, [training.id])
-
-  function loadParticipants() {
+  const loadParticipants = useCallback(() => {
     const storedParticipants = getTrainingParticipants()
 
     const trainingParticipants = storedParticipants.filter(
@@ -21,7 +21,7 @@ export default function TrainingProgressList({ training, onClose }) {
     )
 
     setParticipants(trainingParticipants)
-  }
+  }, [training.id])
 
   function getStatusLabel(status) {
     const labels = {
