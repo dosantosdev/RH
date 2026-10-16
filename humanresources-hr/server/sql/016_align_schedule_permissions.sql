@@ -1,7 +1,9 @@
--- Alinha permissões antigas de Jornadas e Escalas ao catálogo oficial ponto_jornadas_*.
--- Mantém as chaves antigas e seus vínculos por compatibilidade; apenas garante
--- que cada perfil com uma permissão work_schedules_* receba a equivalente oficial.
-BEGIN;
+
+-- Alinha as permissões antigas de Jornadas e Escalas
+-- ao catálogo oficial ponto_jornadas_*.
+--
+-- A transação é controlada pelo migrate.js.
+-- Não adicionar BEGIN ou COMMIT neste arquivo.
 
 INSERT INTO permissions (key, label, category)
 VALUES
@@ -10,15 +12,23 @@ VALUES
   ('ponto_jornadas_edit', 'Editar jornadas e escalas', 'Ponto'),
   ('ponto_jornadas_delete', 'Excluir jornadas e escalas', 'Ponto')
 ON CONFLICT (key) DO UPDATE
-SET label = EXCLUDED.label,
-    category = EXCLUDED.category;
+SET
+  label = EXCLUDED.label,
+  category = EXCLUDED.category;
 
-INSERT INTO access_role_permissions (access_role_id, permission_id)
-SELECT old_link.access_role_id, new_permission.id
-FROM access_role_permissions old_link
-JOIN permissions old_permission
+-- Concede as permissões oficiais equivalentes aos perfis
+-- que ainda possuem associações com as permissões antigas.
+INSERT INTO access_role_permissions (
+  access_role_id,
+  permission_id
+)
+SELECT
+  old_link.access_role_id,
+  new_permission.id
+FROM access_role_permissions AS old_link
+JOIN permissions AS old_permission
   ON old_permission.id = old_link.permission_id
-JOIN permissions new_permission
+JOIN permissions AS new_permission
   ON new_permission.key = CASE old_permission.key
     WHEN 'work_schedules_view' THEN 'ponto_jornadas_view'
     WHEN 'work_schedules_create' THEN 'ponto_jornadas_create'
@@ -32,5 +42,3 @@ WHERE old_permission.key IN (
   'work_schedules_delete'
 )
 ON CONFLICT DO NOTHING;
-
-COMMIT;
