@@ -40,3 +40,8 @@ Reduzir bloqueios que impediam uma validação confiável da migração, sem rep
 5. Continuar a auditoria das dependências de `localStorage` e `app_records`, removendo apenas fontes oficiais legadas já substituídas.
 
 **Critério:** a migração não é considerada pronta para produção apenas por passar em verificações estáticas. As validações com PostgreSQL e o build completo continuam obrigatórias.
+
+
+## Revisão adicional de 16/10/2026 — conflito de schema financeiro
+
+A leitura cruzada das migrations 001 e 010 revelou uma colisão de nome/schema em `financial_events`. A 001 cria a tabela transacional, enquanto a 010 a tratava como tabela de catálogo. Corrigi a 010 para renomear a tabela antiga para `financial_event_transactions` antes de criar o catálogo e adicionei a migration de reparação 015 para instalações que já tenham registrado a 010. A tabela legada é preservada, não apagada. A validação foi estática; o SQL precisa ser executado em PostgreSQL antes de declarar a correção confirmada.

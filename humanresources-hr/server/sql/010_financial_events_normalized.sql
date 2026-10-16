@@ -1,6 +1,27 @@
 -- 010_financial_events_normalized.sql
 -- Migra o catálogo agregado para linhas próprias, preservando o registro legado.
 -- A importação é idempotente: não sobrescreve eventos que já tenham sido migrados.
+
+-- A migration 001 criou uma tabela financial_events transacional com colunas
+-- employee_id/competence/type/description/amount/data. O catálogo atual precisa
+-- de outro formato. Preserve a tabela antiga com um nome explícito antes de criar
+-- o catálogo; assim a execução em banco novo não falha por conflito de schema.
+DO $$
+BEGIN
+  IF to_regclass('public.financial_events') IS NOT NULL
+     AND NOT EXISTS (
+       SELECT 1 FROM information_schema.columns
+       WHERE table_schema = 'public'
+         AND table_name = 'financial_events'
+         AND column_name = 'event_type'
+     ) THEN
+    IF to_regclass('public.financial_event_transactions') IS NOT NULL THEN
+      RAISE EXCEPTION 'A tabela financeira legada e financial_event_transactions já existem; reconcilie os dados antes de continuar.';
+    END IF;
+    ALTER TABLE public.financial_events RENAME TO financial_event_transactions;
+  END IF;
+END $$;
+
 CREATE TABLE IF NOT EXISTS financial_events (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   company_id UUID NOT NULL REFERENCES companies(id) ON DELETE CASCADE,

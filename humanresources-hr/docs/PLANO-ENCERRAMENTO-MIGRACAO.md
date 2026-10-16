@@ -76,3 +76,7 @@ A nota global só sobe quando uma macroetapa ou um domínio passa critérios ver
 5. **Inventário fechado:** auditar leituras/gravações restantes em `localStorage` e `app_records`, distinguindo cache temporário de fonte oficial.
 6. **Validação final:** executar build, testes de API e integração no PostgreSQL real; corrigir falhas.
 7. Integrar Firebase Storage por último.
+
+## Bloqueio crítico de schema identificado em 16/10/2026 — catálogo financeiro
+
+A revisão do ZIP encontrou uma colisão entre `001_init.sql` e `010_financial_events_normalized.sql`: a primeira migration já criava `financial_events` com schema transacional, enquanto a 010 tentava criar a tabela de catálogo com o mesmo nome. Como `CREATE TABLE IF NOT EXISTS` não adiciona colunas a uma tabela existente, a criação de índices sobre `event_type` falharia em uma instalação nova. A migration 010 agora preserva a tabela antiga como `financial_event_transactions` antes de criar o catálogo. A migration 015 aplica a mesma reparação em bancos nos quais a 010 já esteja registrada. Detalhes em `docs/CORRECAO-COLISAO-SCHEMA-FINANCIAL-EVENTS-16-10-2026.md`. Isso foi validado estaticamente; ainda precisa ser executado no PostgreSQL real.
