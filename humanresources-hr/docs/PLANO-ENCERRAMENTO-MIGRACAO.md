@@ -26,6 +26,10 @@ Um domínio só passa para **concluído** quando:
 | 6. Firebase Storage | Reservado para a última etapa | Migração e validação de documentos/binários após estabilizar banco e permissões |
 
 
+## Evidência de 16/10/2026 — Folha de Pagamento em tabelas relacionais
+
+A API `/api/payrolls` agora usa `payrolls` e `payroll_items` como fonte oficial, com migração `012_payroll_relational_storage.sql`, IDs externos compatíveis, itens por funcionário e bloqueio da chave genérica `app_records(payroll, payrolls)`. A origem agregada é preservada para recuperação; campos de compatibilidade ainda permanecem em JSONB por folha/funcionário. A migration SQL, o build e os testes integrados reais ainda precisam ser executados. Detalhes em `docs/MIGRACAO-FOLHA-TABELAS-RELACIONAIS-16-10-2026.md`.
+
 ## Evidência adicional de 16/10/2026 — Histórico salarial normalizado
 
 O histórico salarial foi migrado de `app_records(salaries, salaryHistory)` para `salary_history`, com importação idempotente, preservação da cópia JSONB antiga, endpoints dedicados CRUD, bloqueio por empresa e leitura relacional também em `/api/me/financial-data`. A ponte genérica do frontend e as rotas genéricas de `app_records` foram impedidas de gravar novamente essa chave. A validação no PostgreSQL real, o build e os testes integrados continuam pendentes; portanto, o domínio ainda não deve ser marcado como aprovado para produção. Consulte `docs/MIGRACAO-SALARIOS-TABELA-RELACIONAL.md`.

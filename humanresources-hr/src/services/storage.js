@@ -69,8 +69,8 @@ const FINANCIAL_KEY_TO_MODULE = new Map(
   )
 )
 const FINANCIAL_STORAGE_KEYS = new Set(FINANCIAL_KEY_TO_MODULE.keys())
-// Catálogo normalizado em tabela própria: não deve voltar à ponte genérica JSONB.
-const NORMALIZED_DOMAIN_KEYS = new Set(['financialEvents', 'salaryHistory'])
+// Domínios com persistência relacional própria: não devem voltar à ponte genérica JSONB.
+const NORMALIZED_DOMAIN_KEYS = new Set(['financialEvents', 'salaryHistory', 'payrolls'])
 const EVALUATION_STORAGE_KEYS = new Set([
   'evaluations',
   'evaluationModels',
@@ -807,6 +807,26 @@ export async function syncFinancialDataWithPostgres() {
         }
       } catch (error) {
         console.warn('[PostgreSQL] Não foi possível sincronizar salários pela rota dedicada.', error)
+      }
+      continue
+    }
+
+    // Folhas usam as tabelas relacionais payrolls/payroll_items e a API dedicada.
+    // Nunca sincronizar payrolls por app_records: isso poderia ressuscitar o
+    // agregado legado ou provocar uma gravação genérica rejeitada pelo servidor.
+    if (module.dbModule === 'payroll') {
+      try {
+        const response = await apiRequest('/payrolls')
+        const databasePayrolls = Array.isArray(response?.payrolls) ? response.payrolls : []
+        const cachedPayrolls = getStoredArray('payrolls')
+        if (databasePayrolls.length > 0 || cachedPayrolls.length === 0) {
+          localStorage.setItem('payrolls', JSON.stringify(databasePayrolls))
+          synced += 1
+        } else {
+          console.warn('[PostgreSQL] O cache de folhas foi preservado porque a API retornou uma lista vazia.')
+        }
+      } catch (error) {
+        console.warn('[PostgreSQL] Não foi possível sincronizar a folha pela rota dedicada.', error)
       }
       continue
     }

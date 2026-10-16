@@ -1,3 +1,7 @@
+## Atualização de 16/10/2026 — Folha de Pagamento normalizada
+
+A API `/api/payrolls` passou a usar `payrolls` e `payroll_items` para leitura e persistência, com a migração `012_payroll_relational_storage.sql`, IDs externos compatíveis e bloqueio da chave antiga `payroll/payrolls` na API genérica. `/api/me/financial-data` também lê a folha relacional. O JSONB legado é preservado como backup e alguns atributos ainda permanecem nos campos `data` de compatibilidade. Migration SQL, build e testes PostgreSQL reais ainda pendentes. Ver `MIGRACAO-FOLHA-TABELAS-RELACIONAIS-16-10-2026.md`.
+
 ## Atualização de 16/10/2026 — Salários normalizados
 
 O histórico salarial agora usa a tabela relacional `salary_history`, com importação idempotente da lista antiga, preservação do backup JSONB e endpoints dedicados de leitura/criação/edição/exclusão. `/api/me/financial-data` lê o histórico relacional e o bridge genérico não sincroniza mais a chave `salaryHistory`. A migração SQL, build e testes integrados ainda precisam ser executados em ambiente PostgreSQL real. Detalhes em `docs/MIGRACAO-SALARIOS-TABELA-RELACIONAL.md`.

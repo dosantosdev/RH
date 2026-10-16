@@ -77,6 +77,12 @@ function rejectDedicatedSalaryRecord(req, res) {
   return true
 }
 
+function rejectDedicatedPayrollRecord(req, res) {
+  if (req.params.moduleKey !== 'payroll' || req.params.recordKey !== 'payrolls') return false
+  res.status(409).json({ message: 'A folha de pagamento usa a API dedicada /api/payrolls.' })
+  return true
+}
+
 /**
  * Lista registros de um módulo da empresa autenticada.
  * Não aceita companyId vindo do cliente: o escopo sempre vem do token.
@@ -98,9 +104,10 @@ router.get('/:moduleKey', async (req, res, next) => {
        LIMIT 5000`,
       [req.user.companyId, moduleKey]
     )
-    const rows = moduleKey === 'salaries'
-      ? result.rows.filter((row) => row.recordKey !== 'salaryHistory')
-      : result.rows
+    const rows = result.rows.filter((row) =>
+      !(moduleKey === 'salaries' && row.recordKey === 'salaryHistory') &&
+      !(moduleKey === 'payroll' && row.recordKey === 'payrolls')
+    )
     return res.json(rows)
   } catch (error) {
     return next(error)
@@ -110,6 +117,7 @@ router.get('/:moduleKey', async (req, res, next) => {
 router.get('/:moduleKey/:recordKey', async (req, res, next) => {
   if (denyIfModulePermissionMissing(req, res, 'view')) return
   if (rejectDedicatedSalaryRecord(req, res)) return
+  if (rejectDedicatedPayrollRecord(req, res)) return
   try {
     const { moduleKey, recordKey } = req.params
     if (moduleKey === 'financial_events' && recordKey === 'financialEvents') {
@@ -138,6 +146,7 @@ router.get('/:moduleKey/:recordKey', async (req, res, next) => {
 router.put('/:moduleKey/:recordKey', async (req, res, next) => {
   if (denyIfModulePermissionMissing(req, res, 'manage')) return
   if (rejectDedicatedSalaryRecord(req, res)) return
+  if (rejectDedicatedPayrollRecord(req, res)) return
   try {
     const { moduleKey, recordKey } = req.params
     const payload = req.body?.payload
@@ -174,6 +183,7 @@ router.put('/:moduleKey/:recordKey', async (req, res, next) => {
 router.delete('/:moduleKey/:recordKey', async (req, res, next) => {
   if (denyIfModulePermissionMissing(req, res, 'manage')) return
   if (rejectDedicatedSalaryRecord(req, res)) return
+  if (rejectDedicatedPayrollRecord(req, res)) return
   try {
     const { moduleKey, recordKey } = req.params
     if (moduleKey === 'financial_events' && recordKey === 'financialEvents') {
@@ -220,6 +230,11 @@ router.post('/legacy-import', async (req, res, next) => {
     if (record?.moduleKey === 'financial_events' && record?.recordKey === 'financialEvents') {
       return res.status(409).json({
         message: 'O catálogo de eventos financeiros deve ser salvo pela API dedicada /api/financial-events.'
+      })
+    }
+    if (record?.moduleKey === 'payroll' && record?.recordKey === 'payrolls') {
+      return res.status(409).json({
+        message: 'A folha de pagamento deve ser salva pela API dedicada /api/payrolls.'
       })
     }
     if (!validateModule(record?.moduleKey) || !validateRecordKey(record?.recordKey) ||

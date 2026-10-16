@@ -83,7 +83,9 @@ router.get('/financial-data', async (req, res, next) => {
     const recordsResult = await pool.query(
       `SELECT module_key, record_key, payload
        FROM app_records
-       WHERE company_id = $1 AND module_key = ANY($2::text[])
+       WHERE company_id = $1
+         AND module_key = ANY($2::text[])
+         AND module_key NOT IN ('payroll', 'salaries', 'financial_events')
        ORDER BY updated_at DESC`,
       [req.user.companyId, allowedModules.map((item) => item.module)]
     )
@@ -153,6 +155,62 @@ router.get('/financial-data', async (req, res, next) => {
         [req.user.companyId]
       )
       records.financialEvents = financialEventsResult.rows.map(({ payload }) => payload)
+    }
+
+    if (allowedModules.some((item) => item.module === 'payroll')) {
+      const payrollResult = await pool.query(
+        `SELECT p.external_id, p.competence, p.status, p.data,
+                p.created_at, p.updated_at,
+                COALESCE(
+                  jsonb_agg(
+                    CASE WHEN pi.data = '{}'::jsonb THEN jsonb_build_object(
+                      'employeeId', COALESCE(pi.external_employee_id, pi.employee_id::text, ''),
+                      'baseSalary', pi.base_salary,
+                      'earningsTotal', pi.earnings,
+                      'totalDeductions', pi.deductions,
+                      'inss', pi.inss,
+                      'irrf', pi.irrf,
+                      'fgts', pi.fgts,
+                      'netSalary', pi.net_salary,
+                      'overtimeMinutes', pi.overtime_minutes,
+                      'overtimeAmount', pi.overtime_amount
+                    ) ELSE pi.data END
+                    ORDER BY pi.external_id
+                  ) FILTER (WHERE pi.id IS NOT NULL),
+                  '[]'::jsonb
+                ) AS employee_items
+         FROM payrolls p
+         LEFT JOIN payroll_items pi ON pi.payroll_id = p.id
+         WHERE p.company_id = $1
+         GROUP BY p.id
+         ORDER BY p.competence DESC, p.created_at DESC`,
+        [req.user.companyId]
+      )
+      records.payrolls = payrollResult.rows.map((row) => {
+        const data = row.data && typeof row.data === 'object' && !Array.isArray(row.data)
+          ? row.data
+          : {}
+        const employeeItems = Array.isArray(row.employee_items) ? row.employee_items : []
+        const updatedAt = row.updated_at instanceof Date
+          ? row.updated_at.toISOString()
+          : String(row.updated_at || data.updatedAt || '')
+        const createdAt = row.created_at instanceof Date
+          ? row.created_at.toISOString()
+          : String(row.created_at || data.createdAt || '')
+        return {
+          ...data,
+          id: String(row.external_id),
+          competence: row.competence instanceof Date
+            ? row.competence.toISOString().slice(0, 7)
+            : String(row.competence || '').slice(0, 7),
+          status: row.status === 'closed' ? 'closed' : 'draft',
+          employees: employeeItems.length || !Array.isArray(data.employees)
+            ? employeeItems
+            : data.employees,
+          createdAt,
+          updatedAt
+        }
+      })
     }
 
     // Históricos legados podem conter o ID numérico usado antes da migração.

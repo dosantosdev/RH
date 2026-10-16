@@ -1,4 +1,5 @@
 import express from 'express'
+import { Buffer } from 'node:buffer'
 import { pool } from '../db/pool.js'
 import { authenticate } from '../middleware/auth.js'
 
@@ -106,18 +107,119 @@ async function ensureEmployeesInCompany(client, companyId, payroll) {
   return ids.every((id) => valid.has(id))
 }
 
+function mapDatabaseStatus(status) {
+  return status === 'closed' ? 'closed' : 'draft'
+}
+
+function toCompetence(value) {
+  if (value instanceof Date) return value.toISOString().slice(0, 7)
+  return String(value || '').slice(0, 7)
+}
+
+function toIso(value, fallback = new Date().toISOString()) {
+  if (!value) return fallback
+  const date = value instanceof Date ? value : new Date(value)
+  return Number.isNaN(date.getTime()) ? fallback : date.toISOString()
+}
+
+async function loadPayrolls(client, companyId) {
+  const result = await client.query(
+    `SELECT
+       p.id::text AS database_id,
+       p.external_id,
+       p.competence,
+       p.status AS database_status,
+       p.data,
+       p.created_at,
+       p.updated_at,
+       COALESCE(
+         jsonb_agg(
+           CASE WHEN pi.data = '{}'::jsonb THEN jsonb_build_object(
+             'employeeId', COALESCE(pi.external_employee_id, pi.employee_id::text, ''),
+             'baseSalary', pi.base_salary,
+             'earningsTotal', pi.earnings,
+             'totalDeductions', pi.deductions,
+             'inss', pi.inss,
+             'irrf', pi.irrf,
+             'fgts', pi.fgts,
+             'netSalary', pi.net_salary,
+             'overtimeMinutes', pi.overtime_minutes,
+             'overtimeAmount', pi.overtime_amount
+           ) ELSE pi.data END
+           ORDER BY pi.external_id
+         ) FILTER (WHERE pi.id IS NOT NULL),
+         '[]'::jsonb
+       ) AS employee_items
+     FROM payrolls p
+     LEFT JOIN payroll_items pi ON pi.payroll_id = p.id
+     WHERE p.company_id = $1
+     GROUP BY p.id
+     ORDER BY p.competence DESC, p.created_at DESC`,
+    [companyId]
+  )
+
+  return result.rows.map((row) => {
+    const data = row.data && typeof row.data === 'object' && !Array.isArray(row.data)
+      ? row.data
+      : {}
+    const employeeItems = Array.isArray(row.employee_items) ? row.employee_items : []
+    return {
+      ...data,
+      id: String(row.external_id),
+      competence: toCompetence(row.competence),
+      status: mapDatabaseStatus(row.database_status),
+      employees: employeeItems.length || !Array.isArray(data.employees)
+        ? employeeItems
+        : data.employees,
+      createdAt: toIso(row.created_at, data.createdAt),
+      updatedAt: toIso(row.updated_at, data.updatedAt)
+    }
+  })
+}
+
 async function lockPayrolls(client, companyId) {
+  // Serializa mutações por empresa e bloqueia as linhas existentes para que
+  // uma segunda sessão não grave uma versão construída sobre dados antigos.
   await client.query(
     'SELECT pg_advisory_xact_lock(hashtext($1), hashtext($2))',
     [String(companyId), 'payroll:payrolls']
   )
-  const result = await client.query(
-    `SELECT payload FROM app_records
-     WHERE company_id = $1 AND module_key = $2 AND record_key = $3
-     FOR UPDATE`,
-    [companyId, MODULE_KEY, RECORD_KEY]
+  await client.query(
+    'SELECT id FROM payrolls WHERE company_id = $1 FOR UPDATE',
+    [companyId]
   )
-  return Array.isArray(result.rows[0]?.payload) ? result.rows[0].payload : []
+  return loadPayrolls(client, companyId)
+}
+
+async function resolveEmployeeDatabaseId(client, companyId, externalEmployeeId) {
+  if (externalEmployeeId === undefined || externalEmployeeId === null || !String(externalEmployeeId).trim()) {
+    return null
+  }
+  const result = await client.query(
+    `SELECT id
+     FROM employees
+     WHERE company_id = $1
+       AND (
+         id::text = $2
+         OR registration_data->>'legacyId' = $2
+         OR registration_data->>'legacy_id' = $2
+         OR registration_data->>'idLegacy' = $2
+         OR registration_data->>'id' = $2
+       )
+     ORDER BY CASE WHEN id::text = $2 THEN 0 ELSE 1 END
+     LIMIT 1`,
+    [companyId, String(externalEmployeeId)]
+  )
+  return result.rows[0]?.id || null
+}
+
+function safeAmount(value) {
+  const amount = Number(value)
+  return Number.isFinite(amount) && amount >= 0 && amount <= 1000000000 ? amount : 0
+}
+
+function sumItems(items) {
+  return (Array.isArray(items) ? items : []).reduce((total, item) => total + safeAmount(item?.amount), 0)
 }
 
 async function savePayrolls(client, companyId, userId, payrolls) {
@@ -126,16 +228,104 @@ async function savePayrolls(client, companyId, userId, payrolls) {
     error.status = 413
     throw error
   }
-  await client.query(
-    `INSERT INTO app_records
-       (company_id, module_key, record_key, payload, created_by, updated_by)
-     VALUES ($1, $2, $3, $4::jsonb, $5, $5)
-     ON CONFLICT (company_id, module_key, record_key)
-     DO UPDATE SET payload = EXCLUDED.payload,
-                   updated_by = EXCLUDED.updated_by,
-                   updated_at = NOW()`,
-    [companyId, MODULE_KEY, RECORD_KEY, JSON.stringify(payrolls), userId || null]
-  )
+
+  const retainedExternalIds = []
+  for (const payroll of payrolls) {
+    const competence = String(payroll?.competence || '')
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(competence)) {
+      const error = new Error('Uma folha contém competência inválida para persistência.')
+      error.status = 400
+      throw error
+    }
+    const externalId = String(payroll.id)
+    retainedExternalIds.push(externalId)
+    const updatedAt = toIso(payroll.updatedAt)
+    const createdAt = toIso(payroll.createdAt, updatedAt)
+    const status = payroll.status === 'closed' ? 'closed' : 'open'
+    const storedData = { ...payroll }
+    delete storedData.employees
+
+    const parentResult = await client.query(
+      `INSERT INTO payrolls (
+         company_id, external_id, competence, status, totals, data,
+         created_by, updated_by, created_at, updated_at, closed_at
+       ) VALUES (
+         $1, $2, $3::date, $4, $5::jsonb, $6::jsonb,
+         $7, $7, $8::timestamptz, $9::timestamptz,
+         CASE WHEN $4 = 'closed' THEN COALESCE(NULLIF($6::jsonb->>'closedAt', '')::timestamptz, $9::timestamptz) ELSE NULL END
+       )
+       ON CONFLICT (company_id, external_id) DO UPDATE SET
+         competence = EXCLUDED.competence,
+         status = EXCLUDED.status,
+         totals = EXCLUDED.totals,
+         data = EXCLUDED.data,
+         updated_by = EXCLUDED.updated_by,
+         updated_at = EXCLUDED.updated_at,
+         closed_at = EXCLUDED.closed_at
+       RETURNING id`,
+      [
+        companyId,
+        externalId,
+        `${competence}-01`,
+        status,
+        JSON.stringify(payroll.totals && typeof payroll.totals === 'object' ? payroll.totals : {}),
+        JSON.stringify(storedData),
+        userId || null,
+        createdAt,
+        updatedAt
+      ]
+    )
+    const payrollDatabaseId = parentResult.rows[0].id
+
+    // Cada pessoa possui um registro em payroll_items. O JSON data mantém os
+    // campos específicos da tela enquanto os totais comuns ficam normalizados.
+    await client.query('DELETE FROM payroll_items WHERE payroll_id = $1', [payrollDatabaseId])
+    for (const employee of Array.isArray(payroll.employees) ? payroll.employees : []) {
+      const externalEmployeeId = String(employee.employeeId ?? employee.id ?? '')
+      const employeeDatabaseId = await resolveEmployeeDatabaseId(client, companyId, externalEmployeeId)
+      const itemExternalId = externalEmployeeId || `item-${Buffer.from(JSON.stringify(employee)).toString('base64url').slice(0, 160)}`
+      const earnings = sumItems(employee.earnings)
+      const deductions = sumItems(employee.deductions)
+      await client.query(
+        `INSERT INTO payroll_items (
+           payroll_id, employee_id, external_id, external_employee_id,
+           base_salary, earnings, deductions, inss, irrf, fgts, net_salary,
+           overtime_minutes, overtime_amount, data, created_at, updated_at
+         ) VALUES (
+           $1, $2, $3, $4,
+           $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15::timestamptz, $16::timestamptz
+         )`,
+        [
+          payrollDatabaseId,
+          employeeDatabaseId,
+          itemExternalId,
+          externalEmployeeId || null,
+          safeAmount(employee.baseSalary),
+          earnings || safeAmount(employee.earningsTotal),
+          deductions || safeAmount(employee.deductionsTotal ?? employee.totalDeductions),
+          safeAmount(employee.inss),
+          safeAmount(employee.irrf),
+          safeAmount(employee.fgts),
+          safeAmount(employee.netSalary),
+          Math.max(0, Math.min(1000000000, Number.parseInt(employee.overtimeMinutes, 10) || 0)),
+          safeAmount(employee.overtimeAmount),
+          JSON.stringify(employee),
+          createdAt,
+          updatedAt
+        ]
+      )
+    }
+  }
+
+  if (retainedExternalIds.length) {
+    await client.query(
+      `DELETE FROM payrolls
+       WHERE company_id = $1 AND NOT (external_id = ANY($2::text[]))`,
+      [companyId, retainedExternalIds]
+    )
+  } else {
+    await client.query('DELETE FROM payrolls WHERE company_id = $1', [companyId])
+  }
 }
 
 async function withLockedPayrolls(req, operation) {
@@ -168,12 +358,7 @@ function currentVersionMatches(current, expectedUpdatedAt) {
 router.get('/', async (req, res, next) => {
   if (!canView(req.user)) return res.status(403).json({ message: 'Você não tem permissão para visualizar a folha de pagamento.' })
   try {
-    const result = await pool.query(
-      `SELECT payload FROM app_records
-       WHERE company_id = $1 AND module_key = $2 AND record_key = $3 LIMIT 1`,
-      [req.user.companyId, MODULE_KEY, RECORD_KEY]
-    )
-    const payrolls = Array.isArray(result.rows[0]?.payload) ? result.rows[0].payload : []
+    const payrolls = await loadPayrolls(pool, req.user.companyId)
     return res.json({ payrolls })
   } catch (error) { return next(error) }
 })
