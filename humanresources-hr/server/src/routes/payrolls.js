@@ -432,17 +432,14 @@ async function savePayrolls(client, companyId, userId, payrolls) {
          $7,
          $8::timestamptz,
          $9::timestamptz,
-         CASE WHEN $6::jsonb->>'status' = 'closed' THEN COALESCE(NULLIF($6::jsonb->>'closedAt', '')::timestamptz, $9::timestamptz) ELSE NULL ENDfor endpoint in \
-  "/api/users" \
-  "/api/documents" \
-  "/api/documents/owners"
-do
-  echo ""
-  echo "========== $endpoint =========="
-  curl -sS -w "\nHTTP %{http_code}\n" \
-    "http://localhost:3334$endpoint" \
-    -H "Authorization: Bearer $TOKEN"
-done
+                   CASE
+            WHEN $6::jsonb->>'status' = 'closed'
+            THEN COALESCE(
+              NULLIF($6::jsonb->>'closedAt', '')::timestamptz,
+              $9::timestamptz
+            )
+            ELSE NULL
+          END
        )
        ON CONFLICT (company_id, external_id)
        DO UPDATE SET

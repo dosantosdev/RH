@@ -7,111 +7,63 @@ import { getStoredArray, setStored } from './storage'
  */
 
 export const defaultAccessRoles = [
-  /*
-   * ==========================================================
-   * ADMINISTRADOR
-   * ==========================================================
-   */
-
   {
     id: 1,
-
     name: 'admin',
-
     displayName: 'Administrador',
-
     description: 'Administrador do sistema',
-
     active: true,
-
     permissions: ['all']
   },
-
-  /*
-   * ==========================================================
-   * GESTÃO DE RH
-   * ==========================================================
-   */
-
   {
     id: 2,
-
     name: 'gestao_rh',
-
     displayName: 'Gestão de RH',
-
     description: 'Gestão de Recursos Humanos',
-
     active: true,
-
     permissions: [
-      /*
-       * Funcionários
-       */
-
+      // Funcionários
       'employees_view',
       'employees_create',
       'employees_edit',
 
-      /*
-       * Financeiro
-       */
-
+      // Financeiro
       'finance_salary_view',
       'finance_salary_manage',
-
       'finance_events_view',
       'finance_events_manage',
-
       'finance_payroll_view',
       'finance_payroll_manage',
-
       'finance_advanced_view',
       'finance_advanced_manage',
 
-      /*
-       * Recrutamento
-       */
-
+      // Recrutamento
       'recruitment_view',
       'recruitment_create',
       'recruitment_edit',
       'recruitment_delete',
       'recruitment_convert',
 
-      /*
-       * Relatórios
-       */
-
+      // Relatórios e documentos
       'reports_view',
-
       'documents_view',
       'documents_upload',
       'documents_edit',
       'documents_delete',
 
-      /*
-       * Treinamentos
-       */
-
+      // Treinamentos
       'trainings_view',
       'trainings_create',
       'trainings_edit',
       'trainings_delete',
 
-      /*
-       * Jornadas
-       */
+      // Jornadas e escalas — permissões oficiais
+      'ponto_jornadas_view',
+      'ponto_jornadas_create',
+      'ponto_jornadas_edit',
+      'ponto_jornadas_delete',
 
-      'work_schedules_view',
-      'work_schedules_create',
-      'work_schedules_edit',
-      'work_schedules_delete',
-
-      /*
-       * Avaliações
-       */
-
+      // Avaliações
       'evaluations_view',
       'evaluations_create',
       'evaluations_edit',
@@ -130,29 +82,15 @@ export const defaultAccessRoles = [
       'my_evaluations_answer'
     ]
   },
-
-  /*
-   * ==========================================================
-   * FUNCIONÁRIO
-   * ==========================================================
-   */
-
   {
     id: 3,
-
     name: 'funcionario',
-
     displayName: 'Funcionário',
-
     description: 'Usuário funcionário',
-
     active: true,
-
     permissions: [
       'employees_view',
-
       'my_trainings_view',
-
       'my_evaluations_view',
       'my_evaluations_answer'
     ]
@@ -184,20 +122,18 @@ export function initializeAccessRoles() {
    * ==========================================================
    *
    * Não substituímos perfis personalizados.
-   *
-   * Apenas garantimos que o perfil Gestão de RH possua as
-   * permissões financeiras novas.
+   * Corrigimos as permissões antigas de jornadas e escalas
+   * e garantimos as permissões financeiras e de relatórios
+   * esperadas para Gestão de RH.
    */
 
   if (storedAccessRoles.length > 0) {
     const reportsPermissions = [
       'reports_view',
-
       'documents_view',
       'documents_upload',
       'documents_edit',
       'documents_delete',
-
       'recruitment_view',
       'recruitment_create',
       'recruitment_edit',
@@ -208,53 +144,76 @@ export function initializeAccessRoles() {
     const financePermissions = [
       'finance_salary_view',
       'finance_salary_manage',
-
       'finance_events_view',
       'finance_events_manage',
-
       'finance_payroll_view',
       'finance_payroll_manage',
-
       'finance_advanced_view',
       'finance_advanced_manage'
     ]
 
+    /*
+     * Compatibilidade com as chaves antigas.
+     * Os nomes oficiais são os que começam com ponto_jornadas_.
+     */
+
+    const legacyPermissionAliases = {
+      work_schedules_view: 'ponto_jornadas_view',
+      work_schedules_create: 'ponto_jornadas_create',
+      work_schedules_edit: 'ponto_jornadas_edit',
+      work_schedules_delete: 'ponto_jornadas_delete'
+    }
+
     let changed = false
 
     const updatedAccessRoles = storedAccessRoles.map((role) => {
-      if (role.name !== 'gestao_rh') {
-        return role
-      }
-
-      const currentPermissions = Array.isArray(role.permissions)
+      const originalPermissions = Array.isArray(role.permissions)
         ? role.permissions
         : []
 
-      const requiredPermissions = [
-        ...financePermissions,
-        ...reportsPermissions
+      // Converte chaves antigas e elimina permissões duplicadas.
+      const normalizedPermissions = [
+        ...new Set(
+          originalPermissions.map(
+            (permission) => legacyPermissionAliases[permission] || permission
+          )
+        )
       ]
 
-      const missingPermissions = requiredPermissions.filter(
-        (permission) => !currentPermissions.includes(permission)
-      )
+      // Mantém as permissões necessárias de Gestão de RH.
+      const requiredPermissions =
+        role.name === 'gestao_rh'
+          ? [...financePermissions, ...reportsPermissions]
+          : []
 
-      if (missingPermissions.length === 0) {
-        return role
+      const nextPermissions = [...normalizedPermissions]
+
+      for (const permission of requiredPermissions) {
+        if (!nextPermissions.includes(permission)) {
+          nextPermissions.push(permission)
+        }
       }
 
-      changed = true
+      const permissionsChanged =
+        nextPermissions.length !== originalPermissions.length ||
+        nextPermissions.some(
+          (permission, index) => permission !== originalPermissions[index]
+        )
 
-      return {
-        ...role,
+      if (permissionsChanged) {
+        changed = true
 
-        permissions: [...currentPermissions, ...missingPermissions]
+        return {
+          ...role,
+          permissions: nextPermissions
+        }
       }
+
+      return role
     })
 
     if (changed) {
       setStored('accessRoles', updatedAccessRoles)
-
       return updatedAccessRoles
     }
 
@@ -263,7 +222,7 @@ export function initializeAccessRoles() {
 
   /*
    * ==========================================================
-   * COMPATIBILIDADE COM ESTRUTURA ANTIGA
+   * COMPATIBILIDADE COM A ESTRUTURA ANTIGA
    * ==========================================================
    */
 
@@ -289,16 +248,28 @@ export function initializeAccessRoles() {
         ? legacyRole.permissions
         : []
 
+      const legacyPermissionAliases = {
+        work_schedules_view: 'ponto_jornadas_view',
+        work_schedules_create: 'ponto_jornadas_create',
+        work_schedules_edit: 'ponto_jornadas_edit',
+        work_schedules_delete: 'ponto_jornadas_delete'
+      }
+
+      const normalizedLegacyPermissions = [
+        ...new Set(
+          legacyPermissions.map(
+            (permission) => legacyPermissionAliases[permission] || permission
+          )
+        )
+      ]
+
       return {
         ...defaultRole,
-
         id: legacyRole.id,
-
         permissions: [
-          ...legacyPermissions,
-
+          ...normalizedLegacyPermissions,
           ...defaultRole.permissions.filter(
-            (permission) => !legacyPermissions.includes(permission)
+            (permission) => !normalizedLegacyPermissions.includes(permission)
           )
         ]
       }
@@ -314,21 +285,21 @@ export function initializeAccessRoles() {
 
 /*
  * ============================================================
- * BUSCAR POR ID
+ * BUSCAR PERFIL POR ID
  * ============================================================
  */
 
 export function getAccessRoleById(id) {
   const accessRoles = getAccessRoles()
 
-  return accessRoles.find((role) =>
-    String(role.id) === String(id) || Number(role.id) === Number(id)
+  return accessRoles.find(
+    (role) => String(role.id) === String(id) || Number(role.id) === Number(id)
   )
 }
 
 /*
  * ============================================================
- * BUSCAR POR NOME
+ * BUSCAR PERFIL POR NOME
  * ============================================================
  */
 
@@ -340,7 +311,7 @@ export function getAccessRoleByName(name) {
 
 /*
  * ============================================================
- * ADICIONAR
+ * ADICIONAR PERFIL
  * ============================================================
  */
 
@@ -356,7 +327,7 @@ export function addAccessRole(accessRole) {
 
 /*
  * ============================================================
- * ATUALIZAR
+ * ATUALIZAR PERFIL
  * ============================================================
  */
 
@@ -374,7 +345,7 @@ export function updateAccessRole(updatedAccessRole) {
 
 /*
  * ============================================================
- * EXCLUIR
+ * EXCLUIR PERFIL
  * ============================================================
  */
 

@@ -13,10 +13,7 @@ import {
 
 import { calculateOvertime, DEFAULT_MONTHLY_DIVISOR } from './overtime'
 
-import {
-  calculatePayrollTaxes,
-  createTaxPayrollItems
-} from './payrollTaxes'
+import { calculatePayrollTaxes, createTaxPayrollItems } from './payrollTaxes'
 
 /*
  * ============================================================
@@ -723,25 +720,18 @@ export function createPayrollEmployee(employee, competence, options = {}) {
 
   const dependents =
     Number(employee.dependentsCount) ||
-    (Array.isArray(employee.dependents)
-      ? employee.dependents.length
-      : 0)
+    (Array.isArray(employee.dependents) ? employee.dependents.length : 0)
 
-  const taxCalculation =
-    calculatePayrollTaxes({
-      grossSalary,
+  const taxCalculation = calculatePayrollTaxes({
+    grossSalary,
 
-      dependents,
+    dependents,
 
-      isApprentice:
-        employee.isApprentice === true ||
-        employee.contractType === 'aprendiz'
-    })
+    isApprentice:
+      employee.isApprentice === true || employee.contractType === 'aprendiz'
+  })
 
-  const taxItems =
-    createTaxPayrollItems(
-      taxCalculation
-    )
+  const taxItems = createTaxPayrollItems(taxCalculation)
 
   deductions.push(
     ...taxItems.map((item) => ({
@@ -1522,8 +1512,7 @@ export function calculatePayrollSummary(payroll) {
     inss: roundMoney(
       employees.reduce(
         (total, employee) =>
-          total +
-          (Number(employee.taxes?.inss?.amount) || 0),
+          total + (Number(employee.taxes?.inss?.amount) || 0),
         0
       )
     ),
@@ -1531,8 +1520,7 @@ export function calculatePayrollSummary(payroll) {
     irrf: roundMoney(
       employees.reduce(
         (total, employee) =>
-          total +
-          (Number(employee.taxes?.irrf?.amount) || 0),
+          total + (Number(employee.taxes?.irrf?.amount) || 0),
         0
       )
     ),
@@ -1540,8 +1528,7 @@ export function calculatePayrollSummary(payroll) {
     fgts: roundMoney(
       employees.reduce(
         (total, employee) =>
-          total +
-          (Number(employee.taxes?.fgts?.amount) || 0),
+          total + (Number(employee.taxes?.fgts?.amount) || 0),
         0
       )
     ),

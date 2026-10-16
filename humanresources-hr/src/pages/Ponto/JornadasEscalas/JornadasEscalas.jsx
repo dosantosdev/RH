@@ -90,7 +90,7 @@ export default function JornadasEscalas() {
    * ============================================================
    */
 
-  if (!hasPermission('work_schedules_view')) {
+  if (!hasPermission('ponto_jornadas_view')) {
     return <h2>Acesso negado</h2>
   }
 
@@ -242,8 +242,8 @@ export default function JornadasEscalas() {
     event.preventDefault()
 
     const allowed = editingId
-      ? hasPermission('work_schedules_edit')
-      : hasPermission('work_schedules_create')
+      ? hasPermission('ponto_jornadas_edit')
+      : hasPermission('ponto_jornadas_create')
 
     if (!allowed) {
       showToast('Você não tem permissão para esta ação.', 'warning')
@@ -304,7 +304,7 @@ export default function JornadasEscalas() {
    */
 
   function handleEdit(item) {
-    if (!hasPermission('work_schedules_edit')) {
+    if (!hasPermission('ponto_jornadas_edit')) {
       showToast('Você não tem permissão para editar jornadas.', 'warning')
 
       return
@@ -333,7 +333,7 @@ export default function JornadasEscalas() {
    */
 
   function handleDelete(id) {
-    if (!hasPermission('work_schedules_delete')) {
+    if (!hasPermission('ponto_jornadas_delete')) {
       showToast('Você não tem permissão para excluir jornadas.', 'warning')
 
       return
@@ -374,7 +374,7 @@ export default function JornadasEscalas() {
   function handleAssign(event) {
     event.preventDefault()
 
-    if (!hasPermission('work_schedules_edit')) {
+    if (!hasPermission('ponto_jornadas_edit')) {
       showToast('Você não tem permissão para vincular jornadas.', 'warning')
 
       return
@@ -420,7 +420,7 @@ export default function JornadasEscalas() {
    */
 
   function removeAssignment(employeeId) {
-    if (!hasPermission('work_schedules_edit')) {
+    if (!hasPermission('ponto_jornadas_edit')) {
       showToast('Você não tem permissão para alterar vínculos.', 'warning')
 
       return
@@ -847,13 +847,13 @@ export default function JornadasEscalas() {
                 </div>
 
                 <div className="work-schedule-card-actions">
-                  {hasPermission('work_schedules_edit') && (
+                  {hasPermission('ponto_jornadas_edit') && (
                     <button type="button" onClick={() => handleEdit(item)}>
                       Editar
                     </button>
                   )}
 
-                  {hasPermission('work_schedules_delete') && (
+                  {hasPermission('ponto_jornadas_delete') && (
                     <button type="button" onClick={() => handleDelete(item.id)}>
                       Excluir
                     </button>
@@ -881,7 +881,7 @@ export default function JornadasEscalas() {
           </div>
         </div>
 
-        {hasPermission('work_schedules_edit') && (
+        {hasPermission('ponto_jornadas_edit') && (
           <form
             className="work-schedule-assignment-form"
             onSubmit={handleAssign}
@@ -976,7 +976,7 @@ export default function JornadasEscalas() {
                   {assignment.notes && <small>{assignment.notes}</small>}
                 </div>
 
-                {hasPermission('work_schedules_edit') && (
+                {hasPermission('ponto_jornadas_edit') && (
                   <button
                     type="button"
                     onClick={() => removeAssignment(assignment.employeeId)}

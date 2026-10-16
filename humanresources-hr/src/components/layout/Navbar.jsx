@@ -43,7 +43,9 @@ export default function Navbar() {
     let active = true
 
     if (!currentUser) {
-      return () => { active = false }
+      return () => {
+        active = false
+      }
     }
 
     apiRequest('/me')
@@ -51,13 +53,15 @@ export default function Navbar() {
         if (!active) return
 
         const apiUser = result?.user
-        setEmployee(apiUser?.employee_id
-          ? {
-              id: apiUser.employee_id,
-              name: apiUser.employee_name || '',
-              status: apiUser.employee_status || ''
-            }
-          : null)
+        setEmployee(
+          apiUser?.employee_id
+            ? {
+                id: apiUser.employee_id,
+                name: apiUser.employee_name || '',
+                status: apiUser.employee_status || ''
+              }
+            : null
+        )
       })
       .catch(() => {
         // A barra continua funcional durante indisponibilidade temporária da API.
@@ -65,7 +69,9 @@ export default function Navbar() {
         if (active) setEmployee(null)
       })
 
-    return () => { active = false }
+    return () => {
+      active = false
+    }
   }, [currentUser])
 
   /*
@@ -272,7 +278,7 @@ export default function Navbar() {
           <div className="dropdown-content">
             <Link to="/ponto/bater">Bater Ponto</Link>
 
-            {hasPermission('work_schedules_view') && (
+            {hasPermission('ponto_jornadas_view') && (
               <Link to="/ponto/jornadas">Jornadas e Escalas</Link>
             )}
 
@@ -353,10 +359,16 @@ export default function Navbar() {
                 <Link to="/candidatos?tab=vacancies">Vagas abertas</Link>
                 <Link to="/candidatos?tab=candidates">Candidatos</Link>
                 <Link to="/candidatos?tab=curriculums">Currículos</Link>
-                <Link to="/candidatos?tab=stages">Etapas do processo seletivo</Link>
+                <Link to="/candidatos?tab=stages">
+                  Etapas do processo seletivo
+                </Link>
                 <Link to="/candidatos?tab=interviews">Entrevistas</Link>
-                <Link to="/candidatos?tab=conversion">Aprovação / reprovação</Link>
-                <Link to="/candidatos?tab=conversion">Transformar candidato em funcionário</Link>
+                <Link to="/candidatos?tab=conversion">
+                  Aprovação / reprovação
+                </Link>
+                <Link to="/candidatos?tab=conversion">
+                  Transformar candidato em funcionário
+                </Link>
               </>
             )}
           </div>
