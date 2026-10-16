@@ -2,10 +2,17 @@ import './userList.css'
 
 import { hasPermission } from '../../services/permissions'
 
-export default function UserList({ users, handleEdit, handleDelete }) {
+export default function UserList({
+  users,
+  handleEdit,
+  handleDelete,
+  emptyMessage = 'Nenhum usuário cadastrado.'
+}) {
   return (
     <div className="users-grid">
-      {users.length === 0 && <p>Nenhum usuário cadastrado</p>}
+      {users.length === 0 && (
+        <p className="users-empty-message">{emptyMessage}</p>
+      )}
 
       {users.map((u) => (
         <div key={u.id} className="users-list-card default-card">

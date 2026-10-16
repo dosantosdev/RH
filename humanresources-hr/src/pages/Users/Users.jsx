@@ -37,6 +37,9 @@ export default function Users() {
   const [accessRoles, setAccessRoles] = useState([])
   const [employees, setEmployees] = useState([])
   const [search, setSearch] = useState('')
+  // Por padrão, a tela mostra somente usuários ativos. Os inativos continuam
+  // armazenados no banco e podem ser consultados pelo filtro abaixo.
+  const [statusFilter, setStatusFilter] = useState('active')
   const [editingId, setEditingId] = useState(null)
   const [deleteId, setDeleteId] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -77,10 +80,26 @@ export default function Users() {
     return <h2>Acesso negado</h2>
   }
 
-  const filteredUsers = users.filter((item) =>
-    `${item.name || ''} ${item.username || ''}`
+  const filteredUsers = users.filter((item) => {
+    const matchesSearch = `${item.name || ''} ${item.username || ''}`
       .toLowerCase()
       .includes(search.toLowerCase())
+
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && item.active === true) ||
+      (statusFilter === 'inactive' && item.active === false)
+
+    return matchesSearch && matchesStatus
+  })
+
+  const userCounts = users.reduce(
+    (counts, item) => {
+      if (item.active === true) counts.active += 1
+      else if (item.active === false) counts.inactive += 1
+      return counts
+    },
+    { active: 0, inactive: 0 }
   )
 
   function handleChange(event) {
@@ -193,7 +212,10 @@ export default function Users() {
       showToast('Usuário desativado.', 'success')
       await loadData()
     } catch (error) {
-      showToast(error.message || 'Não foi possível desativar o usuário.', 'error')
+      showToast(
+        error.message || 'Não foi possível desativar o usuário.',
+        'error'
+      )
     }
   }
 
@@ -226,11 +248,44 @@ export default function Users() {
         </button>
       )}
 
-      <UserList
-        users={filteredUsers}
-        handleEdit={handleEdit}
-        handleDelete={handleDelete}
-      />
+      <section className="users-list-section" aria-label="Lista de usuários">
+        <div className="users-list-toolbar">
+          <div className="users-list-heading">
+            <h3>Usuários cadastrados</h3>
+            <p>
+              {userCounts.active} ativo(s) · {userCounts.inactive} inativo(s)
+            </p>
+          </div>
+
+          <div className="users-status-filter">
+            <label htmlFor="users-status-filter">Exibir</label>
+            <select
+              id="users-status-filter"
+              value={statusFilter}
+              onChange={(event) => setStatusFilter(event.target.value)}
+            >
+              <option value="active">Ativos</option>
+              <option value="inactive">Inativos</option>
+              <option value="all">Todos</option>
+            </select>
+          </div>
+        </div>
+
+        <UserList
+          users={filteredUsers}
+          emptyMessage={
+            search.trim()
+              ? 'Nenhum usuário encontrado para essa busca.'
+              : statusFilter === 'inactive'
+                ? 'Nenhum usuário inativo encontrado.'
+                : statusFilter === 'active'
+                  ? 'Nenhum usuário ativo encontrado.'
+                  : 'Nenhum usuário cadastrado.'
+          }
+          handleEdit={handleEdit}
+          handleDelete={handleDelete}
+        />
+      </section>
 
       <ConfirmModal
         isOpen={deleteId !== null}
