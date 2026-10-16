@@ -41,3 +41,6 @@ Data: 15/10/2026
 ## Limitação
 
 O catálogo ainda usa um endpoint `PUT` de lista completa por compatibilidade com a interface, mas os dados são armazenados como linhas individuais. Uma próxima melhoria é migrar para operações CRUD por evento e adicionar testes automatizados de concorrência.
+
+
+> **Atualização em 16/10/2026:** o contrato de `PUT` descrito nesta etapa foi substituído por CRUD individual. Consulte `MIGRACAO-PROVENTOS-DESCONTOS-CRUD-INDIVIDUAL-16-10-2026.md`.

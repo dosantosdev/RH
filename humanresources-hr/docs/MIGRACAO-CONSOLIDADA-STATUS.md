@@ -1,3 +1,12 @@
+## Etapa mais recente — Proventos e Descontos com CRUD individual
+
+- A tela agora cria, atualiza, ativa/inativa e exclui eventos por endpoints individuais; deixou de enviar a lista inteira em um `PUT`.
+- A rota `PUT /api/financial-events` rejeita substituição em massa com HTTP 409.
+- O endpoint de importação legada é explícito, idempotente e não apaga/substitui registros existentes; a interface pede confirmação antes de importar cache para a empresa da sessão.
+- As rotas validam permissão e escopo da empresa no backend; os dados continuam na tabela relacional `financial_events`.
+- Testes reais no PostgreSQL e build completo continuam pendentes.
+- Detalhes: `MIGRACAO-PROVENTOS-DESCONTOS-CRUD-INDIVIDUAL-16-10-2026.md`.
+
 ## Atualização de 16/10/2026 — Folha de Pagamento normalizada
 
 A API `/api/payrolls` passou a usar `payrolls` e `payroll_items` para leitura e persistência, com a migração `012_payroll_relational_storage.sql`, IDs externos compatíveis e bloqueio da chave antiga `payroll/payrolls` na API genérica. `/api/me/financial-data` também lê a folha relacional. O JSONB legado é preservado como backup e alguns atributos ainda permanecem nos campos `data` de compatibilidade. Migration SQL, build e testes PostgreSQL reais ainda pendentes. Ver `MIGRACAO-FOLHA-TABELAS-RELACIONAIS-16-10-2026.md`.

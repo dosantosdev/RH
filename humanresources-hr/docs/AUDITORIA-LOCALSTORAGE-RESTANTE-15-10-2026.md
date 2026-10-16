@@ -46,3 +46,8 @@ Este inventário é uma busca estática por ocorrências de `localStorage.` em a
 ## Regra de segurança
 
 Não executar `localStorage.clear()` nem remover em lote as chaves atuais. O projeto ainda utiliza armazenamento local em fluxos compatíveis e alguns dados podem não ter sido importados para o PostgreSQL.
+
+
+## Atualização de 16/10/2026
+
+A tela `src/pages/Financeiro/ProventosDescontos/ProventosDescontos.jsx` mantém `localStorage.financialEvents` apenas como cache compatível. As gravações oficiais são individuais pela API; se o banco estiver vazio e houver cache, a importação exige confirmação explícita e não é executada automaticamente. A contagem acima é o inventário original de 15/10/2026 e não foi recalculada nesta etapa.

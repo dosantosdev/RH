@@ -58,6 +58,10 @@ export default function ProventosDescontos() {
 
   const [apiReady, setApiReady] = useState(false)
 
+  const [legacyImportAvailable, setLegacyImportAvailable] = useState(false)
+
+  const [importingLegacy, setImportingLegacy] = useState(false)
+
   const [saving, setSaving] = useState(false)
 
   const [activeTab, setActiveTab] = useState(FINANCIAL_EVENT_TYPES.EARNING)
@@ -97,16 +101,18 @@ export default function ProventosDescontos() {
         if (databaseEvents.length > 0 || cachedEvents.length === 0) {
           setEvents(databaseEvents)
           localStorage.setItem('financialEvents', JSON.stringify(databaseEvents))
+          setLegacyImportAvailable(false)
+          setApiReady(true)
         } else {
-          // Não apagamos o legado automaticamente: ele pode precisar ser importado.
+          // Cache pode pertencer a outra empresa: nunca importar automaticamente.
           setEvents(cachedEvents)
+          setLegacyImportAvailable(true)
+          setApiReady(false)
           showMessage(
-            'O PostgreSQL ainda não possui eventos. Os dados locais foram preservados; ao salvar, serão enviados à API.',
+            'O PostgreSQL ainda não possui eventos. Os dados locais foram preservados; importe-os para a empresa atual antes de editar.',
             'warning'
           )
         }
-
-        setApiReady(true)
       } catch (error) {
         if (cancelled) return
         setApiReady(false)
@@ -124,27 +130,74 @@ export default function ProventosDescontos() {
     return () => { cancelled = true }
   }, [])
 
-  async function persistEvents(nextEvents, successMessage) {
+  async function handleImportLegacy() {
+    if (!canManage || !legacyImportAvailable || importingLegacy) return
+
+    const confirmed = window.confirm(
+      'Deseja importar os eventos preservados neste navegador para a empresa da sessão atual? Confirme somente se esses dados pertencem a esta empresa.'
+    )
+    if (!confirmed) return
+
+    setImportingLegacy(true)
+    try {
+      const response = await apiRequest('/financial-events/import-legacy', {
+        method: 'POST',
+        body: JSON.stringify({ events })
+      })
+      const importedEvents = Array.isArray(response?.events) ? response.events : []
+      setEvents(importedEvents)
+      localStorage.setItem('financialEvents', JSON.stringify(importedEvents))
+      setLegacyImportAvailable(false)
+      setApiReady(true)
+      showMessage('Importação concluída. Os eventos agora estão no PostgreSQL.')
+    } catch (error) {
+      showMessage(
+        error?.message || 'Não foi possível importar os eventos locais. Os dados foram preservados.',
+        'error'
+      )
+    } finally {
+      setImportingLegacy(false)
+    }
+  }
+
+  async function persistEvent({ method, id, event }, successMessage) {
     if (!apiReady) {
       showMessage('A API não está disponível. Reconecte antes de alterar os eventos.', 'error')
-      return false
+      return null
     }
 
     setSaving(true)
     try {
-      const response = await apiRequest('/financial-events', {
-        method: 'PUT',
-        body: JSON.stringify({ events: nextEvents })
+      const endpoint = id === undefined || id === null
+        ? '/financial-events'
+        : `/financial-events/${encodeURIComponent(String(id))}`
+      const response = await apiRequest(endpoint, {
+        method,
+        ...(method === 'DELETE' ? {} : { body: JSON.stringify({ event }) })
       })
-      const savedEvents = Array.isArray(response?.events) ? response.events : nextEvents
-      setEvents(savedEvents)
-      // Cache local atualizado somente depois da confirmação do PostgreSQL.
-      localStorage.setItem('financialEvents', JSON.stringify(savedEvents))
+
+      const savedEvent = response?.event
+      let nextEvents
+      if (method === 'DELETE') {
+        nextEvents = events.filter((item) => String(item.id) !== String(id))
+      } else if (method === 'POST') {
+        if (!savedEvent) throw new Error('A API não retornou o evento salvo.')
+        nextEvents = [...events, savedEvent]
+      } else {
+        if (!savedEvent) throw new Error('A API não retornou o evento atualizado.')
+        nextEvents = events.map((item) =>
+          String(item.id) === String(id) ? savedEvent : item
+        )
+      }
+
+      setEvents(nextEvents)
+      // O cache só é atualizado depois da confirmação da operação específica.
+      localStorage.setItem('financialEvents', JSON.stringify(nextEvents))
       showMessage(successMessage)
-      return true
+      return savedEvent || true
     } catch (error) {
       showMessage(error?.message || 'Não foi possível salvar no PostgreSQL.', 'error')
-      return false
+      return null
     } finally {
       setSaving(false)
     }
@@ -352,25 +405,26 @@ export default function ProventosDescontos() {
       active: form.active
     }
 
-    let nextEvents
-    let successMessage
-    if (editingId !== null) {
-      nextEvents = events.map((item) => String(item.id) === String(editingId)
-        ? { ...item, ...eventData, updatedAt: new Date().toISOString(), updatedBy: userName }
-        : item)
-      successMessage = 'Evento financeiro atualizado com sucesso!'
-    } else {
-      const newId = window.crypto?.randomUUID?.() || String(Date.now())
-      nextEvents = [...events, {
-        ...eventData,
-        id: newId,
+    const isEditing = editingId !== null
+    const eventId = isEditing
+      ? String(editingId)
+      : (window.crypto?.randomUUID?.() || String(Date.now()))
+    const eventPayload = {
+      ...eventData,
+      id: eventId,
+      ...(isEditing ? {} : {
         createdAt: new Date().toISOString(),
         createdBy: userName
-      }]
-      successMessage = 'Evento financeiro cadastrado com sucesso!'
+      })
     }
 
-    const saved = await persistEvents(nextEvents, successMessage)
+    const saved = await persistEvent({
+      method: isEditing ? 'PATCH' : 'POST',
+      id: isEditing ? eventId : undefined,
+      event: eventPayload
+    }, isEditing
+      ? 'Evento financeiro atualizado com sucesso!'
+      : 'Evento financeiro cadastrado com sucesso!')
     if (!saved) return
 
     setEditingId(null)
@@ -390,14 +444,11 @@ export default function ProventosDescontos() {
     }
 
     const updatedEvent = { ...event, active: event.active === false }
-    const nextEvents = events.map((item) =>
-      String(item.id) === String(event.id) ? updatedEvent : item
-    )
-    const saved = await persistEvents(
-      nextEvents,
-      event.active !== false ? 'Evento financeiro inativado.' : 'Evento financeiro ativado.'
-    )
-    if (!saved) return
+    await persistEvent({
+      method: 'PATCH',
+      id: event.id,
+      event: updatedEvent
+    }, event.active !== false ? 'Evento financeiro inativado.' : 'Evento financeiro ativado.')
   }
 
   /*
@@ -415,8 +466,10 @@ export default function ProventosDescontos() {
     const confirmed = window.confirm(`Deseja realmente excluir o evento "${event.name}"?`)
     if (!confirmed) return
 
-    const nextEvents = events.filter((item) => String(item.id) !== String(event.id))
-    const saved = await persistEvents(nextEvents, 'Evento financeiro excluído com sucesso!')
+    const saved = await persistEvent({
+      method: 'DELETE',
+      id: event.id
+    }, 'Evento financeiro excluído com sucesso!')
     if (!saved) return
 
     if (String(editingId) === String(event.id)) handleCancel()
@@ -492,6 +545,23 @@ export default function ProventosDescontos() {
       {loading && (
         <div className="financial-events-message financial-events-message-warning" role="status">
           Carregando eventos financeiros do PostgreSQL...
+        </div>
+      )}
+
+      {legacyImportAvailable && canManage && !loading && (
+        <div className="financial-events-message financial-events-message-warning" role="status">
+          <p>
+            Existem {events.length} evento(s) no cache deste navegador, mas o PostgreSQL está vazio para esta empresa.
+            Os dados não serão importados automaticamente para evitar misturar informações de empresas diferentes.
+          </p>
+          <button
+            type="button"
+            className="financial-events-new-button"
+            onClick={handleImportLegacy}
+            disabled={importingLegacy || saving}
+          >
+            {importingLegacy ? 'Importando...' : 'Importar dados locais para esta empresa'}
+          </button>
         </div>
       )}
 

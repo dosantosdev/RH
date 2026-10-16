@@ -26,6 +26,10 @@ Um domínio só passa para **concluído** quando:
 | 6. Firebase Storage | Reservado para a última etapa | Migração e validação de documentos/binários após estabilizar banco e permissões |
 
 
+## Evidência de 16/10/2026 — Proventos e Descontos com CRUD por evento
+
+A tela deixou de enviar o catálogo completo por `PUT`. As mutações agora usam `POST /api/financial-events`, `PATCH /api/financial-events/:id` e `DELETE /api/financial-events/:id`; o `PUT` agregado retorna HTTP 409. A importação do cache local é explícita, idempotente e só insere IDs ausentes. Isso reduz risco de sobrescrita concorrente, mas a execução no PostgreSQL real e os testes de integração continuam pendentes. Detalhes em `docs/MIGRACAO-PROVENTOS-DESCONTOS-CRUD-INDIVIDUAL-16-10-2026.md`.
+
 ## Evidência de 16/10/2026 — Folha de Pagamento em tabelas relacionais
 
 A API `/api/payrolls` agora usa `payrolls` e `payroll_items` como fonte oficial, com migração `012_payroll_relational_storage.sql`, IDs externos compatíveis, itens por funcionário e bloqueio da chave genérica `app_records(payroll, payrolls)`. A origem agregada é preservada para recuperação; campos de compatibilidade ainda permanecem em JSONB por folha/funcionário. A migration SQL, o build e os testes integrados reais ainda precisam ser executados. Detalhes em `docs/MIGRACAO-FOLHA-TABELAS-RELACIONAIS-16-10-2026.md`.
@@ -44,17 +48,17 @@ A Folha de Pagamento passou a usar endpoints dedicados para consultar e executar
 
 ## Evidência anterior
 
-Proventos e Descontos agora usa `GET/PUT /api/financial-events`, com validação no servidor e atualização do cache somente depois da confirmação do PostgreSQL. Isso fecha o ciclo de API da tela, mas o catálogo ainda é uma lista JSONB agregada em `app_records` e não há teste de integração real nesta sessão. Por esse motivo, a tela está **migrada no fluxo de API, mas não concluída para produção**.
+Proventos e Descontos usa a tabela relacional `financial_events`, com CRUD por evento, importação legada explícita e bloqueio do PUT agregado. O cache só é atualizado após confirmação da API. A validação real no PostgreSQL e os testes integrados continuam pendentes; o domínio não deve ser considerado aprovado para produção.
 
 ## Regra para o progresso numérico
 
-A nota global só sobe quando uma macroetapa ou um domínio passa critérios verificáveis. Pequenas migrações de leitura não devem, sozinhas, inflar a nota. A avaliação de 6/10 feita anteriormente ficou repetida porque usava uma estimativa ampla sem mostrar os critérios que ainda impediam o encerramento. Após a migração do ciclo de mutações da Folha de Pagamento, a estimativa é **7/10**. O avanço se deve a operações dedicadas com controle de versão e transações, não apenas à leitura pela API. Normalização em tabelas próprias, validação dos cálculos no servidor e testes integrados continuam sendo pendências substanciais.
+A nota global só sobe quando uma macroetapa ou um domínio passa critérios verificáveis. Pequenas migrações de leitura não devem, sozinhas, inflar a nota. A avaliação de 6/10 feita anteriormente ficou repetida porque usava uma estimativa ampla sem mostrar os critérios que ainda impediam o encerramento. Após a normalização da Folha e do histórico salarial, e o avanço do catálogo financeiro para CRUD individual, a estimativa é **7,5/10**. O avanço se deve a operações dedicadas com controle de versão e transações, não apenas à leitura pela API. Normalização em tabelas próprias, validação dos cálculos no servidor e testes integrados continuam sendo pendências substanciais.
 
 ## Próxima sequência, sem repetir etapas já feitas
 
 1. **Salários:** tabela `salary_history` e endpoints CRUD relacionais implementados; falta executar a migração e validar em PostgreSQL real.
-2. **Folha de Pagamento:** endpoints dedicados de leitura e mutação implementados; faltam normalização, cálculos validados no servidor e testes reais.
-3. **Proventos e Descontos:** tabela própria e persistência relacional implementadas nesta revisão; falta validar no PostgreSQL real e, depois, trocar o PUT de lista por operações CRUD por evento.
+2. **Folha de Pagamento:** tabelas `payrolls`/`payroll_items` e endpoints dedicados implementados; faltam validar a migração no banco real, reforçar os cálculos no servidor e executar testes integrados.
+3. **Proventos e Descontos:** tabela própria e CRUD individual por evento implementados; falta validar no PostgreSQL real, testar importação assistida e confirmar isolamento por empresa.
 4. **Financeiro Avançado:** auditar férias, 13º e rescisões por CRUD completo.
 5. **Inventário fechado:** auditar leituras/gravações restantes em `localStorage` e `app_records`, distinguindo cache temporário de fonte oficial.
 6. **Validação final:** executar build, testes de API e integração no PostgreSQL real; corrigir falhas.

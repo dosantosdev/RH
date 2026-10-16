@@ -29,3 +29,6 @@ O cache `localStorage.financialEvents` só é atualizado depois da confirmação
 4. Confirmar que o catálogo de uma empresa não aparece para usuário de outra empresa.
 5. Simular falha de API e confirmar que a tela não informa sucesso nem grava a alteração apenas no cache.
 6. Se houver catálogo local antigo e nenhum registro no banco, verificar o aviso de preservação e confirmar a migração por uma gravação autorizada.
+
+
+> **Atualização em 16/10/2026:** esta descrição antecede a migração para CRUD individual. As gravações agora usam `POST`, `PATCH` e `DELETE` por evento; o `PUT` agregado foi bloqueado com HTTP 409. Consulte `MIGRACAO-PROVENTOS-DESCONTOS-CRUD-INDIVIDUAL-16-10-2026.md`.
