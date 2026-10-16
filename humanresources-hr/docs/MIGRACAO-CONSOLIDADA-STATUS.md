@@ -1,4 +1,9 @@
-# Atualização 15/10/2026 — Proventos e Descontos em tabela relacional
+## Atualização de 16/10/2026 — Salários normalizados
+
+O histórico salarial agora usa a tabela relacional `salary_history`, com importação idempotente da lista antiga, preservação do backup JSONB e endpoints dedicados de leitura/criação/edição/exclusão. `/api/me/financial-data` lê o histórico relacional e o bridge genérico não sincroniza mais a chave `salaryHistory`. A migração SQL, build e testes integrados ainda precisam ser executados em ambiente PostgreSQL real. Detalhes em `docs/MIGRACAO-SALARIOS-TABELA-RELACIONAL.md`.
+
+
+# Status consolidado da migração PostgreSQL — atualização 16/10/2026
 
 - Criada a migração `server/sql/010_financial_events_normalized.sql`, que cria `financial_events` e copia o catálogo legado de `app_records` sem apagar a origem.
 - A rota `/api/financial-events` agora lê e grava linhas individuais na tabela relacional, mantendo o contrato e os IDs usados pela interface.

@@ -70,7 +70,7 @@ const FINANCIAL_KEY_TO_MODULE = new Map(
 )
 const FINANCIAL_STORAGE_KEYS = new Set(FINANCIAL_KEY_TO_MODULE.keys())
 // Catálogo normalizado em tabela própria: não deve voltar à ponte genérica JSONB.
-const NORMALIZED_DOMAIN_KEYS = new Set(['financialEvents'])
+const NORMALIZED_DOMAIN_KEYS = new Set(['financialEvents', 'salaryHistory'])
 const EVALUATION_STORAGE_KEYS = new Set([
   'evaluations',
   'evaluationModels',
@@ -790,6 +790,26 @@ export async function syncFinancialDataWithPostgres() {
       )
     )
     if (!canView) continue
+
+    // O histórico salarial usa tabela e CRUD dedicados. Nunca hidratar nem
+    // gravar salaryHistory por app_records, pois isso poderia ressuscitar a
+    // lista JSONB legada e sobrescrever a fonte relacional.
+    if (module.dbModule === 'salaries') {
+      try {
+        const response = await apiRequest('/salaries')
+        const databaseHistory = Array.isArray(response?.salaryHistory) ? response.salaryHistory : []
+        const cachedHistory = getStoredArray('salaryHistory')
+        if (databaseHistory.length > 0 || cachedHistory.length === 0) {
+          localStorage.setItem('salaryHistory', JSON.stringify(databaseHistory))
+          synced += 1
+        } else {
+          console.warn('[PostgreSQL] O histórico salarial do cache foi preservado porque a API retornou uma lista vazia.')
+        }
+      } catch (error) {
+        console.warn('[PostgreSQL] Não foi possível sincronizar salários pela rota dedicada.', error)
+      }
+      continue
+    }
 
     // Eventos financeiros têm tabela e rota dedicadas. Não hidratar nem gravar
     // esse catálogo por app_records, para impedir que uma lista JSONB antiga

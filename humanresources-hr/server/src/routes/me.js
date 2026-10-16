@@ -114,6 +114,47 @@ router.get('/financial-data', async (req, res, next) => {
       positionId: employee.position_id
     }))
 
+    // Salários e eventos financeiros já possuem tabelas relacionais próprias.
+    // Não use app_records como fonte oficial para esses dois catálogos.
+    if (allowedModules.some((item) => item.module === 'salaries')) {
+      const salaryResult = await pool.query(
+        `SELECT external_id, employee_id, external_employee_id, employee_name,
+                salary, effective_date, reason, notes, payload, created_at, updated_at
+         FROM salary_history
+         WHERE company_id = $1
+         ORDER BY effective_date DESC, created_at DESC, external_id`,
+        [req.user.companyId]
+      )
+      records.salaryHistory = salaryResult.rows.map((row) => {
+        const legacy = row.payload && typeof row.payload === 'object' && !Array.isArray(row.payload)
+          ? row.payload
+          : {}
+        return {
+          ...legacy,
+          id: String(row.external_id),
+          employeeId: row.employee_id ? String(row.employee_id) : String(row.external_employee_id || legacy.employeeId || ''),
+          employeeName: row.employee_name || legacy.employeeName || '',
+          salary: Number(row.salary),
+          effectiveDate: String(row.effective_date).slice(0, 10),
+          reason: row.reason,
+          notes: row.notes || '',
+          createdAt: legacy.createdAt || row.created_at,
+          createdBy: legacy.createdBy || '',
+          ...(row.updated_at ? { updatedAt: row.updated_at } : {})
+        }
+      })
+    }
+
+    if (allowedModules.some((item) => item.module === 'financial_events')) {
+      const financialEventsResult = await pool.query(
+        `SELECT payload FROM financial_events
+         WHERE company_id = $1
+         ORDER BY lower(name), external_id`,
+        [req.user.companyId]
+      )
+      records.financialEvents = financialEventsResult.rows.map(({ payload }) => payload)
+    }
+
     // Históricos legados podem conter o ID numérico usado antes da migração.
     // Normalizamos referências conhecidas para o UUID atual sem descartar
     // registros cujo vínculo não possa ser identificado com segurança.
