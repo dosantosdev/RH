@@ -1,3 +1,12 @@
+## Atualização de 16/10/2026 — lançamentos individuais da Folha
+
+- Criada `payroll_item_entries` para persistir cada provento/desconto de funcionário como linha relacional.
+- A migração `013_payroll_item_entries_normalized.sql` importa arrays legados de `payroll_items.data` de forma idempotente e preserva o JSONB original.
+- `/api/payrolls` grava e lê os lançamentos relacionais mantendo o formato esperado pela interface; gravações permanecem transacionais com a folha.
+- A validação de valores rejeita itens fora do intervalo permitido.
+- A migração SQL, o build e os testes integrados com PostgreSQL real ainda precisam ser executados.
+- Detalhes: `MIGRACAO-LANCAMENTOS-FOLHA-TABELA-RELACIONAL-16-10-2026.md`.
+
 ## Etapa mais recente — Proventos e Descontos com CRUD individual
 
 - A tela agora cria, atualiza, ativa/inativa e exclui eventos por endpoints individuais; deixou de enviar a lista inteira em um `PUT`.

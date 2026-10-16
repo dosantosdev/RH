@@ -67,7 +67,7 @@ function validatePayroll(payroll) {
         return `A lista ${listKey} da folha é inválida.`
       }
       for (const item of employee[listKey] || []) {
-        if (!item || typeof item !== 'object' || !Number.isFinite(Number(item.amount)) || Number(item.amount) < 0) {
+        if (!item || typeof item !== 'object' || !Number.isFinite(Number(item.amount)) || Number(item.amount) < 0 || Number(item.amount) > 1000000000) {
           return `A folha contém um item inválido em ${listKey}.`
         }
       }
@@ -144,14 +144,37 @@ async function loadPayrolls(client, companyId) {
              'fgts', pi.fgts,
              'netSalary', pi.net_salary,
              'overtimeMinutes', pi.overtime_minutes,
-             'overtimeAmount', pi.overtime_amount
-           ) ELSE pi.data END
+             'overtimeAmount', pi.overtime_amount,
+             'earnings', COALESCE(entry_rows.earnings, '[]'::jsonb),
+             'deductions', COALESCE(entry_rows.deductions, '[]'::jsonb)
+           ) ELSE jsonb_set(
+             jsonb_set(
+               pi.data,
+               '{earnings}',
+               CASE WHEN entry_rows.earnings IS NOT NULL THEN entry_rows.earnings
+                    ELSE COALESCE(pi.data->'earnings', '[]'::jsonb) END,
+               true
+             ),
+             '{deductions}',
+             CASE WHEN entry_rows.deductions IS NOT NULL THEN entry_rows.deductions
+                  ELSE COALESCE(pi.data->'deductions', '[]'::jsonb) END,
+             true
+           ) END
            ORDER BY pi.external_id
          ) FILTER (WHERE pi.id IS NOT NULL),
          '[]'::jsonb
        ) AS employee_items
      FROM payrolls p
      LEFT JOIN payroll_items pi ON pi.payroll_id = p.id
+     LEFT JOIN LATERAL (
+       SELECT
+         jsonb_agg(entry.payload ORDER BY entry.sort_order, entry.external_id)
+           FILTER (WHERE entry.entry_type = 'earning') AS earnings,
+         jsonb_agg(entry.payload ORDER BY entry.sort_order, entry.external_id)
+           FILTER (WHERE entry.entry_type = 'deduction') AS deductions
+       FROM payroll_item_entries entry
+       WHERE entry.payroll_item_id = pi.id
+     ) entry_rows ON TRUE
      WHERE p.company_id = $1
      GROUP BY p.id
      ORDER BY p.competence DESC, p.created_at DESC`,
@@ -286,7 +309,7 @@ async function savePayrolls(client, companyId, userId, payrolls) {
       const itemExternalId = externalEmployeeId || `item-${Buffer.from(JSON.stringify(employee)).toString('base64url').slice(0, 160)}`
       const earnings = sumItems(employee.earnings)
       const deductions = sumItems(employee.deductions)
-      await client.query(
+      const employeeItemResult = await client.query(
         `INSERT INTO payroll_items (
            payroll_id, employee_id, external_id, external_employee_id,
            base_salary, earnings, deductions, inss, irrf, fgts, net_salary,
@@ -294,7 +317,8 @@ async function savePayrolls(client, companyId, userId, payrolls) {
          ) VALUES (
            $1, $2, $3, $4,
            $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15::timestamptz, $16::timestamptz
-         )`,
+         )
+         RETURNING id`,
         [
           payrollDatabaseId,
           employeeDatabaseId,
@@ -314,6 +338,33 @@ async function savePayrolls(client, companyId, userId, payrolls) {
           updatedAt
         ]
       )
+
+      const payrollItemDatabaseId = employeeItemResult.rows[0].id
+      for (const [entryType, entries] of [
+        ['earning', Array.isArray(employee.earnings) ? employee.earnings : []],
+        ['deduction', Array.isArray(employee.deductions) ? employee.deductions : []]
+      ]) {
+        for (const [sortOrder, entry] of entries.entries()) {
+          const entryExternalId = `${String(entry?.id ?? entry?.financialEventId ?? entry?.eventCode ?? entry?.code ?? entryType)}:${sortOrder}`
+          await client.query(
+            `INSERT INTO payroll_item_entries (
+               payroll_item_id, external_id, entry_type, sort_order,
+               event_code, event_name, amount, payload, created_at, updated_at
+             ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9::timestamptz, $9::timestamptz)`,
+            [
+              payrollItemDatabaseId,
+              entryExternalId,
+              entryType,
+              sortOrder,
+              String(entry?.eventCode ?? entry?.code ?? '').slice(0, 80) || null,
+              String(entry?.eventName ?? entry?.name ?? '').slice(0, 180) || null,
+              safeAmount(entry?.amount),
+              JSON.stringify(entry ?? {}),
+              updatedAt
+            ]
+          )
+        }
+      }
     }
   }
 

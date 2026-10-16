@@ -50,6 +50,10 @@ A Folha de Pagamento passou a usar endpoints dedicados para consultar e executar
 
 Proventos e Descontos usa a tabela relacional `financial_events`, com CRUD por evento, importação legada explícita e bloqueio do PUT agregado. O cache só é atualizado após confirmação da API. A validação real no PostgreSQL e os testes integrados continuam pendentes; o domínio não deve ser considerado aprovado para produção.
 
+## Evidência de 16/10/2026 — Lançamentos da Folha normalizados
+
+Os proventos e descontos individuais de cada funcionário da folha agora possuem a tabela `payroll_item_entries` e migração `013_payroll_item_entries_normalized.sql`. A API salva os lançamentos na mesma transação da folha e recompõe as listas na leitura, mantendo o contrato da interface. Os arrays JSONB antigos são preservados para recuperação. A migração e os testes de integração ainda precisam ser executados no PostgreSQL real; os cálculos fiscais no servidor também permanecem como pendência. Consulte `docs/MIGRACAO-LANCAMENTOS-FOLHA-TABELA-RELACIONAL-16-10-2026.md`.
+
 ## Regra para o progresso numérico
 
 A nota global só sobe quando uma macroetapa ou um domínio passa critérios verificáveis. Pequenas migrações de leitura não devem, sozinhas, inflar a nota. A avaliação de 6/10 feita anteriormente ficou repetida porque usava uma estimativa ampla sem mostrar os critérios que ainda impediam o encerramento. Após a normalização da Folha e do histórico salarial, e o avanço do catálogo financeiro para CRUD individual, a estimativa é **7,5/10**. O avanço se deve a operações dedicadas com controle de versão e transações, não apenas à leitura pela API. Normalização em tabelas próprias, validação dos cálculos no servidor e testes integrados continuam sendo pendências substanciais.
@@ -57,7 +61,7 @@ A nota global só sobe quando uma macroetapa ou um domínio passa critérios ver
 ## Próxima sequência, sem repetir etapas já feitas
 
 1. **Salários:** tabela `salary_history` e endpoints CRUD relacionais implementados; falta executar a migração e validar em PostgreSQL real.
-2. **Folha de Pagamento:** tabelas `payrolls`/`payroll_items` e endpoints dedicados implementados; faltam validar a migração no banco real, reforçar os cálculos no servidor e executar testes integrados.
+2. **Folha de Pagamento:** tabelas `payrolls`/`payroll_items` e endpoints dedicados implementados; os lançamentos earnings/deductions também foram normalizados em `payroll_item_entries` pela migração 013. Faltam validar as migrações no banco real, reforçar os cálculos no servidor e executar testes integrados.
 3. **Proventos e Descontos:** tabela própria e CRUD individual por evento implementados; falta validar no PostgreSQL real, testar importação assistida e confirmar isolamento por empresa.
 4. **Financeiro Avançado:** auditar férias, 13º e rescisões por CRUD completo.
 5. **Inventário fechado:** auditar leituras/gravações restantes em `localStorage` e `app_records`, distinguindo cache temporário de fonte oficial.
