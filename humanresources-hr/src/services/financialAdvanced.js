@@ -8,10 +8,87 @@ import {
 } from './bankHours'
 import { calculateHourlyRate } from './overtime'
 import { getStoredArray, setStored } from './storage'
+import { apiRequest } from './api'
 
 const VACATION_KEY = 'financialVacations'
 const THIRTEENTH_KEY = 'financialThirteenths'
 const TERMINATION_KEY = 'financialTerminations'
+
+const FINANCIAL_ADVANCED_COLLECTIONS = [
+  { key: VACATION_KEY, collection: 'vacations' },
+  { key: THIRTEENTH_KEY, collection: 'thirteenths' },
+  { key: TERMINATION_KEY, collection: 'terminations' }
+]
+
+function mergeById(localRecords, remoteRecords) {
+  const merged = new Map((Array.isArray(localRecords) ? localRecords : []).map((record) => [String(record.id), record]))
+  for (const record of remoteRecords) merged.set(String(record.id), record)
+  return [...merged.values()]
+}
+
+/**
+ * Busca os três conjuntos pela API dedicada. Registros que só existem no
+ * navegador são preservados no cache e sinalizados para importação explícita.
+ */
+export async function loadFinancialAdvancedRecords() {
+  let pendingCount = 0
+  const errors = []
+
+  for (const { key, collection } of FINANCIAL_ADVANCED_COLLECTIONS) {
+    try {
+      const response = await apiRequest(`/financial-advanced/${collection}`)
+      const remoteRecords = Array.isArray(response?.records) ? response.records : []
+      const localRecords = getStoredArray(key)
+      const remoteIds = new Set(remoteRecords.map((record) => String(record.id)))
+      pendingCount += localRecords.filter((record) => !remoteIds.has(String(record.id))).length
+      setStored(key, mergeById(localRecords, remoteRecords))
+    } catch (error) {
+      errors.push(error)
+    }
+  }
+
+  return { pendingCount, errors }
+}
+
+/** Importa explicitamente os registros locais que ainda não existem no banco. */
+export async function importFinancialAdvancedLegacy() {
+  let importedCount = 0
+  for (const { key, collection } of FINANCIAL_ADVANCED_COLLECTIONS) {
+    const localRecords = getStoredArray(key)
+    if (!localRecords.length) continue
+    const response = await apiRequest(`/financial-advanced/${collection}/import-legacy`, {
+      method: 'POST',
+      body: JSON.stringify({ records: localRecords })
+    })
+    const remoteRecords = Array.isArray(response?.records) ? response.records : []
+    setStored(key, remoteRecords)
+    importedCount += Number(response?.importedCount || 0)
+  }
+  return importedCount
+}
+
+async function persistFinancialAdvancedRecord(key, collection, record) {
+  const isUpdate = record.id !== undefined && record.id !== null &&
+    getStoredArray(key).some((item) => String(item.id) === String(record.id))
+  const savedRecord = {
+    ...record,
+    id: String(record.id || generateId()),
+    updatedAt: new Date().toISOString()
+  }
+  const response = await apiRequest(
+    isUpdate
+      ? `/financial-advanced/${collection}/${encodeURIComponent(savedRecord.id)}`
+      : `/financial-advanced/${collection}`,
+    {
+      method: isUpdate ? 'PUT' : 'POST',
+      body: JSON.stringify({ record: savedRecord })
+    }
+  )
+  const saved = response?.record || savedRecord
+  const current = getStoredArray(key)
+  setStored(key, mergeById(current, [saved]))
+  return saved
+}
 
 export const FINANCIAL_ADVANCED_STATUS = {
   DRAFT: 'draft',
@@ -151,30 +228,13 @@ export function getVacations() {
 }
 
 export function saveVacation(record) {
-  const records = getVacations()
-
-  const saved = {
-    ...record,
-
-    id: record.id || generateId(),
-
-    updatedAt: new Date().toISOString()
-  }
-
-  const updated = record.id
-    ? records.map((item) => (item.id === record.id ? saved : item))
-    : [...records, saved]
-
-  setStored(VACATION_KEY, updated)
-
-  return saved
+  return persistFinancialAdvancedRecord(VACATION_KEY, 'vacations', record)
 }
 
-export function deleteVacation(recordId) {
-  const updated = getVacations().filter((item) => item.id !== recordId)
-
+export async function deleteVacation(recordId) {
+  await apiRequest(`/financial-advanced/vacations/${encodeURIComponent(recordId)}`, { method: 'DELETE' })
+  const updated = getVacations().filter((item) => String(item.id) !== String(recordId))
   setStored(VACATION_KEY, updated)
-
   return updated
 }
 
@@ -236,23 +296,7 @@ export function getThirteenths() {
 }
 
 export function saveThirteenth(record) {
-  const records = getThirteenths()
-
-  const saved = {
-    ...record,
-
-    id: record.id || generateId(),
-
-    updatedAt: new Date().toISOString()
-  }
-
-  const updated = record.id
-    ? records.map((item) => (item.id === record.id ? saved : item))
-    : [...records, saved]
-
-  setStored(THIRTEENTH_KEY, updated)
-
-  return saved
+  return persistFinancialAdvancedRecord(THIRTEENTH_KEY, 'thirteenths', record)
 }
 
 export function calculateThirteenth(
@@ -341,23 +385,7 @@ export function getTerminations() {
 }
 
 export function saveTermination(record) {
-  const records = getTerminations()
-
-  const saved = {
-    ...record,
-
-    id: record.id || generateId(),
-
-    updatedAt: new Date().toISOString()
-  }
-
-  const updated = record.id
-    ? records.map((item) => (item.id === record.id ? saved : item))
-    : [...records, saved]
-
-  setStored(TERMINATION_KEY, updated)
-
-  return saved
+  return persistFinancialAdvancedRecord(TERMINATION_KEY, 'terminations', record)
 }
 
 export function calculateTermination(employeeId, dismissalDate, options = {}) {

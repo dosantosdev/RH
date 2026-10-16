@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { hasPermission } from '../../services/permissions'
 
@@ -24,6 +24,8 @@ import {
   formatDate,
   formatMinutes,
   formatMoney,
+  importFinancialAdvancedLegacy,
+  loadFinancialAdvancedRecords,
   getTerminations,
   getThirteenths,
   getVacations,
@@ -89,6 +91,10 @@ export default function GestaoFinanceira() {
 
   const [message, setMessage] = useState('')
 
+  const [pendingLegacyRecords, setPendingLegacyRecords] = useState(0)
+
+  const [isImportingLegacy, setIsImportingLegacy] = useState(false)
+
   const [entries, setEntries] = useState(() => getBankHoursEntries())
 
   const [vacations, setVacations] = useState(() => getVacations())
@@ -126,6 +132,41 @@ export default function GestaoFinanceira() {
   )
 
   const [bankDescription, setBankDescription] = useState('')
+
+  useEffect(() => {
+    if (!canView) return undefined
+    let active = true
+    loadFinancialAdvancedRecords()
+      .then(({ pendingCount, errors }) => {
+        if (!active) return
+        setVacations(getVacations())
+        setThirteenths(getThirteenths())
+        setTerminations(getTerminations())
+        setPendingLegacyRecords(pendingCount)
+        if (errors.length) notify('Não foi possível atualizar todos os dados financeiros pela API. O cache local foi preservado.')
+      })
+      .catch(() => {
+        if (active) notify('Não foi possível carregar os registros financeiros do PostgreSQL.')
+      })
+    return () => { active = false }
+  }, [canView])
+
+  async function handleImportLegacyRecords() {
+    if (!canManage || isImportingLegacy) return
+    setIsImportingLegacy(true)
+    try {
+      const imported = await importFinancialAdvancedLegacy()
+      setVacations(getVacations())
+      setThirteenths(getThirteenths())
+      setTerminations(getTerminations())
+      setPendingLegacyRecords(0)
+      notify(`${imported} registro(s) legado(s) importado(s) ou já existente(s) confirmado(s).`)
+    } catch (error) {
+      notify(error?.message || 'Não foi possível importar os registros locais.')
+    } finally {
+      setIsImportingLegacy(false)
+    }
+  }
 
   const selectedEmployee = employees.find(
     (employee) => Number(employee.id) === Number(employeeId)
@@ -206,12 +247,13 @@ export default function GestaoFinanceira() {
     notify('Lançamento do banco de horas salvo.')
   }
 
-  function saveVacationRecord() {
+  async function saveVacationRecord() {
     if (!canManage || !vacationCalculation) {
       return
     }
 
-    saveVacation({
+    try {
+      await saveVacation({
       employeeId: Number(employeeId),
 
       startDate,
@@ -223,19 +265,21 @@ export default function GestaoFinanceira() {
       calculation: vacationCalculation,
 
       status: 'scheduled'
-    })
-
-    setVacations(getVacations())
-
-    notify('Férias registradas.')
+      })
+      setVacations(getVacations())
+      notify('Férias registradas no PostgreSQL.')
+    } catch (error) {
+      notify(error?.message || 'Não foi possível registrar as férias.')
+    }
   }
 
-  function saveThirteenthRecord() {
+  async function saveThirteenthRecord() {
     if (!canManage || !thirteenthCalculation) {
       return
     }
 
-    saveThirteenth({
+    try {
+      await saveThirteenth({
       employeeId: Number(employeeId),
 
       year: thirteenthYear,
@@ -243,19 +287,21 @@ export default function GestaoFinanceira() {
       calculation: thirteenthCalculation,
 
       status: 'calculated'
-    })
-
-    setThirteenths(getThirteenths())
-
-    notify('13º salário registrado.')
+      })
+      setThirteenths(getThirteenths())
+      notify('13º salário registrado no PostgreSQL.')
+    } catch (error) {
+      notify(error?.message || 'Não foi possível registrar o 13º salário.')
+    }
   }
 
-  function saveTerminationRecord() {
+  async function saveTerminationRecord() {
     if (!canManage || !terminationCalculation) {
       return
     }
 
-    saveTermination({
+    try {
+      await saveTermination({
       employeeId: Number(employeeId),
 
       dismissalDate: terminationDate,
@@ -263,11 +309,12 @@ export default function GestaoFinanceira() {
       calculation: terminationCalculation,
 
       status: 'simulated'
-    })
-
-    setTerminations(getTerminations())
-
-    notify('Simulação de rescisão registrada.')
+      })
+      setTerminations(getTerminations())
+      notify('Simulação de rescisão registrada no PostgreSQL.')
+    } catch (error) {
+      notify(error?.message || 'Não foi possível registrar a simulação de rescisão.')
+    }
   }
 
   if (!canView) {
@@ -312,6 +359,15 @@ export default function GestaoFinanceira() {
       </header>
 
       {message && <div className="financial-message">{message}</div>}
+
+      {canManage && pendingLegacyRecords > 0 && (
+        <div className="financial-message" role="status">
+          Existem {pendingLegacyRecords} registro(s) local(is) de férias, 13º ou rescisão que ainda não foram confirmados no PostgreSQL.
+          <button type="button" disabled={isImportingLegacy} onClick={handleImportLegacyRecords}>
+            {isImportingLegacy ? 'Importando...' : 'Importar registros locais pendentes'}
+          </button>
+        </div>
+      )}
 
       <nav className="financial-tabs">
         {TABS.map(([value, label]) => (
@@ -789,10 +845,14 @@ export default function GestaoFinanceira() {
                       {canManage && (
                         <button
                           className="danger-link"
-                          onClick={() => {
-                            deleteVacation(record.id)
-
-                            setVacations(getVacations())
+                          onClick={async () => {
+                            try {
+                              await deleteVacation(record.id)
+                              setVacations(getVacations())
+                              notify('Registro de férias excluído do PostgreSQL.')
+                            } catch (error) {
+                              notify(error?.message || 'Não foi possível excluir o registro de férias.')
+                            }
                           }}
                         >
                           Excluir

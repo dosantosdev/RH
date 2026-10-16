@@ -53,3 +53,8 @@ Esta entrega parte do ZIP mais recente enviado pela usuária e consolida a ponte
 - `node --check` nos arquivos JavaScript do servidor e no serviço `src/services/storage.js`.
 - O build Vite não foi executado nesta sessão porque as dependências não estavam instaladas no ambiente de validação.
 - Não houve conexão com o PostgreSQL real da usuária; testes funcionais e de isolamento por empresa continuam pendentes.
+
+
+## Atualização de 16/10/2026 — Financeiro Avançado
+
+Férias, 13º e rescisões agora têm API dedicada e tabela `financial_advanced_records` (migração 014), com importação idempotente de registros antigos, escopo por empresa e permissões específicas. A interface grava após confirmação da API e permite importar explicitamente registros locais pendentes. O payload JSONB é mantido temporariamente como compatibilidade; validar migração, permissões e persistência no PostgreSQL real antes de marcar o domínio como concluído. Consulte `docs/MIGRACAO-FINANCEIRO-AVANCADO-API-RELACIONAL-16-10-2026.md`.

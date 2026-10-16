@@ -70,7 +70,10 @@ const FINANCIAL_KEY_TO_MODULE = new Map(
 )
 const FINANCIAL_STORAGE_KEYS = new Set(FINANCIAL_KEY_TO_MODULE.keys())
 // Domínios com persistência relacional própria: não devem voltar à ponte genérica JSONB.
-const NORMALIZED_DOMAIN_KEYS = new Set(['financialEvents', 'salaryHistory', 'payrolls'])
+const NORMALIZED_DOMAIN_KEYS = new Set([
+  'financialEvents', 'salaryHistory', 'payrolls',
+  'financialVacations', 'financialThirteenths', 'financialTerminations'
+])
 const EVALUATION_STORAGE_KEYS = new Set([
   'evaluations',
   'evaluationModels',
@@ -827,6 +830,36 @@ export async function syncFinancialDataWithPostgres() {
         }
       } catch (error) {
         console.warn('[PostgreSQL] Não foi possível sincronizar a folha pela rota dedicada.', error)
+      }
+      continue
+    }
+
+    // Férias, 13º e rescisões usam registros relacionais dedicados. Mantemos
+    // no cache qualquer registro local ainda ausente do banco para permitir
+    // importação assistida, sem apagar dados legados automaticamente.
+    if (module.dbModule === 'financial_advanced') {
+      const collections = [
+        ['financialVacations', 'vacations'],
+        ['financialThirteenths', 'thirteenths'],
+        ['financialTerminations', 'terminations']
+      ]
+      for (const [key, collection] of collections) {
+        try {
+          const response = await apiRequest(`/financial-advanced/${collection}`)
+          const remoteRecords = Array.isArray(response?.records) ? response.records : []
+          const cachedRecords = getStoredArray(key)
+          const remoteIds = new Set(remoteRecords.map((record) => String(record.id)))
+          const localOnly = cachedRecords.filter((record) => !remoteIds.has(String(record.id)))
+          if (localOnly.length) {
+            console.warn(`[PostgreSQL] ${localOnly.length} registro(s) local(is) de "${key}" ainda não importado(s); cache preservado.`)
+          }
+          const merged = new Map(cachedRecords.map((record) => [String(record.id), record]))
+          for (const record of remoteRecords) merged.set(String(record.id), record)
+          localStorage.setItem(key, JSON.stringify([...merged.values()]))
+          synced += 1
+        } catch (error) {
+          console.warn(`[PostgreSQL] Não foi possível sincronizar "${key}" pela API dedicada.`, error)
+        }
       }
       continue
     }

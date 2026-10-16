@@ -51,3 +51,8 @@ Não executar `localStorage.clear()` nem remover em lote as chaves atuais. O pro
 ## Atualização de 16/10/2026
 
 A tela `src/pages/Financeiro/ProventosDescontos/ProventosDescontos.jsx` mantém `localStorage.financialEvents` apenas como cache compatível. As gravações oficiais são individuais pela API; se o banco estiver vazio e houver cache, a importação exige confirmação explícita e não é executada automaticamente. A contagem acima é o inventário original de 15/10/2026 e não foi recalculada nesta etapa.
+
+
+## Atualização de 16/10/2026 — Financeiro Avançado
+
+Férias, 13º e rescisões passaram a usar `GET/POST/PUT/DELETE /api/financial-advanced/:collection` e a tabela `financial_advanced_records`. As três chaves locais permanecem como cache de compatibilidade; o carregamento combina dados remotos com registros locais ainda não importados, e a interface oferece importação explícita. A ponte genérica e a importação legada genérica agora rejeitam essas chaves para impedir que a lista JSONB volte a ser a fonte oficial.
