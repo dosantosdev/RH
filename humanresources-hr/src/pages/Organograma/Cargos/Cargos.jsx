@@ -10,7 +10,12 @@ import useToast from '../../../hooks/useToast'
 
 import { hasPermission } from '../../../services/permissions'
 import { getAccessRoles } from '../../../services/accessRoles'
-import { listProfessionalRoles, createProfessionalRole, updateProfessionalRole, deleteProfessionalRole } from '../../../services/organizationApi'
+import {
+  listProfessionalRoles,
+  createProfessionalRole,
+  updateProfessionalRole,
+  deleteProfessionalRole
+} from '../../../services/organizationApi'
 
 export default function Cargos() {
   const initialRole = {
@@ -86,9 +91,19 @@ export default function Cargos() {
     let active = true
     setAccessRoles(getAccessRoles())
     listProfessionalRoles()
-      .then((items) => { if (active) setRoles(items) })
-      .catch((error) => { if (active) showToast(error.message || 'Não foi possível carregar os cargos.', 'error') })
-    return () => { active = false }
+      .then((items) => {
+        if (active) setRoles(items)
+      })
+      .catch((error) => {
+        if (active)
+          showToast(
+            error.message || 'Não foi possível carregar os cargos.',
+            'error'
+          )
+      })
+    return () => {
+      active = false
+    }
   }, [])
 
   /*
@@ -103,41 +118,24 @@ export default function Cargos() {
 
   /*
    * ============================================================
-   * IDENTIFICA PERFIS DE ACESSO ANTIGOS
+   * CARGOS PROFISSIONAIS
    * ============================================================
+   *
+   * A função listProfessionalRoles() consulta a API específica de
+   * cargos profissionais. Portanto, não devemos comparar os IDs
+   * retornados com os IDs dos perfis de acesso armazenados no
+   * catálogo local `accessRoles`.
+   *
+   * Essas entidades pertencem a catálogos diferentes e podem ter
+   * IDs iguais sem representar o mesmo registro. O filtro anterior
+   * removia cargos válidos quando seus IDs coincidiam com os IDs
+   * de admin, gestão de RH ou funcionário.
+   *
+   * A separação entre cargos profissionais e perfis de acesso deve
+   * ser garantida pela API/consulta de cada domínio, não por uma
+   * comparação entre IDs de tabelas distintas no frontend.
    */
-
-  const legacyAccessRoleIds = accessRoles
-    .filter((accessRole) =>
-      ['admin', 'gestao_rh', 'funcionario'].includes(accessRole.name)
-    )
-    .map((accessRole) => Number(accessRole.id))
-
-  const professionalRoles = roles.filter((roleItem) => {
-    const roleId = Number(roleItem.id)
-
-    const isLegacyAccessRole = legacyAccessRoleIds.includes(roleId)
-
-    if (isLegacyAccessRole) {
-      return false
-    }
-
-    const normalizedName = String(roleItem.name || '')
-      .trim()
-      .toLowerCase()
-
-    const matchingAccessRole = accessRoles.find(
-      (accessRole) =>
-        accessRole.name === normalizedName &&
-        ['admin', 'gestao_rh', 'funcionario'].includes(accessRole.name)
-    )
-
-    if (matchingAccessRole) {
-      return false
-    }
-
-    return true
-  })
+  const professionalRoles = roles
 
   /*
    * ============================================================
@@ -330,16 +328,22 @@ export default function Cargos() {
       salaryMin: role.salaryMin === '' ? null : Number(role.salaryMin),
       salaryMax: role.salaryMax === '' ? null : Number(role.salaryMax),
       dailyHours: role.dailyHours === '' ? null : Number(role.dailyHours),
-      workDaysPerWeek: role.workDaysPerWeek === '' ? null : Number(role.workDaysPerWeek),
-      cycleWorkDays: role.cycleWorkDays === '' ? null : Number(role.cycleWorkDays),
-      cycleRestDays: role.cycleRestDays === '' ? null : Number(role.cycleRestDays)
+      workDaysPerWeek:
+        role.workDaysPerWeek === '' ? null : Number(role.workDaysPerWeek),
+      cycleWorkDays:
+        role.cycleWorkDays === '' ? null : Number(role.cycleWorkDays),
+      cycleRestDays:
+        role.cycleRestDays === '' ? null : Number(role.cycleRestDays)
     }
 
     try {
       if (editingId) await updateProfessionalRole(editingId, payload)
       else await createProfessionalRole(payload)
       setRoles(await listProfessionalRoles())
-      showToast(editingId ? 'Cargo atualizado!' : 'Cargo cadastrado!', 'success')
+      showToast(
+        editingId ? 'Cargo atualizado!' : 'Cargo cadastrado!',
+        'success'
+      )
       setRole(initialRole)
       setEditingId(null)
     } catch (error) {
@@ -442,7 +446,9 @@ export default function Cargos() {
       showToast('Cargo excluído!', 'success')
     } catch (error) {
       showToast(error.message || 'Não foi possível excluir o cargo.', 'error')
-    } finally { setDeleteId(null) }
+    } finally {
+      setDeleteId(null)
+    }
   }
 
   /*
