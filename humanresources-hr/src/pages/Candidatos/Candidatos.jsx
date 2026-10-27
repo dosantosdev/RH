@@ -146,13 +146,21 @@ export default function Candidatos() {
   }
 
   useEffect(() => {
+    // A sincronização PostgreSQL -> localStorage ocorre de forma assíncrona.
+    // Na mesma aba, o evento nativo `storage` não é emitido; escutamos o evento
+    // explícito disparado pelo serviço para atualizar o estado React.
+    const refreshRecruitment = () => reload()
     const refreshPositions = (event) => {
       if (event?.detail?.key && event.detail.key !== 'positions') return
       setPositions(getPositions())
     }
+
+    window.addEventListener('hr:recruitment-cache-updated', refreshRecruitment)
     window.addEventListener('hr:organization-cache-updated', refreshPositions)
     window.addEventListener('storage', refreshPositions)
+
     return () => {
+      window.removeEventListener('hr:recruitment-cache-updated', refreshRecruitment)
       window.removeEventListener('hr:organization-cache-updated', refreshPositions)
       window.removeEventListener('storage', refreshPositions)
     }

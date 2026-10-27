@@ -771,6 +771,14 @@ export async function syncRecruitmentDataWithPostgres() {
     synced += 1
   }
 
+  // Alterações feitas pela própria aba em localStorage não acionam o evento
+  // nativo `storage` nessa mesma aba. Notificamos as telas após a hidratação.
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('hr:recruitment-cache-updated', {
+      detail: { keys, synced }
+    }))
+  }
+
   return { synced, skipped: false }
 }
 
