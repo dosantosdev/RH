@@ -66,7 +66,7 @@ export default function useEmployeeForm(formData, setFormData) {
   const filteredDepartments = departments.filter(
     (department) =>
       department.active !== false &&
-      Number(department.branchId) === Number(formData.branchId)
+      String(department.branchId ?? '') === String(formData.branchId ?? '')
   )
 
   /*
@@ -88,8 +88,8 @@ export default function useEmployeeForm(formData, setFormData) {
     }
 
     return (
-      Number(position.branchId) === Number(formData.branchId) &&
-      Number(position.departmentId) === Number(formData.departmentId)
+      String(position.branchId ?? '') === String(formData.branchId ?? '') &&
+      String(position.departmentId ?? '') === String(formData.departmentId ?? '')
     )
   })
 

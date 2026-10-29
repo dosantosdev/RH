@@ -49,7 +49,7 @@ export default function EmployeeForm({
    */
 
   const selectedPosition = filteredPositions.find(
-    (position) => Number(position.id) === Number(form.positionId)
+    (position) => String(position.id ?? '') === String(form.positionId ?? '')
   )
 
   /*
@@ -61,8 +61,8 @@ export default function EmployeeForm({
    */
 
   const selectedRole = selectedPosition
-    ? roles.find((role) => Number(role.id) === Number(selectedPosition.cargoId))
-    : roles.find((role) => Number(role.id) === Number(form.roleId))
+    ? roles.find((role) => String(role.id ?? '') === String(selectedPosition.cargoId ?? ''))
+    : roles.find((role) => String(role.id ?? '') === String(form.roleId ?? ''))
 
   /*
    * ============================================================
@@ -82,7 +82,7 @@ export default function EmployeeForm({
     }
 
     const position = filteredPositions.find(
-      (item) => Number(item.id) === Number(form.positionId)
+      (item) => String(item.id ?? '') === String(form.positionId ?? '')
     )
 
     if (!position) {
@@ -215,7 +215,7 @@ export default function EmployeeForm({
     const branchId = e.target.value
 
     const selectedBranch = branches.find(
-      (branch) => Number(branch.id) === Number(branchId)
+      (branch) => String(branch.id ?? '') === String(branchId ?? '')
     )
 
     setFormData((prev) => ({
@@ -253,7 +253,7 @@ export default function EmployeeForm({
     const departmentId = e.target.value
 
     const selectedDepartment = filteredDepartments.find(
-      (department) => Number(department.id) === Number(departmentId)
+      (department) => String(department.id ?? '') === String(departmentId ?? '')
     )
 
     setFormData((prev) => ({
@@ -288,7 +288,7 @@ export default function EmployeeForm({
     const positionId = e.target.value
 
     const selected = filteredPositions.find(
-      (position) => Number(position.id) === Number(positionId)
+      (position) => String(position.id ?? '') === String(positionId ?? '')
     )
 
     if (!selected) {
@@ -308,7 +308,7 @@ export default function EmployeeForm({
     }
 
     const selectedRoleForPosition = roles.find(
-      (role) => Number(role.id) === Number(selected.cargoId)
+      (role) => String(role.id ?? '') === String(selected.cargoId ?? '')
     )
 
     setFormData((prev) => ({
