@@ -348,7 +348,7 @@ export default function Candidatos() {
     }
 
     const position = positions.find(
-      (item) => Number(item.id) === Number(vacancyForm.positionId)
+      (item) => String(item.id ?? '') === String(vacancyForm.positionId ?? '')
     )
 
     const payload = {
@@ -535,7 +535,7 @@ export default function Candidatos() {
       }
 
       const position = positions.find(
-        (item) => Number(item.id) === Number(vacancy.positionId)
+        (item) => String(item.id ?? '') === String(vacancy.positionId ?? '')
       )
 
       if (!position) {
