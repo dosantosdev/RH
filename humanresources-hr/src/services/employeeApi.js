@@ -29,13 +29,15 @@ export function normalizeEmployee(row) {
     admissionDate: formatDateForForm(row.admission_date ?? data.admissionDate),
     dismissalDate: formatDateForForm(row.termination_date ?? data.dismissalDate),
     periodicExamDate: formatDateForForm(data.periodicExamDate ?? data.periodic_exam_date),
-    branchId: row.branch_id ?? data.branchId ?? '',
-    departmentId: row.department_id ?? data.departmentId ?? '',
-    roleId: row.role_id ?? data.roleId ?? '',
-    positionId: row.position_id ?? data.positionId ?? '',
-    branchName: row.branch_name ?? data.branchName ?? '',
-    departmentName: row.department_name ?? data.departmentName ?? '',
-    roleName: row.role_name ?? data.roleName ?? '',
+    // Quando a API envia explicitamente um vínculo nulo, respeitamos o valor
+    // do banco em vez de recuperar um ID antigo de registration_data.
+    branchId: row.branch_id !== undefined ? (row.branch_id ?? '') : (data.branchId ?? ''),
+    departmentId: row.department_id !== undefined ? (row.department_id ?? '') : (data.departmentId ?? ''),
+    roleId: row.role_id !== undefined ? (row.role_id ?? '') : (data.roleId ?? ''),
+    positionId: row.position_id !== undefined ? (row.position_id ?? '') : (data.positionId ?? ''),
+    branchName: row.branch_name !== undefined ? (row.branch_name ?? '') : (data.branchName ?? ''),
+    departmentName: row.department_name !== undefined ? (row.department_name ?? '') : (data.departmentName ?? ''),
+    roleName: row.role_name !== undefined ? (row.role_name ?? '') : (data.roleName ?? ''),
     dependents: Array.isArray(row.dependents)
       ? row.dependents
       : Array.isArray(data.dependents)
@@ -90,6 +92,12 @@ export async function updateEmployeeInApi(employee) {
     birthDate: toIsoDate(employee.birthDate),
     admissionDate: toIsoDate(employee.admissionDate),
     terminationDate: toIsoDate(employee.dismissalDate),
+    // Enviar os vínculos relacionais em colunas próprias do PostgreSQL.
+    // Sem estes campos, o perfil podia parecer atualizado até a próxima consulta.
+    branchId: employee.branchId || null,
+    departmentId: employee.departmentId || null,
+    roleId: employee.roleId || null,
+    positionId: employee.positionId || null,
     status: employee.status || ((employee.isActive || employee.active) ? 'active' : 'inactive'),
     registrationData: employee
   }
